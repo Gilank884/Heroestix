@@ -17,7 +17,7 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
             {/* 🔸 Navbar utama */}
             <nav className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-10 lg:px-20 py-4 bg-white">
                 {/* Logo */}
-                <div className="text-2xl font-bold text-gray-800">kalo Laper Ngapain Yak Selain Makan</div>
+                <div className="text-2xl font-bold text-gray-800">HaiTicket</div>
 
                 {/* Search Input */}
                 <div className="relative w-full sm:w-1/3">

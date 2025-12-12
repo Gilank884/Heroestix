@@ -9,7 +9,7 @@ export default function Footer() {
                 {/* Logo dan Deskripsi */}
                 <div className="col-span-2">
                     <div className="flex items-center space-x-1">
-                        <span className="text-2xl font-bold text-gray-800">haiticket.com</span>
+                        <span className="text-2xl font-bold text-gray-800">HaiTicket.com</span>
                     </div>
                     <p className="mt-4 text-sm leading-relaxed text-gray-600">
                         GAASSSS GAK SIH BELUM BELI TICKET
