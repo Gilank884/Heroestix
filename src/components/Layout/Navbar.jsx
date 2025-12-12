@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import LogoBanner from "../../../public/Logo/Logo-p.png";
+import LogoBanner from "../../../public/Logo/LogoBanner.png";
 
 const Navbar = ({ searchTerm, setSearchTerm }) => {
     return (
@@ -20,6 +20,7 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
                 {/* Logo */}
                 <img
                     src={LogoBanner}
+                    Link to="/home"
                     alt="Logo"
                     className="h-10 w-auto"
                 />

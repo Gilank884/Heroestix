@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FaLinkedinIn, FaFacebookF, FaInstagram, FaTwitter, FaWhatsapp } from "react-icons/fa";
-import LogoBanner from "../../../public/Logo/Logo-p.png";
+import LogoBanner from "../../../public/Logo/LogoBanner.png";
 
 export default function Footer() {
     return (
@@ -13,6 +13,7 @@ export default function Footer() {
                         <img
                             src={LogoBanner}
                             alt="Logo"
+                            Link to="/home"
                             className="h-10 w-auto"
                         />
                     </div>
