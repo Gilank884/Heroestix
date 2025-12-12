@@ -1,9 +1,9 @@
 import React from "react";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Layout/Navbar";
 import Card from "../components/Card";
 import events from "../data/events";
 import MidBanner from "../components/MidBanner";
-import Footer from "../components/Footer";
+import Footer from "../components/Layout/Footer";
 
 export default function Home() {
     return (
