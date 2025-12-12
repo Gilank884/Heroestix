@@ -1,12 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import LogoBanner from "../../../public/Logo/Logo-p.png";
 
 const Navbar = ({ searchTerm, setSearchTerm }) => {
     return (
         <header className="w-full shadow-md">
             {/* 🔹 Topbar dengan gradient biru */}
             <div className="w-full bg-gradient-to-r from-blue-600 to-blue-400 text-white text-sm px-6 py-2 flex justify-end gap-6">
-                <Link to="/tentang" className="hover:underline">
+                <Link to="/about-us" className="hover:underline">
                     Tentang Kami
                 </Link>
                 <Link to="/konsultasi" className="hover:underline">
@@ -15,9 +16,13 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
             </div>
 
             {/* 🔸 Navbar utama */}
-            <nav className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-10 lg:px-20 py-4 bg-white">
+            <nav className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-10 lg:px-20 py-4 bg-orange-100">
                 {/* Logo */}
-                <div className="text-2xl font-bold text-gray-800">HaiTicket</div>
+                <img
+                    src={LogoBanner}
+                    alt="Logo"
+                    className="h-10 w-auto"
+                />
 
                 {/* Search Input */}
                 <div className="relative w-full sm:w-1/3">

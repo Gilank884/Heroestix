@@ -1,15 +1,20 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FaLinkedinIn, FaFacebookF, FaInstagram, FaTwitter, FaWhatsapp } from "react-icons/fa";
+import LogoBanner from "../../../public/Logo/Logo-p.png";
 
 export default function Footer() {
     return (
-        <footer className="bg-white text-gray-800 border-t mt-16">
+        <footer className="bg-orange-100 text-gray-800 border-t mt-16">
             <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8">
                 {/* Logo dan Deskripsi */}
                 <div className="col-span-2">
                     <div className="flex items-center space-x-1">
-                        <span className="text-2xl font-bold text-gray-800">HaiTicket.com</span>
+                        <img
+                            src={LogoBanner}
+                            alt="Logo"
+                            className="h-10 w-auto"
+                        />
                     </div>
                     <p className="mt-4 text-sm leading-relaxed text-gray-600">
                         GAASSSS GAK SIH BELUM BELI TICKET
@@ -30,7 +35,7 @@ export default function Footer() {
                 <div>
                     <h3 className="font-semibold text-lg mb-3">About</h3>
                     <ul className="space-y-2 text-sm">
-                        <li><Link to="/tentang-kami" className="hover:text-blue-600">Tentang Kami</Link></li>
+                        <li><Link to="/about-us" className="hover:text-blue-600">Tentang Kami</Link></li>
                         <li><Link to="/alumni" className="hover:text-blue-600">Terms And Condition</Link></li>
                         <li><Link to="/karir" className="hover:text-blue-600">Career</Link></li>
                         <li><Link to="/blog" className="hover:text-blue-600">Pusat Dan Bantuan</Link></li>
