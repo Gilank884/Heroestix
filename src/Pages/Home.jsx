@@ -15,8 +15,8 @@ export default function Home() {
             <Navbar />
 
             {/* 🟢 KONTEN PUTIH */}
-            <div className="pt-32 bg-white min-h-screen">
-                <MidBanner />
+            <MidBanner />
+            <div className="bg-white min-h-screen">
 
                 {/* Section Card */}
                 <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 mt-28">

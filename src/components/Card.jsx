@@ -11,14 +11,18 @@ const Card = ({ image, title, date, location, price, status }) => {
     return (
         <div
             className="
-                bg-white rounded-xs shadow-sm overflow-hidden
-                hover:shadow-md transition-all duration-300
-                transform hover:-translate-y-1
+            bg-white rounded-l overflow-hidden
+            transition-all duration-300
+            transform hover:-translate-y-1
 
-                /* JARAK */
-                mx-2 my-3
-            "
+            border border-blue-500/20
+            shadow-[0_0_14px_rgba(59,130,246,0.25)]
+            hover:shadow-[0_0_26px_rgba(59,130,246,0.5)]
+
+            mx-2 my-3
+        "
         >
+
             {/* Gambar */}
             <div className="relative">
                 <img
