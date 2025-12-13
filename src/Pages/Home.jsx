@@ -7,20 +7,28 @@ import Footer from "../components/Layout/Footer";
 
 export default function Home() {
     return (
-        <div className="min-h-screen bg-gray-50">
+        <>
+
+            <div className="bg-transparent h-40 w-full fixed top-0 left-0 z-40" />
+
+            {/* NAVBAR */}
             <Navbar />
 
-            <main className="p-24">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {events.map((ev) => (
-                        <Card key={ev.id} {...ev} />
-                    ))}
-                </div>
-
+            {/* 🟢 KONTEN PUTIH */}
+            <div className="pt-32 bg-white min-h-screen">
                 <MidBanner />
-            </main>
 
-            <Footer />
-        </div>
+                {/* Section Card */}
+                <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 mt-28">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {events.map((ev) => (
+                            <Card key={ev.id} {...ev} />
+                        ))}
+                    </div>
+                </section>
+
+                <Footer />
+            </div>
+        </>
     );
 }

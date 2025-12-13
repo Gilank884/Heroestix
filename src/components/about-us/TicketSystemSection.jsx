@@ -5,7 +5,7 @@ import useFadeIn from './useFadeIn';
 export default function TicketSystemSection() {
     const ref = useFadeIn();
     return (
-        <section ref={ref} className="w-full py-20 px-6 md:px-20 bg-blue-50 text-blue-900">
+        <section ref={ref} className="w-full py-20 px-6 md:px-20 bg-red-500 text-blue-900">
             <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}

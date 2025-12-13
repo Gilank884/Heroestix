@@ -1,28 +1,39 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import LogoBanner from "../../../public/Logo/LogoBanner.png";
 
 const Navbar = ({ searchTerm, setSearchTerm }) => {
-    return (
-        <header className="w-full shadow-md">
-            {/* 🔹 Topbar dengan gradient biru */}
-            <div className="w-full bg-gradient-to-r from-blue-600 to-blue-400 text-white text-sm px-6 py-2 flex justify-end gap-6">
-                <Link to="/about-us" className="hover:underline">
-                    Tentang Kami
-                </Link>
-                <Link to="/konsultasi" className="hover:underline">
-                    Konsultasi
-                </Link>
-            </div>
 
-            {/* 🔸 Navbar utama */}
-            <nav className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-10 lg:px-20 py-4 bg-orange-100">
+
+    const [scrolled, setScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 50);
+        };
+
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
+
+    return (
+        <header className="fixed top-6 left-1/2 -translate-x-1/2 w-full max-w-7xl z-50">
+            {/* Floating Container */}
+            <div
+                className={`
+                    rounded-2xl px-6 py-4 flex flex-col sm:flex-row
+                    sm:items-center sm:justify-between gap-4
+                    transition-all duration-300 ease-in-out
+                    ${scrolled
+                        ? "bg-gradient-to-r from-blue-600 to-blue-400 shadow-lg border border-gray-200"
+                        : "bg-white shadow-xl"}
+                `}
+            >
                 {/* Logo */}
                 <img
-                    src={LogoBanner}
-                    Link to="/home"
+                    src={scrolled ? "/Logo/Logo.png" : "/Logo/LogoBanner.png"}
                     alt="Logo"
-                    className="h-10 w-auto"
+                    className="h-10 w-auto transition-all duration-300"
                 />
 
                 {/* Search Input */}
@@ -32,7 +43,13 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
                         placeholder="Cari event..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                        className={`
+                            w-full pl-10 pr-4 py-2 rounded-xl transition
+                            focus:outline-none focus:ring-2
+                            ${scrolled
+                                ? "border border-gray-300 focus:ring-blue-500"
+                                : "border border-black bg-white/90 focus:ring-white"}
+                        `}
                     />
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -40,7 +57,8 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
                         viewBox="0 0 24 24"
                         strokeWidth={2}
                         stroke="currentColor"
-                        className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"
+                        className={`w-5 h-5 absolute left-3 top-2.5 ${scrolled ? "text-gray-400" : "text-blue-600"
+                            }`}
                     >
                         <path
                             strokeLinecap="round"
@@ -49,7 +67,20 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
                         />
                     </svg>
                 </div>
-            </nav>
+
+                {/* Right Links */}
+                <div
+                    className={`flex gap-6 text-sm font-medium ${scrolled ? "text-gray-700" : "text-black"
+                        }`}
+                >
+                    <Link to="/about-us" className="hover:opacity-80">
+                        Tentang Kami
+                    </Link>
+                    <Link to="/konsultasi" className="hover:opacity-80">
+                        Konsultasi
+                    </Link>
+                </div>
+            </div>
         </header>
     );
 };

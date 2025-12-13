@@ -6,17 +6,24 @@ import WhyUsSection from '../components/about-us/WhyUsSection';
 import Navbar from '../components/Layout/Navbar';
 import Footer from '../components/Layout/Footer';
 
-
 export default function AboutUsPage() {
     return (
-        <main className="min-h-screen bg-white">
+        <>
+            {/* Navbar fixed */}
             <Navbar />
-            <GeneralSection />
-            <TicketSystemSection />
-            <ClientSection />
-            <PaymentSection />
-            <WhyUsSection />
+
+            {/* Container utama */}
+            <main className="pt-[190px]">
+                {/* Tambahkan padding-top setinggi navbar (100–130px) */}
+
+                <GeneralSection />
+                <TicketSystemSection />
+                <ClientSection />
+                <PaymentSection />
+                <WhyUsSection />
+            </main>
+
             <Footer />
-        </main>
+        </>
     );
 }
