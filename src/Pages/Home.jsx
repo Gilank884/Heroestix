@@ -4,6 +4,9 @@ import Card from "../components/home/EventSection";
 import HeroSection from "../components/home/HeroSection";
 import Footer from "../components/Layout/Footer";
 import ImageBanner from "../components/home/ImageBanner";
+import RegionSelector from "../components/home/RegionSelector";
+import MidSection from "../components/home/MidSection";
+
 
 
 import topEvents from "../data/TopEvent";
@@ -125,8 +128,13 @@ export default function Home() {
 
 
                 </div>
-                <section className="relative w-full mt-32">
+                <MidSection />
+                <section className="w-full bg-white -mt-24">
+                    <RegionSelector />
+                </section>
 
+
+                <section className="relative w-full">
                     {/* BACKGROUND PATTERN */}
                     <div
                         className="
@@ -137,8 +145,8 @@ export default function Home() {
             bg-center
         "
                     />
-                    {/* Optional: isi konten kalau mau */}
                 </section>
+
 
 
                 <Footer />
