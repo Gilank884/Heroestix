@@ -62,17 +62,17 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
                     className={`ml-auto flex items-center gap-6 text-sm font-medium
             ${scrolled ? "text-white" : "text-black"}`}
                 >
-                    <Link to="/about-us" className="flex items-center gap-2 hover:opacity-80">
+                    <Link to="/error" className="flex items-center gap-2 hover:opacity-80">
                         <HiOutlineInformationCircle size={18} />
                         Tentang Kami
                     </Link>
 
-                    <Link to="/konsultasi" className="flex items-center gap-2 hover:opacity-80">
+                    <Link to="/error" className="flex items-center gap-2 hover:opacity-80">
                         <MdOutlineContactSupport size={18} />
                         Konsultasi
                     </Link>
 
-                    <Link to="/profile" className="flex items-center gap-2 hover:opacity-80">
+                    <Link to="/error" className="flex items-center gap-2 hover:opacity-80">
                         <FiUser size={18} />
                         Profile
                     </Link>

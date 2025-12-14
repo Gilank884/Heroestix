@@ -5,7 +5,7 @@ import LogoBanner from "../../../public/Logo/LogoBanner.png";
 
 export default function Footer() {
     return (
-        <footer className="bg-white text-gray-800 border-t mt-16">
+        <footer className="bg-white text-gray-800 border-t">
             <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8">
                 {/* Logo dan Deskripsi */}
                 <div className="col-span-2">

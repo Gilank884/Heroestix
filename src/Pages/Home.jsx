@@ -3,6 +3,8 @@ import Navbar from "../components/Layout/Navbar";
 import Card from "../components/home/EventSection";
 import HeroSection from "../components/home/HeroSection";
 import Footer from "../components/Layout/Footer";
+import ImageBanner from "../components/home/ImageBanner";
+
 
 import topEvents from "../data/TopEvent";
 import newEvents from "../data/NewEvent";
@@ -110,12 +112,34 @@ export default function Home() {
                         data={newEvents}
                     />
 
+                    <ImageBanner
+                        image="/assets/Dongker.png"
+                        alt="Customer Care Yesplis"
+                        href="/contact"
+                    />
+
                     <EventSection
                         title="Rekomendasi Untuk Anda"
                         data={recommendedEvents}
                     />
 
+
                 </div>
+                <section className="relative w-full mt-32">
+
+                    {/* BACKGROUND PATTERN */}
+                    <div
+                        className="
+            w-full
+            h-[280px] md:h-[200px]
+            bg-[url('/assets/Footer.png')]
+            bg-no-repeat  
+            bg-center
+        "
+                    />
+                    {/* Optional: isi konten kalau mau */}
+                </section>
+
 
                 <Footer />
             </div>
