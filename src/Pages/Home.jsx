@@ -1,31 +1,121 @@
-import React from "react";
+import React, { useState } from "react";
 import Navbar from "../components/Layout/Navbar";
-import Card from "../components/Card";
-import events from "../data/events";
-import MidBanner from "../components/MidBanner";
+import Card from "../components/home/EventSection";
+import HeroSection from "../components/home/HeroSection";
 import Footer from "../components/Layout/Footer";
+
+import topEvents from "../data/TopEvent";
+import newEvents from "../data/NewEvent";
+import recommendedEvents from "../data/RecommendedEvent";
+
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+
+const ITEMS = 5;
+
+function EventSection({ title, data }) {
+    const [page, setPage] = useState(0);
+    const [fade, setFade] = useState(true);
+
+    const totalPage = Math.ceil(data.length / ITEMS);
+
+    const currentEvents = data.slice(
+        page * ITEMS,
+        page * ITEMS + ITEMS
+    );
+
+    const next = () => {
+        if (page < totalPage - 1) {
+            setFade(false);
+            setTimeout(() => {
+                setPage(page + 1);
+                setFade(true);
+            }, 200);
+        }
+    };
+
+    const prev = () => {
+        if (page > 0) {
+            setFade(false);
+            setTimeout(() => {
+                setPage(page - 1);
+                setFade(true);
+            }, 200);
+        }
+    };
+
+    return (
+        <section className="mb-20">
+            {/* HEADER */}
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold">
+                    {title}
+                </h2>
+
+                <div className="flex gap-2">
+                    <button
+                        onClick={prev}
+                        disabled={page === 0}
+                        className="p-2 rounded-full border disabled:opacity-40"
+                    >
+                        <FiChevronLeft />
+                    </button>
+
+                    <button
+                        onClick={next}
+                        disabled={page === totalPage - 1}
+                        className="p-2 rounded-full border disabled:opacity-40"
+                    >
+                        <FiChevronRight />
+                    </button>
+                </div>
+            </div>
+
+            {/* CARD */}
+            <div
+                className={`
+                    grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6
+                    transition-opacity duration-300
+                    ${fade ? "opacity-100" : "opacity-0"}
+                `}
+            >
+                {currentEvents.map((ev) => (
+                    <Card key={ev.id} {...ev} />
+                ))}
+
+                <Card variant="more" />
+            </div>
+        </section>
+    );
+}
 
 export default function Home() {
     return (
         <>
-
             <div className="bg-transparent h-40 w-full fixed top-0 left-0 z-40" />
-
-            {/* NAVBAR */}
             <Navbar />
+            <HeroSection />
 
-            {/* 🟢 KONTEN PUTIH */}
-            <MidBanner />
             <div className="bg-white min-h-screen">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 mt-28">
 
-                {/* Section Card */}
-                <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 mt-28">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {events.map((ev) => (
-                            <Card key={ev.id} {...ev} />
-                        ))}
-                    </div>
-                </section>
+
+                    <EventSection
+                        title="Event Teratas"
+                        data={topEvents}
+                    />
+
+
+                    <EventSection
+                        title="Event Terbaru"
+                        data={newEvents}
+                    />
+
+                    <EventSection
+                        title="Rekomendasi Untuk Anda"
+                        data={recommendedEvents}
+                    />
+
+                </div>
 
                 <Footer />
             </div>
