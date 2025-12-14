@@ -128,6 +128,7 @@ export default function Home() {
 
 
                 </div>
+
                 <MidSection />
                 <section className="w-full bg-white -mt-24">
                     <RegionSelector />

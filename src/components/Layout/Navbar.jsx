@@ -30,7 +30,7 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
                 <div className="flex items-center gap-4 w-full sm:w-auto">
                     {/* Logo */}
                     <img
-                        src={scrolled ? "/Logo/Logo.png" : "/Logo/LogoBanner.png"}
+                        src={scrolled ? "/Logo/LogoLight.png" : "/Logo/LogoDark.png"}
                         alt="Logo"
                         className="h-10 w-auto transition-all duration-300"
                     />
@@ -46,13 +46,13 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
     w-full pl-10 pr-4 py-2 rounded-xl transition
     focus:outline-none focus:ring-2
     ${scrolled
-                                    ? "border border-gray-300 bg-blue-500 text-white placeholder-white focus:ring-white"
+                                    ? "border border-gray-300 bg-blue-600 text-white placeholder-white focus:ring-white"
                                     : "border border-black bg-white/90 text-black placeholder-gray-500 focus:ring-blue-500"}
   `}
                         />
                         <FiSearch
                             className={`absolute left-3 top-1/2 -translate-y-1/2 text-lg
-                ${scrolled ? "text-white" : "text-blue-600"}`}
+                ${scrolled ? "text-white" : "text-black"}`}
                         />
                     </div>
                 </div>
