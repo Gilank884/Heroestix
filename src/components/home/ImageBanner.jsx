@@ -13,7 +13,7 @@ export default function ImageBanner({ image, alt = "Banner", href }) {
                 alt={alt}
                 className="
                     w-full
-                    h-[160px] sm:h-[201px] md:h-[240px]
+                    h-[160px] sm:h-[200px] md:h-[240px]
                     object-cover
                 "
             />
