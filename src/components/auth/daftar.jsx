@@ -193,7 +193,7 @@ const Daftar = () => {
                     <div className="flex items-center gap-4 my-8">
                         <div className="flex-1 h-px bg-blue-400/30" />
                         <span className="text-sm text-blue-200">
-                            atau lanjutkan dengan
+                            Atau lanjutkan dengan
                         </span>
                         <div className="flex-1 h-px bg-blue-400/30" />
                     </div>
