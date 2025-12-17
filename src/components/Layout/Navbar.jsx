@@ -9,17 +9,16 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
     const [scrolled, setScrolled] = useState(false);
     const [user, setUser] = useState(null);
 
-    // Handle scroll effect
+    // Scroll effect
     useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 50);
         };
-
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // Handle auth state
+    // Auth state
     useEffect(() => {
         const getUser = async () => {
             const { data } = await supabase.auth.getUser();
@@ -45,10 +44,10 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
         setUser(null);
     };
 
-    // Display name (username > email)
+    // ✅ DISPLAY NAME ONLY (NO EMAIL)
     const displayName =
+        user?.user_metadata?.full_name ||
         user?.user_metadata?.username ||
-        user?.email ||
         "User";
 
     return (
@@ -63,20 +62,20 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
         >
             <div
                 className={`
-                    flex items-center gap-6 transition-all duration-300 ease-in-out
+                    flex items-center gap-6 transition-all duration-300
                     ${scrolled
                         ? "rounded-none px-10 py-4 bg-gradient-to-r from-blue-600 to-blue-400 shadow-md"
                         : "rounded-2xl px-6 py-4 bg-white shadow-xl"
                     }
                 `}
             >
-                {/* 🔵 Logo + Search */}
+                {/* Logo + Search */}
                 <div className="flex items-center gap-4 w-full sm:w-auto">
                     <Link to="/">
                         <img
                             src={scrolled ? "/Logo/LogoLight.png" : "/Logo/LogoDark.png"}
                             alt="Logo"
-                            className="h-10 w-auto cursor-pointer transition-all duration-300"
+                            className="h-10 w-auto cursor-pointer"
                         />
                     </Link>
 
@@ -87,22 +86,22 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className={`
-                                w-full pl-10 pr-4 py-2 rounded-xl transition
+                                w-full pl-10 pr-4 py-2 rounded-xl
                                 focus:outline-none focus:ring-2
                                 ${scrolled
                                     ? "border border-white/40 bg-blue-600 text-white placeholder-white focus:ring-white"
-                                    : "border border-black bg-white/90 text-black placeholder-gray-500 focus:ring-blue-500"
+                                    : "border border-black bg-white text-black placeholder-gray-500 focus:ring-blue-500"
                                 }
                             `}
                         />
                         <FiSearch
-                            className={`absolute left-3 top-1/2 -translate-y-1/2 text-lg ${scrolled ? "text-white" : "text-black"
+                            className={`absolute left-3 top-1/2 -translate-y-1/2 ${scrolled ? "text-white" : "text-black"
                                 }`}
                         />
                     </div>
                 </div>
 
-                {/* 🔵 Menu Kanan */}
+                {/* Menu Kanan */}
                 <div
                     className={`ml-auto flex items-center gap-6 text-sm font-medium ${scrolled ? "text-white" : "text-black"
                         }`}
@@ -117,37 +116,24 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
                         Konsultasi
                     </Link>
 
-                    {/* 🔵 Auth Section */}
+                    {/* Auth */}
                     {user ? (
                         <div className="relative group">
-                            {/* Trigger */}
-                            <div
-                                className="
-                                    flex items-center gap-2 cursor-pointer font-semibold
-                                    transition-all duration-300
-                                    hover:text-blue-500
-                                "
-                            >
+                            <div className="flex items-center gap-2 cursor-pointer font-semibold hover:text-blue-500">
                                 <FiUser size={18} />
                                 {displayName}
                             </div>
 
-                            {/* Dropdown */}
-                            <div
-                                className="
-                                    absolute right-0 mt-3 w-40
-                                    rounded-xl bg-white shadow-xl
-                                    opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                                    transition-all duration-300
-                                    text-black
-                                "
-                            >
+                            <div className="
+                                absolute right-0 mt-3 w-40
+                                rounded-xl bg-white shadow-xl
+                                opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                                transition-all duration-300
+                                text-black
+                            ">
                                 <Link
                                     to="/profile"
-                                    className="
-                                        flex items-center gap-2 px-4 py-3
-                                        hover:bg-blue-50 rounded-t-xl
-                                    "
+                                    className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 rounded-t-xl"
                                 >
                                     <FiUser size={16} />
                                     Profile
@@ -155,11 +141,7 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
 
                                 <button
                                     onClick={handleLogout}
-                                    className="
-                                        w-full flex items-center gap-2 px-4 py-3
-                                        hover:bg-red-50 text-red-600
-                                        rounded-b-xl
-                                    "
+                                    className="w-full flex items-center gap-2 px-4 py-3 hover:bg-red-50 text-red-600 rounded-b-xl"
                                 >
                                     <FiLogOut size={16} />
                                     Logout
@@ -168,26 +150,18 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
                         </div>
                     ) : (
                         <div className="flex items-center gap-4">
-                            <Link
-                                to="/masuk"
-                                className="
-                                    transition-all duration-300
-                                    hover:text-blue-500
-                                    hover:drop-shadow-[0_0_6px_rgba(59,130,246,0.8)]
-                                "
-                            >
+                            <Link to="/masuk" className="hover:text-blue-500">
                                 Masuk
                             </Link>
 
                             <Link
                                 to="/daftar"
                                 className={`
-                                    px-4 py-2 rounded-xl font-semibold transition-all duration-300
+                                    px-4 py-2 rounded-xl font-semibold
                                     ${scrolled
                                         ? "bg-white text-blue-600 hover:bg-blue-50"
                                         : "bg-blue-600 text-white hover:bg-blue-700"
                                     }
-                                    hover:shadow-[0_0_12px_rgba(59,130,246,0.9)]
                                 `}
                             >
                                 Daftar
