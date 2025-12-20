@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import Navbar from "../components/Layout/Navbar";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import EventNavbar from "../components/Layout/EventNavbar";
 import BottomBar from "../components/Layout/Footer";
 import { HiLocationMarker, HiCalendar, HiTicket, HiClock } from "react-icons/hi";
 import { FiChevronLeft } from "react-icons/fi";
@@ -21,6 +21,7 @@ const rupiah = (value) => {
 
 export default function EventDetail() {
     const { id } = useParams();
+    const navigate = useNavigate();
     const [event, setEvent] = useState(null);
 
     const [showFullDesc, setShowFullDesc] = useState(false);
@@ -42,7 +43,7 @@ export default function EventDetail() {
 
     return (
         <div className="bg-[#fbffff] min-h-screen font-sans text-slate-900">
-            <Navbar />
+            <EventNavbar />
 
             <div className="pt-28 pb-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -129,6 +130,7 @@ export default function EventDetail() {
                                     <span className="text-xl font-black text-slate-900">{rupiah(event.price)}</span>
                                 </div>
                                 <button
+                                    onClick={() => navigate(`/select-ticket/${event.id}`)}
                                     className="w-full bg-[#1b3bb6] hover:bg-[#16319c] text-white py-4 rounded-xl font-bold transition-all"
                                 >
                                     Beli Sekarang
