@@ -7,6 +7,7 @@ import Error from "./Pages/Error";
 import Daftar from "./Pages/Daftar";
 import Profile from "./Pages/Profile"
 import Masuk from "./Pages/Masuk"
+import EventDetail from "./Pages/EventDetail";
 
 
 
@@ -19,6 +20,7 @@ export default function App() {
       <Route path="/masuk" element={<Masuk />} />
       <Route path="/error" element={<Error />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/event/:id" element={<EventDetail />} />
     </Routes>
   );
 }

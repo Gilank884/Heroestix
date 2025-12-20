@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.88.0",
     "@tailwindcss/vite": "^4.1.17",
+    "flowbite-react": "^0.12.14",
     "framer-motion": "^12.23.26",
     "gsap": "^3.14.1",
     "lucide-react": "^0.561.0",

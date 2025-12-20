@@ -1,5 +1,6 @@
 import React from "react";
 import { HiLocationMarker } from "react-icons/hi";
+import { Link } from "react-router-dom";
 
 // ✅ SAFE RUPIAH FORMATTER
 const rupiah = (value) => {
@@ -11,20 +12,34 @@ const rupiah = (value) => {
     }).format(value);
 };
 
-const Card = ({ image, title, date, location, price, status }) => {
+const Card = ({ id, image, title, date, location, price, status, variant }) => {
+    // Render "Load More" card variant
+    if (variant === "more") {
+        return (
+            <div className="bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center p-6 text-center hover:bg-gray-100 transition-colors cursor-pointer group">
+                <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <span className="text-2xl text-blue-600 font-bold">+</span>
+                </div>
+                <p className="text-sm font-semibold text-gray-600">Lihat Semua Event</p>
+            </div>
+        );
+    }
+
     // ❌ Jangan render card kalau data utama kosong
     if (!title || !image) return null;
 
     const isAvailable = status !== "soldout";
 
     return (
-        <div
+        <Link
+            to={`/event/${id}`}
             className="
                 bg-white rounded-xl overflow-hidden
                 shadow hover:shadow-lg
                 transition-all duration-300
                 hover:-translate-y-1
                 w-full
+                block
             "
         >
             {/* IMAGE */}
@@ -80,7 +95,7 @@ const Card = ({ image, title, date, location, price, status }) => {
                     </span>
                 </div>
             </div>
-        </div>
+        </Link>
     );
 };
 

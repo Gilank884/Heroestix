@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Navbar from "../components/Layout/Navbar";
 import Card from "../components/home/EventSection";
 import HeroSection from "../components/home/HeroSection";
-import Footer from "../components/Layout/Footer";
+import BottomBar from "../components/Layout/Footer";
 import ImageBanner from "../components/home/ImageBanner";
 import RegionSelector from "../components/home/RegionSelector";
 import MidSection from "../components/home/MidSection";
@@ -150,7 +150,7 @@ export default function Home() {
 
 
 
-                <Footer />
+                <BottomBar />
             </div>
         </>
     );
