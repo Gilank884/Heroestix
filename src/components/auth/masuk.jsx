@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 import { FcGoogle } from "react-icons/fc";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -48,15 +48,15 @@ const Masuk = () => {
     return (
         <div className="min-h-screen flex">
             {/* ================= LEFT (FORM) ================= */}
-            <div className="w-full md:w-[30%] flex items-center justify-center bg-gradient-to-b from-blue-950 to-blue-900 px-8">
+            <div className="w-full md:w-[30%] flex items-center justify-center bg-gradient-to-b from-[#b1451a] to-[#8e3715] px-8">
                 <div className="w-full max-w-sm">
                     {/* Header */}
                     <div className="mb-8 mt-10">
                         <h1 className="text-3xl font-bold text-white mb-2">
                             Masuk
                         </h1>
-                        <p className="text-blue-200 text-sm">
-                            Masuk ke akun Hai Ticket kamu
+                        <p className="text-[#f9e2d2] text-sm text-center">
+                            Masuk ke akun Heroestix kamu
                         </p>
                     </div>
 
@@ -77,13 +77,13 @@ const Masuk = () => {
                             required
                             className="
                                 w-full rounded-xl px-4 py-3
-                                bg-blue-950 text-white
+                                bg-[#b1451a] text-white
                                 focus:ring-2 focus:ring-white outline-none
-                                autofill:bg-blue-950
+                                autofill:bg-[#b1451a]
                             "
                             style={{
                                 WebkitBoxShadow:
-                                    "0 0 0 1000px rgb(23 37 84) inset",
+                                    "0 0 0 1000px rgb(177 69 26) inset",
                                 WebkitTextFillColor: "white",
                             }}
                         />
@@ -96,13 +96,13 @@ const Masuk = () => {
                             required
                             className="
                                 w-full rounded-xl px-4 py-3
-                                bg-blue-950 text-white
+                                bg-[#b1451a] text-white
                                 focus:ring-2 focus:ring-white outline-none
-                                autofill:bg-blue-950
+                                autofill:bg-[#b1451a]
                             "
                             style={{
                                 WebkitBoxShadow:
-                                    "0 0 0 1000px rgb(23 37 84) inset",
+                                    "0 0 0 1000px rgb(177 69 26) inset",
                                 WebkitTextFillColor: "white",
                             }}
                         />
@@ -110,7 +110,7 @@ const Masuk = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-blue-950 text-white py-3 rounded-xl font-semibold hover:bg-blue-900 transition disabled:opacity-50"
+                            className="w-full bg-[#8e3715] text-white py-3 rounded-xl font-semibold hover:bg-[#5e240a] transition disabled:opacity-50"
                         >
                             {loading ? "Memproses..." : "Masuk"}
                         </button>
@@ -118,17 +118,17 @@ const Masuk = () => {
 
                     {/* Divider */}
                     <div className="flex items-center gap-4 my-8">
-                        <div className="flex-1 h-px bg-blue-400/30" />
-                        <span className="text-sm text-blue-200">
+                        <div className="flex-1 h-px bg-[#f9e2d2]/30" />
+                        <span className="text-sm text-[#f9e2d2]">
                             Atau lanjutkan dengan
                         </span>
-                        <div className="flex-1 h-px bg-blue-400/30" />
+                        <div className="flex-1 h-px bg-[#f9e2d2]/30" />
                     </div>
 
                     {/* Google */}
                     <button
                         onClick={handleGoogleLogin}
-                        className="w-full flex items-center justify-center gap-3 bg-blue-950 text-white rounded-xl py-3 hover:bg-blue-900 transition shadow-md"
+                        className="w-full flex items-center justify-center gap-3 bg-[#b1451a] text-white rounded-xl py-3 hover:bg-[#8e3715] transition shadow-md"
                     >
                         <FcGoogle size={22} />
                         <span className="font-medium">
@@ -137,7 +137,7 @@ const Masuk = () => {
                     </button>
 
                     {/* Footer */}
-                    <p className="text-sm mt-8 text-blue-200 text-center">
+                    <p className="text-sm mt-8 text-[#f9e2d2] text-center">
                         Belum punya akun?{" "}
                         <Link
                             to="/daftar"
@@ -166,7 +166,7 @@ const Masuk = () => {
                     <div className="rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.25)]">
                         <img
                             src="/assets/Dongker.png"
-                            alt="Hai Ticket Banner"
+                            alt="Heroestix Banner"
                             className="w-full h-[220px] object-cover"
                         />
                     </div>

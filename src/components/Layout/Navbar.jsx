@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FiSearch, FiUser, FiLogOut } from "react-icons/fi";
-import { MdOutlineContactSupport } from "react-icons/md";
-import { HiOutlineInformationCircle } from "react-icons/hi";
-import { supabase } from "../../supabaseClient";
+import { FiUser, FiLogOut } from "react-icons/fi";
+import { supabase } from "../../lib/supabaseClient";
 
-const Navbar = ({ searchTerm, setSearchTerm }) => {
+const Navbar = () => {
     const [scrolled, setScrolled] = useState(false);
     const [user, setUser] = useState(null);
 
     // Scroll effect
     useEffect(() => {
         const handleScroll = () => {
-            setScrolled(window.scrollY > 50);
+            setScrolled(window.scrollY > 20);
         };
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
@@ -44,127 +42,107 @@ const Navbar = ({ searchTerm, setSearchTerm }) => {
         setUser(null);
     };
 
-    // ✅ DISPLAY NAME ONLY (NO EMAIL)
     const displayName =
         user?.user_metadata?.full_name ||
         user?.user_metadata?.username ||
         "User";
 
+    const navLinks = [
+        { name: "Become a Creator", path: "/become-creator" },
+        { name: "About Us", path: "/about-us" },
+        { name: "Contact Us", path: "/contact" }
+    ];
+
     return (
         <header
             className={`
-                fixed z-50 transition-all duration-300
-                ${scrolled
-                    ? "top-0 left-0 w-full"
-                    : "top-6 left-1/2 -translate-x-1/2 w-full max-w-7xl px-4"
-                }
+                fixed top-6 left-1/2 -translate-x-1/2 w-[95%] md:w-[90%] max-w-7xl z-50 
+                transition-all duration-500 ease-in-out
+                ${scrolled ? "py-3 bg-[#5d3a24]/95 backdrop-blur-md" : "py-4 bg-[#5d3a24]"}
+                shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-xl border border-white/5
+                hover:border-white/20 hover:bg-[#5d3a24] hover:shadow-[0_30px_70px_rgba(0,0,0,0.3)]
             `}
         >
-            <div
-                className={`
-                    flex items-center gap-6 transition-all duration-300
-                    ${scrolled
-                        ? "rounded-none px-10 py-4 bg-gradient-to-r from-blue-600 to-blue-400 shadow-md"
-                        : "rounded-2xl px-6 py-4 bg-white shadow-xl"
-                    }
-                `}
-            >
-                {/* Logo + Search */}
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <Link to="/">
+            <div className="mx-auto px-6 md:px-10 flex items-center justify-between">
+                {/* Logo Section */}
+                <div className="flex items-center gap-10">
+                    <Link to="/" className="flex-shrink-0 flex items-center gap-3 group/logo">
                         <img
-                            src={scrolled ? "/Logo/LogoLight.png" : "/Logo/LogoDark.png"}
-                            alt="Logo"
-                            className="h-10 w-auto cursor-pointer"
+                            src="/Logo/Logo.png"
+                            alt="Heroestix Logo"
+                            className="h-9 w-auto transition-transform duration-500 group-hover/logo:scale-110"
                         />
+                        <span className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase italic group-hover/logo:text-orange-400 transition-colors duration-500">
+                            Heroestix
+                        </span>
                     </Link>
 
-                    <div className="relative w-full sm:w-64">
-                        <input
-                            type="text"
-                            placeholder="Cari event..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className={`
-                                w-full pl-10 pr-4 py-2 rounded-xl
-                                focus:outline-none focus:ring-2
-                                ${scrolled
-                                    ? "border border-white/40 bg-blue-600 text-white placeholder-white focus:ring-white"
-                                    : "border border-black bg-white text-black placeholder-gray-500 focus:ring-blue-500"
-                                }
-                            `}
-                        />
-                        <FiSearch
-                            className={`absolute left-3 top-1/2 -translate-y-1/2 ${scrolled ? "text-white" : "text-black"
-                                }`}
-                        />
-                    </div>
                 </div>
 
-                {/* Menu Kanan */}
-                <div
-                    className={`ml-auto flex items-center gap-6 text-sm font-medium ${scrolled ? "text-white" : "text-black"
-                        }`}
-                >
-                    <Link to="/about-us" className="flex items-center gap-2 hover:opacity-80">
-                        <HiOutlineInformationCircle size={18} />
-                        Tentang Kami
-                    </Link>
-
-                    <Link to="/error" className="flex items-center gap-2 hover:opacity-80">
-                        <MdOutlineContactSupport size={18} />
-                        Konsultasi
-                    </Link>
-
-                    {/* Auth */}
+                {/* Right Side: Navigation + Auth / CTA */}
+                <div className="flex items-center gap-10">
+                    {/* Navigation Menu - Desktop */}
+                    <nav className="hidden md:flex items-center gap-8">
+                        {navLinks.map((item) => (
+                            <Link
+                                key={item.name}
+                                to={item.path}
+                                className={`
+                                    text-[13px] font-black uppercase tracking-widest transition-all hover:text-orange-400
+                                    text-white/80
+                                `}
+                            >
+                                {item.name}
+                            </Link>
+                        ))}
+                    </nav>
                     {user ? (
                         <div className="relative group">
-                            <div className="flex items-center gap-2 cursor-pointer font-semibold hover:text-blue-500">
-                                <FiUser size={18} />
-                                {displayName}
+                            <div className={`
+                                flex items-center gap-2 cursor-pointer font-semibold hover:text-orange-400 transition-all
+                                text-white
+                            `}>
+                                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
+                                    <FiUser size={16} className="text-orange-400" />
+                                </div>
+                                <span className="hidden sm:inline text-sm">{displayName}</span>
                             </div>
 
+                            {/* Dropdown Menu */}
                             <div className="
-                                absolute right-0 mt-3 w-40
-                                rounded-xl bg-white shadow-xl
+                                absolute right-0 mt-4 w-48
+                                rounded-2xl bg-[#4a2e1d] shadow-2xl ring-1 ring-white/10
                                 opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                                transition-all duration-300
-                                text-black
+                                transition-all duration-200 transform origin-top-right scale-95 group-hover:scale-100
+                                overflow-hidden text-white/90
                             ">
                                 <Link
                                     to="/profile"
-                                    className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 rounded-t-xl"
+                                    className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors"
                                 >
                                     <FiUser size={16} />
-                                    Profile
+                                    <span>Profile</span>
                                 </Link>
-
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full flex items-center gap-2 px-4 py-3 hover:bg-red-50 text-red-600 rounded-b-xl"
+                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 text-red-400 transition-colors border-t border-white/5"
                                 >
                                     <FiLogOut size={16} />
-                                    Logout
+                                    <span>Logout</span>
                                 </button>
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-4">
-                            <Link to="/masuk" className="hover:text-blue-500">
-                                Masuk
-                            </Link>
-
+                        <div className="flex items-center gap-3">
                             <Link
-                                to="/daftar"
-                                className={`
-                                    px-4 py-2 rounded-xl font-semibold
-                                    ${scrolled
-                                        ? "bg-white text-blue-600 hover:bg-blue-50"
-                                        : "bg-blue-600 text-white hover:bg-blue-700"
-                                    }
-                                `}
+                                to="/masuk"
+                                className="
+                                    px-6 py-2.5 rounded-xl font-bold text-sm
+                                    bg-[#b1451a] text-white shadow-lg shadow-orange-900/20
+                                    hover:bg-[#8e3715] hover:scale-105 active:scale-95 transition-all
+                                "
                             >
-                                Daftar
+                                Get In
                             </Link>
                         </div>
                     )}

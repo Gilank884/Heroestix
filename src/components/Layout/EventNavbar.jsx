@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { FiSearch, FiUser, FiLogOut } from "react-icons/fi";
 import { MdOutlineContactSupport } from "react-icons/md";
 import { HiOutlineInformationCircle } from "react-icons/hi";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 
 const EventNavbar = ({ searchTerm, setSearchTerm }) => {
     const [user, setUser] = useState(null);
@@ -42,19 +42,19 @@ const EventNavbar = ({ searchTerm, setSearchTerm }) => {
 
     return (
         <header className="fixed z-50 transition-all duration-300 top-0 left-0 w-full">
-            <div className="flex items-center gap-6 transition-all duration-300 rounded-none px-10 py-4 bg-gradient-to-r from-blue-600 to-blue-400 shadow-md">
+            <div className="flex items-center gap-6 transition-all duration-300 rounded-none px-10 py-4 bg-gradient-to-r from-[#b1451a] to-[#d66a4a] shadow-md">
                 {/* Logo + Search */}
                 <div className="flex items-center gap-4 w-full sm:w-auto">
                     <Link to="/">
                         <img
-                            src="/Logo/LogoLight.png"
+                            src="/Logo/Logo.png"
                             alt="Logo"
                             className="h-10 w-auto cursor-pointer"
                         />
                     </Link>
 
                     <div className="relative w-full sm:w-64">
-                        <h2 className="text-2xl font-black text-white tracking-tight">Hai Ticket Official</h2>
+                        <h2 className="text-2xl font-black text-white tracking-tight">Heroestix Official</h2>
                     </div>
                 </div>
 
@@ -87,7 +87,7 @@ const EventNavbar = ({ searchTerm, setSearchTerm }) => {
                             ">
                                 <Link
                                     to="/profile"
-                                    className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 rounded-t-xl"
+                                    className="flex items-center gap-2 px-4 py-3 hover:bg-[#f9e2d2] rounded-t-xl"
                                 >
                                     <FiUser size={16} />
                                     Profile
@@ -110,7 +110,7 @@ const EventNavbar = ({ searchTerm, setSearchTerm }) => {
 
                             <Link
                                 to="/daftar"
-                                className="px-4 py-2 rounded-xl font-semibold bg-white text-blue-600 hover:bg-blue-50"
+                                className="px-4 py-2 rounded-xl font-semibold bg-white text-[#b1451a] hover:bg-[#f9e2d2]"
                             >
                                 Daftar
                             </Link>

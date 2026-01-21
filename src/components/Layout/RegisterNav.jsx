@@ -9,7 +9,7 @@ export default function RegisterNav() {
         z-50
         shadow-md shadow-black/20
         transition-all duration-500
-        hover:bg-blue-950
+        hover:bg-[#b1451a]
         group
       "
         >
@@ -21,7 +21,7 @@ export default function RegisterNav() {
                 <div className="flex items-center">
                     {/* Logo Dark */}
                     <img
-                        src="/Logo/LogoDark.png"
+                        src="/Logo/Logo.png"
                         alt="Logo Dark"
                         className="
               h-9 w-auto
@@ -33,7 +33,7 @@ export default function RegisterNav() {
 
                     {/* Logo Light */}
                     <img
-                        src="/Logo/LogoLight.png"
+                        src="/Logo/Logo.png"
                         alt="Logo Light"
                         className="
               h-9 w-auto
@@ -54,7 +54,7 @@ export default function RegisterNav() {
             group-hover:text-white
           "
                 >
-                    Hai Ticket Official
+                    Heroestix Official
                 </span>
             </Link>
         </nav>

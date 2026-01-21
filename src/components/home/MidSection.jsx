@@ -23,7 +23,7 @@ export default function MidSection() {
     }, []);
 
     return (
-        <section className="w-full py-24 bg-gradient-to-r from-indigo-700 via-blue-700 to-blue-800 overflow-hidden">
+        <section className="w-full py-24 bg-gradient-to-r from-[#b1451a] via-[#f28b2a] to-[#d66a4a] overflow-hidden">
             <div className="max-w-7xl mx-auto px-4 text-center text-white">
 
                 {/* HEADER */}
