@@ -1,17 +1,19 @@
 import { Link } from "react-router-dom";
 
-export default function RegisterNav() {
+export default function RegisterNav({ role = "user" }) {
+    const isCore = role === "creator" || role === "developer";
+
     return (
         <nav
-            className="
+            className={`
         fixed top-0 left-0 w-full h-16 flex items-center
-        bg-white
+        ${isCore ? "bg-transparent" : "bg-white"}
         z-50
-        shadow-md shadow-black/20
+        ${isCore ? "" : "shadow-md shadow-black/20"}
         transition-all duration-500
-        hover:bg-[#b1451a]
+        ${isCore ? "" : "hover:bg-[#b1451a]"}
         group
-      "
+      `}
         >
             <Link
                 to="/"
@@ -19,43 +21,34 @@ export default function RegisterNav() {
             >
                 {/* LOGO */}
                 <div className="flex items-center">
-                    {/* Logo Dark */}
                     <img
                         src="/Logo/Logo.png"
-                        alt="Logo Dark"
-                        className="
-              h-9 w-auto
-              block
-              transition-all duration-300
-              group-hover:hidden
-            "
-                    />
-
-                    {/* Logo Light */}
-                    <img
-                        src="/Logo/Logo.png"
-                        alt="Logo Light"
-                        className="
-              h-9 w-auto
-              hidden
-              transition-all duration-300
-              group-hover:block
-            "
+                        alt="Logo"
+                        className="h-9 w-auto"
                     />
                 </div>
 
                 {/* TEXT */}
-                <span
-                    className="
-            text-gray-800
-            font-semibold
-            text-lg
-            transition-colors duration-300
-            group-hover:text-white
-          "
-                >
-                    Heroestix Official
-                </span>
+                <div className="flex flex-col">
+                    <span
+                        className={`
+                        ${isCore ? "text-white" : "text-gray-800"}
+                        font-black
+                        text-lg
+                        tracking-tighter
+                        transition-colors duration-300
+                        ${isCore ? "" : "group-hover:text-white"}
+                        italic uppercase
+                    `}
+                    >
+                        Heroestix {isCore ? <span className="text-orange-500 ml-1">Core</span> : "Official"}
+                    </span>
+                    {isCore && (
+                        <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-[0.2em] -mt-1">
+                            {role} Portal
+                        </span>
+                    )}
+                </div>
             </Link>
         </nav>
     );

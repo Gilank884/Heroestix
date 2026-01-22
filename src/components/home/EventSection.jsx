@@ -26,7 +26,7 @@ const Card = ({ id, image, title, date, location, price, status, variant }) => {
         );
     }
 
-    if (!title || !image) return null;
+    if (!title) return null;
     const isAvailable = status !== "soldout";
 
     return (
@@ -34,7 +34,7 @@ const Card = ({ id, image, title, date, location, price, status, variant }) => {
             {/* TICKET TOP: IMAGE */}
             <div className="relative aspect-[4/3] overflow-hidden">
                 <img
-                    src={image || "/assets/placeholder.png"}
+                    src={image || "https://images.unsplash.com/photo-1540575861501-7ad05823c93f?q=80&w=2070&auto=format&fit=crop"}
                     alt={title}
                     className={`w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 ${!isAvailable ? "grayscale opacity-70" : ""}`}
                 />

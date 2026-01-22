@@ -1,63 +1,243 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useAuthStore from '../../auth/useAuthStore';
+import { supabase } from '../../lib/supabaseClient';
+import { HiPlus, HiCalendar, HiTicket, HiTrendingUp, HiQrcode, HiShieldCheck, HiCash } from 'react-icons/hi';
+
+import CreateEventModal from '../components/CreateEventModal';
+import TicketControlModal from '../components/TicketControlModal';
 
 const CreatorDashboard = () => {
     const { user } = useAuthStore();
+    const [events, setEvents] = useState([]);
+    const [stats, setStats] = useState({
+        totalEvents: 0,
+        totalTickets: 0,
+        totalQuota: 0
+    });
+    const [loading, setLoading] = useState(true);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showControlModal, setShowControlModal] = useState(false);
 
-    // Mock data for initial implementation
-    const stats = [
-        { label: 'Total Events', value: '12', color: 'bg-blue-500' },
-        { label: 'Total Tickets Sold', value: '1,245', color: 'bg-green-500' },
-        { label: 'Total Revenue', value: 'Rp 45.200.000', color: 'bg-orange-500' },
-    ];
+    useEffect(() => {
+        if (user?.id) {
+            fetchDashboardData();
+        }
+    }, [user?.id]);
+
+    const fetchDashboardData = async () => {
+        setLoading(true);
+        try {
+            // 1. Fetch Events
+            const { data: eventsData, error: eventsError } = await supabase
+                .from('events')
+                .select(`
+                    *,
+                    ticket_types (
+                        price,
+                        quota,
+                        sold
+                    )
+                `)
+                .eq('creator_id', user.id);
+
+            if (eventsError) throw eventsError;
+
+            setEvents(eventsData || []);
+
+            // 2. Calculate Stats
+            let totalSold = 0;
+            let totalQ = 0;
+
+            eventsData?.forEach(ev => {
+                ev.ticket_types?.forEach(tt => {
+                    totalSold += tt.sold || 0;
+                    totalQ += tt.quota || 0;
+                });
+            });
+
+            setStats({
+                totalEvents: eventsData?.length || 0,
+                totalTickets: totalSold,
+                totalQuota: totalQ
+            });
+
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-3xl font-bold text-gray-800">Welcome back, {user?.name || 'Creator'}!</h2>
-                <button className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition">
-                    Create New Event
-                </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {stats.map((stat) => (
-                    <div key={stat.label} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-gray-500 text-sm font-medium">{stat.label}</p>
-                        <p className="text-2xl font-bold mt-2 text-gray-900">{stat.value}</p>
-                        <div className={`h-1 w-12 mt-4 rounded-full ${stat.color}`}></div>
-                    </div>
-                ))}
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold mb-4">Recent Sales</h3>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="text-gray-400 text-sm uppercase">
-                                <th className="pb-4 font-semibold">Event</th>
-                                <th className="pb-4 font-semibold">Buyer</th>
-                                <th className="pb-4 font-semibold">Ticket</th>
-                                <th className="pb-4 font-semibold">Status</th>
-                                <th className="pb-4 font-semibold text-right">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            <tr className="text-gray-700 hover:bg-gray-50 transition">
-                                <td className="py-4">Music Fest 2026</td>
-                                <td className="py-4">John Doe</td>
-                                <td className="py-4 font-medium">VIP Pass</td>
-                                <td className="py-4">
-                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Paid</span>
-                                </td>
-                                <td className="py-4 text-right font-bold">Rp 750.000</td>
-                            </tr>
-                            {/* More mock rows can go here */}
-                        </tbody>
-                    </table>
+        <div className="space-y-8 animate-in fade-in duration-700">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">
+                        Core <span className="text-cyan-600">Console</span>
+                    </h2>
+                    <p className="text-slate-500 font-medium mt-1">
+                        Monitoring event operations and ticket distribution.
+                    </p>
+                </div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => setShowControlModal(true)}
+                        className="flex items-center justify-center gap-2 bg-white border-2 border-slate-900 text-slate-900 px-8 py-4 rounded-2xl font-bold hover:bg-slate-50 transition-all active:scale-95"
+                    >
+                        <HiQrcode size={20} />
+                        Scan Ticket QR
+                    </button>
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95"
+                    >
+                        <HiPlus size={20} />
+                        Deploy New Event
+                    </button>
                 </div>
             </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                        <HiCalendar size={24} />
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Active Operations</p>
+                    <p className="text-3xl font-black text-slate-900 mt-2">{stats.totalEvents}</p>
+                    <p className="text-xs text-blue-600 font-bold mt-4 flex items-center gap-1">
+                        <HiTrendingUp /> {stats.totalEvents} campaigns live
+                    </p>
+                </div>
+
+                <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-6">
+                        <HiTicket size={24} />
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Tickets Distributed</p>
+                    <p className="text-3xl font-black text-slate-900 mt-2">{stats.totalTickets.toLocaleString()}</p>
+                    <p className="text-xs text-green-600 font-bold mt-4 flex items-center gap-1">
+                        <HiShieldCheck /> Verified check-ins active
+                    </p>
+                </div>
+
+                <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-6">
+                        <HiCash size={24} />
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Total Market Quota</p>
+                    <p className="text-3xl font-black text-slate-900 mt-2">{stats.totalQuota.toLocaleString()}</p>
+                    <p className="text-xs text-orange-600 font-bold mt-4 flex items-center gap-1">
+                        Inventory utilization: {Math.round((stats.totalTickets / stats.totalQuota) * 100) || 0}%
+                    </p>
+                </div>
+            </div>
+
+            {/* Content Tabs/Sections */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Events Table */}
+                <div className="lg:col-span-12 bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-8">
+                        <h3 className="text-xl font-black text-slate-900">Operation Center</h3>
+                        <button className="text-xs font-bold text-cyan-600 hover:text-cyan-700 uppercase tracking-widest">View Archives</button>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] border-b border-slate-50">
+                                    <th className="pb-4 pl-4">Operation Name</th>
+                                    <th className="pb-4">Status</th>
+                                    <th className="pb-4">Schedule</th>
+                                    <th className="pb-4">Market Cap</th>
+                                    <th className="pb-4 text-right pr-4">Units Sold</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {events.length > 0 ? (
+                                    events.map((ev) => (
+                                        <tr key={ev.id} className="group hover:bg-slate-50/50 transition-colors">
+                                            <td className="py-6 pl-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
+                                                        <img src={ev.poster_url || 'https://via.placeholder.com/150'} alt="" className="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-slate-900 leading-tight">{ev.title}</p>
+                                                        <p className="text-xs text-slate-500 font-medium mt-1 uppercase tracking-tight">{ev.location}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-6">
+                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${ev.status === 'active' ? 'bg-cyan-100 text-cyan-700' :
+                                                    ev.status === 'draft' ? 'bg-slate-100 text-slate-600' :
+                                                        'bg-orange-100 text-orange-700'
+                                                    }`}>
+                                                    {ev.status}
+                                                </span>
+                                            </td>
+                                            <td className="py-6">
+                                                <p className="text-sm font-bold text-slate-700">{ev.event_date}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase">{ev.event_time}</p>
+                                            </td>
+                                            <td className="py-6">
+                                                <p className="text-sm font-bold text-slate-900">
+                                                    {ev.ticket_types?.length} Categories
+                                                </p>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase">Ticket Control</p>
+                                            </td>
+                                            <td className="py-6 text-right pr-4">
+                                                <p className="text-sm font-black text-slate-900">
+                                                    {ev.ticket_types?.reduce((acc, curr) => acc + (curr.sold || 0), 0)} / {ev.ticket_types?.reduce((acc, curr) => acc + (curr.quota || 0), 0)}
+                                                </p>
+                                                <div className="w-24 bg-slate-100 h-1 rounded-full overflow-hidden ml-auto mt-2">
+                                                    <div
+                                                        className="bg-cyan-500 h-full rounded-full"
+                                                        style={{ width: `${(ev.ticket_types?.reduce((acc, curr) => acc + (curr.sold || 0), 0) / ev.ticket_types?.reduce((acc, curr) => acc + (curr.quota || 0), 0)) * 100 || 0}%` }}
+                                                    />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="5" className="py-12 text-center">
+                                            <p className="text-slate-400 font-bold text-sm">No operations deployed yet.</p>
+                                            <button
+                                                onClick={() => setShowCreateModal(true)}
+                                                className="text-cyan-600 hover:text-cyan-700 font-black text-xs uppercase tracking-widest mt-2"
+                                            >
+                                                Initialize First Event
+                                            </button>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {/* Modals */}
+            <CreateEventModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                creatorId={user?.id}
+                onRefresh={fetchDashboardData}
+            />
+            <TicketControlModal
+                isOpen={showControlModal}
+                onClose={() => setShowControlModal(false)}
+            />
         </div>
     );
 };

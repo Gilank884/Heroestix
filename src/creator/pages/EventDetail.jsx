@@ -1,0 +1,178 @@
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { supabase } from '../../lib/supabaseClient';
+import {
+    Info,
+    Calendar,
+    MapPin,
+    Share2,
+    Globe,
+    Edit,
+    Clock,
+    CheckCircle2
+} from 'lucide-react';
+
+const EventDetail = () => {
+    const { id: eventId } = useParams();
+    const [event, setEvent] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('Informasi Umum');
+
+    const tabs = [
+        "Informasi Umum",
+        "Tanggal Dan Lokasi",
+        "Pajak Hiburan",
+        "Sosial Media",
+        "SEO"
+    ];
+
+    useEffect(() => {
+        const fetchEvent = async () => {
+            if (eventId) {
+                const { data, error } = await supabase
+                    .from('events')
+                    .select('*')
+                    .eq('id', eventId)
+                    .single();
+
+                if (!error && data) {
+                    setEvent(data);
+                }
+                setLoading(false);
+            }
+        };
+        fetchEvent();
+    }, [eventId]);
+
+    if (loading) return <div className="p-10 text-center font-bold">Loading...</div>;
+    if (!event) return <div className="p-10 text-center text-red-500 font-bold">Event not found</div>;
+
+    return (
+        <div className="p-8 space-y-6 animate-in fade-in duration-500">
+            {/* Page Title */}
+            <h1 className="text-2xl font-black text-gray-900">Detail Event</h1>
+
+            {/* Tabs */}
+            <div className="flex items-center gap-8 border-b border-gray-200">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`pb-4 text-[13px] font-bold transition-all relative
+                            ${activeTab === tab ? 'text-[#1a36c7]' : 'text-gray-400 hover:text-gray-600'}
+                        `}
+                    >
+                        {tab}
+                        {activeTab === tab && (
+                            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#1a36c7]" />
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {/* Dynamic Content */}
+            <div className="space-y-6">
+                {activeTab === 'Informasi Umum' && (
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <div className="p-8 grid grid-cols-[200px_1fr] gap-x-12 gap-y-12">
+                            <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mt-1">Subkategori</div>
+                            <div>
+                                <div className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-[11px] font-bold">
+                                    Running
+                                </div>
+                                <div className="mt-8 space-y-4 text-gray-900">
+                                    <h2 className="text-xl font-black">{event.title}</h2>
+                                    <p className="text-sm font-bold text-gray-500">
+                                        5K Fun Run - {event.location}, {new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">Deskripsi</div>
+                            <div className="space-y-6">
+                                <div>
+                                    <p className="text-sm font-black mb-4">Benefit</p>
+                                    <ul className="space-y-3">
+                                        {['Jersey', 'BIB', 'Medali', 'Totebag'].map(item => (
+                                            <li key={item} className="flex items-center gap-3 text-sm font-bold text-gray-700">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                                                {item}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'Tanggal Dan Lokasi' && (
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                            <div className="p-6 flex items-center justify-between border-b border-gray-50">
+                                <h3 className="font-black text-gray-900">Tanggal Dan Lokasi</h3>
+                                <button className="flex items-center gap-2 px-4 py-1.5 bg-[#1a36c7] text-white rounded-lg text-xs font-bold hover:bg-[#152ba3] transition-all">
+                                    <Edit size={14} />
+                                    Edit
+                                </button>
+                            </div>
+
+                            <div className="p-6">
+                                <div className="bg-[#f0f7ff] p-4 rounded-xl border border-[#d0e6ff] flex items-center gap-3 mb-6">
+                                    <Info size={18} className="text-[#1a36c7]" />
+                                    <span className="text-[11px] font-bold text-[#1a36c7]">Format tanggal dan waktu menggunakan zona waktu WIB (UTC+7)</span>
+                                </div>
+
+                                <table className="w-full text-sm border-collapse border border-gray-100 rounded-xl overflow-hidden">
+                                    <tbody className="divide-y divide-gray-100">
+                                        <tr className="bg-gray-50/30">
+                                            <td className="p-4 font-bold text-gray-500 w-1/3 border-r border-gray-100">Tanggal Mulai</td>
+                                            <td className="p-4 font-bold text-gray-900">{new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} {event.event_time} WIB</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="p-4 font-bold text-gray-500 border-r border-gray-100">Tanggal Berakhir</td>
+                                            <td className="p-4 font-bold text-gray-900">{new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} 10:00 WIB</td>
+                                        </tr>
+                                        <tr className="bg-gray-50/30">
+                                            <td className="p-4 font-bold text-gray-500 border-r border-gray-100">Provinsi</td>
+                                            <td className="p-4 font-bold text-gray-900 uppercase">Jawa Barat</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="p-4 font-bold text-gray-500 border-r border-gray-100">Kabupaten</td>
+                                            <td className="p-4 font-bold text-gray-900 uppercase">Kota Bandung</td>
+                                        </tr>
+                                        <tr className="bg-gray-50/30">
+                                            <td className="p-4 font-bold text-gray-500 border-r border-gray-100">Nama Venue</td>
+                                            <td className="p-4 font-bold text-gray-900">{event.location}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="p-4 font-bold text-gray-500 border-r border-gray-100">Alamat</td>
+                                            <td className="p-4 font-bold text-gray-900 leading-relaxed">{event.location}, Kota Bandung, Jawa Barat, Indonesia</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Placeholders for other tabs */}
+                {(activeTab === 'Pajak Hiburan' || activeTab === 'Sosial Media' || activeTab === 'SEO') && (
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center space-y-4">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-300">
+                            <Info size={32} />
+                        </div>
+                        <h3 className="font-black text-gray-900">{activeTab}</h3>
+                        <p className="text-gray-400 text-sm font-bold max-w-sm mx-auto">Informasi terkait {activeTab.toLowerCase()} sedang dalam proses pengembangan.</p>
+                        <button className="flex items-center gap-2 px-6 py-2 bg-[#1a36c7] text-white rounded-lg text-xs font-bold hover:bg-[#152ba3] transition-all mx-auto mt-6">
+                            <Edit size={14} />
+                            Ingatkan Saya
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default EventDetail;

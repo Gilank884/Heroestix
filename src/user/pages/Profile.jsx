@@ -20,6 +20,10 @@ const Profile = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("profile");
 
+    const [orders, setOrders] = useState([]);
+    const [tickets, setTickets] = useState([]);
+    const [loadingData, setLoadingData] = useState(false);
+
     useEffect(() => {
         const getUser = async () => {
             const { data } = await supabase.auth.getUser();
@@ -29,13 +33,63 @@ const Profile = () => {
             }
             setUser(data.user);
             setLoading(false);
+            fetchUserData(data.user.id);
         };
         getUser();
     }, [navigate]);
 
+    const fetchUserData = async (userId) => {
+        setLoadingData(true);
+        try {
+            // 1. Fetch Orders
+            const { data: orderData } = await supabase
+                .from("orders")
+                .select(`
+                    *,
+                    tickets (
+                        *,
+                        ticket_types (
+                            *,
+                            events (*)
+                        )
+                    )
+                `)
+                .eq("user_id", userId)
+                .order("created_at", { ascending: false });
+
+            setOrders(orderData || []);
+
+            // 2. Extract Tickets for easier access
+            const allTickets = [];
+            orderData?.forEach(order => {
+                order.tickets?.forEach(ticket => {
+                    allTickets.push({
+                        ...ticket,
+                        order_status: order.status,
+                        order_date: order.created_at
+                    });
+                });
+            });
+            setTickets(allTickets);
+
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
     const handleLogout = async () => {
         const { error } = await supabase.auth.signOut();
         if (!error) navigate("/");
+    };
+
+    const rupiah = (value) => {
+        return new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            minimumFractionDigits: 0,
+        }).format(value || 0);
     };
 
     if (loading) {
@@ -161,7 +215,7 @@ const Profile = () => {
                                         <div className="absolute top-0 right-0 w-64 h-64 bg-[#b1451a]/5 rounded-full blur-3xl -mr-32 -mt-32" />
 
                                         <div className="relative">
-                                            <div className="mb-12">
+                                            <div className="mb-12 text-left">
                                                 <h1 className="text-3xl font-black text-slate-800 tracking-tight">
                                                     Informasi Akun
                                                 </h1>
@@ -212,27 +266,62 @@ const Profile = () => {
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 1.05 }}
-                                        className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-10 h-full flex items-center justify-center min-h-[500px]"
+                                        className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-10 h-full min-h-[500px]"
                                     >
-                                        <div className="text-center max-w-sm">
-                                            <div className="relative w-32 h-32 mx-auto mb-8">
-                                                <div className="absolute inset-0 bg-[#b1451a]/10 rounded-[2.5rem] rotate-12 scale-90" />
-                                                <div className="absolute inset-0 bg-[#b1451a]/5 rounded-[2.5rem] -rotate-6" />
-                                                <div className="relative w-full h-full bg-white rounded-[2.5rem] shadow-sm border border-slate-50 flex items-center justify-center">
-                                                    <HiTicket className="text-6xl text-[#b1451a]" />
+                                        {tickets.length > 0 ? (
+                                            <div className="space-y-6">
+                                                <div className="mb-8 text-left">
+                                                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">Daftar Tiket Aktif</h2>
+                                                    <p className="text-slate-400 font-medium text-sm">Berikut adalah tiket yang baru saja Anda beli.</p>
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    {tickets.map(ticket => (
+                                                        <div key={ticket.id} className="bg-slate-50 border border-slate-100 rounded-3xl p-6 relative overflow-hidden group hover:border-[#b1451a]/30 transition-all text-left">
+                                                            <div className="absolute top-0 right-0 w-24 h-24 bg-[#b1451a]/5 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-150" />
+                                                            <div className="relative z-10 space-y-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="px-3 py-1 bg-white rounded-full text-[10px] font-black uppercase text-[#b1451a] tracking-widest shadow-sm">
+                                                                        {ticket.ticket_types?.name}
+                                                                    </span>
+                                                                    <span className={`text-[10px] font-black uppercase tracking-widest ${ticket.order_status === 'paid' ? 'text-green-500' : 'text-orange-500'
+                                                                        }`}>
+                                                                        {ticket.order_status}
+                                                                    </span>
+                                                                </div>
+                                                                <div>
+                                                                    <h3 className="font-black text-slate-800 line-clamp-1">{ticket.ticket_types?.events?.title}</h3>
+                                                                    <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-widest">{ticket.ticket_types?.events?.event_date}</p>
+                                                                </div>
+                                                                <div className="pt-4 border-t border-slate-200/50 flex items-center justify-between">
+                                                                    <p className="text-[10px] font-mono text-slate-400">{ticket.qr_code}</p>
+                                                                    <button className="text-[11px] font-black text-[#b1451a] uppercase tracking-widest hover:underline">Download</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
-                                            <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">Opps! Belum Ada Tiket</h2>
-                                            <p className="text-slate-400 font-medium mb-10 leading-relaxed">
-                                                Sepertinya Anda belum memesan tiket apapun. Yuk, cari event menarik dan amankan tiketmu!
-                                            </p>
-                                            <button
-                                                onClick={() => navigate("/")}
-                                                className="w-full py-4 px-10 bg-gradient-to-r from-[#b1451a] to-[#d66a4a] text-white rounded-2xl font-black text-sm tracking-widest uppercase shadow-xl shadow-[#b1451a]/20 hover:opacity-90 transition-opacity"
-                                            >
-                                                Cari Event Seru
-                                            </button>
-                                        </div>
+                                        ) : (
+                                            <div className="text-center max-w-sm mx-auto">
+                                                <div className="relative w-32 h-32 mx-auto mb-8">
+                                                    <div className="absolute inset-0 bg-[#b1451a]/10 rounded-[2.5rem] rotate-12 scale-90" />
+                                                    <div className="absolute inset-0 bg-[#b1451a]/5 rounded-[2.5rem] -rotate-6" />
+                                                    <div className="relative w-full h-full bg-white rounded-[2.5rem] shadow-sm border border-slate-50 flex items-center justify-center">
+                                                        <HiTicket className="text-6xl text-[#b1451a]" />
+                                                    </div>
+                                                </div>
+                                                <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">Opps! Belum Ada Tiket</h2>
+                                                <p className="text-slate-400 font-medium mb-10 leading-relaxed">
+                                                    Sepertinya Anda belum memesan tiket apapun. Yuk, cari event menarik dan amankan tiketmu!
+                                                </p>
+                                                <button
+                                                    onClick={() => navigate("/")}
+                                                    className="w-full py-4 px-10 bg-gradient-to-r from-[#b1451a] to-[#d66a4a] text-white rounded-2xl font-black text-sm tracking-widest uppercase shadow-xl shadow-[#b1451a]/20 hover:opacity-90 transition-opacity"
+                                                >
+                                                    Cari Event Seru
+                                                </button>
+                                            </div>
+                                        )}
                                     </motion.div>
                                 )}
 
@@ -242,20 +331,53 @@ const Profile = () => {
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         exit={{ opacity: 0, x: -20 }}
-                                        className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-10 h-full flex items-center justify-center min-h-[500px]"
+                                        className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-10 h-full min-h-[500px]"
                                     >
-                                        <div className="text-center max-w-sm">
-                                            <div className="relative w-32 h-32 mx-auto mb-8">
-                                                <div className="absolute inset-0 bg-slate-100 rounded-full animate-pulse" />
-                                                <div className="relative w-full h-full flex items-center justify-center">
-                                                    <HiReceiptTax className="text-6xl text-slate-300" />
+                                        {orders.length > 0 ? (
+                                            <div className="w-full space-y-6">
+                                                <div className="mb-8 text-left">
+                                                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">Riwayat Transaksi</h2>
+                                                    <p className="text-slate-400 font-medium text-sm">Semua catatan transaksi pembayaran Anda.</p>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    {orders.map(order => (
+                                                        <div key={order.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:border-slate-200 transition-all text-left">
+                                                            <div className="flex items-center gap-6">
+                                                                <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-[#b1451a]">
+                                                                    <HiReceiptTax size={28} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-black text-slate-800">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                                                    <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-widest">
+                                                                        {new Date(order.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="font-black text-slate-800">{rupiah(order.total)}</p>
+                                                                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${order.status === 'paid' ? 'text-green-500' : 'text-orange-500'
+                                                                    }`}>
+                                                                    {order.status}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
-                                            <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">Kosong Melompong</h2>
-                                            <p className="text-slate-400 font-medium leading-relaxed">
-                                                Belum ada catatan transaksi yang dilakukan. Riwayat pembayaran Anda akan tampil di sini secara detail.
-                                            </p>
-                                        </div>
+                                        ) : (
+                                            <div className="text-center max-w-sm mx-auto">
+                                                <div className="relative w-32 h-32 mx-auto mb-8">
+                                                    <div className="absolute inset-0 bg-slate-100 rounded-full animate-pulse" />
+                                                    <div className="relative w-full h-full flex items-center justify-center">
+                                                        <HiReceiptTax className="text-6xl text-slate-300" />
+                                                    </div>
+                                                </div>
+                                                <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">Kosong Melompong</h2>
+                                                <p className="text-slate-400 font-medium leading-relaxed">
+                                                    Belum ada catatan transaksi yang dilakukan. Riwayat pembayaran Anda akan tampil di sini secara detail.
+                                                </p>
+                                            </div>
+                                        )}
                                     </motion.div>
                                 )}
                             </AnimatePresence>

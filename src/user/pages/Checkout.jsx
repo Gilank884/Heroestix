@@ -2,13 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import EventNavbar from "../../components/Layout/EventNavbar";
 import Footer from "../../components/Layout/Footer";
-import { HiCalendar, HiUser, HiMail, HiPhone, HiChevronDown, HiCreditCard, HiCheckCircle } from "react-icons/hi";
-import { FaMale, FaFemale, FaWallet } from "react-icons/fa";
-import { MdStorefront, MdPayment } from "react-icons/md";
-
-import topEvents from "../../data/TopEvent";
-import newEvents from "../../data/NewEvent";
-import recommendedEvents from "../../data/RecommendedEvent";
+import { HiCalendar, HiUser, HiMail, HiPhone, HiChevronDown } from "react-icons/hi";
+import { FaMale, FaFemale } from "react-icons/fa";
+import useAuthStore from "../../auth/useAuthStore";
+import { supabase } from "../../lib/supabaseClient";
 
 const rupiah = (value) => {
     if (typeof value !== "number" || isNaN(value)) return "-";
@@ -44,25 +41,6 @@ const PAYMENT_METHODS = [
             { id: "linkaja", name: "LinkAja", logo: "LAja" },
             { id: "astrapay", name: "AstraPay", logo: "APay" },
         ]
-    },
-    {
-        category: "Kartu Debit/Kredit",
-        methods: [
-            { id: "cc", name: "Credit Card / Debit Card", logo: "CC" },
-        ]
-    },
-    {
-        category: "Retail Outlets",
-        methods: [
-            { id: "alfamart", name: "Alfamart", logo: "Alfa" },
-            { id: "indomaret", name: "Indomaret", logo: "Indo" },
-        ]
-    },
-    {
-        category: "Paylater",
-        methods: [
-            { id: "akulaku", name: "Akulaku", logo: "Aku" },
-        ]
     }
 ];
 
@@ -70,31 +48,101 @@ export default function Checkout() {
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const { ticketCount } = location.state || { ticketCount: 1 };
+    const { user } = useAuthStore();
+    const { selectedTickets, totalAmount, event } = location.state || { selectedTickets: {}, totalAmount: 0, event: null };
 
-    const [event, setEvent] = useState(null);
     const [sameAsBuyer, setSameAsBuyer] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [selectedPayment, setSelectedPayment] = useState("bca");
+    const [loading, setLoading] = useState(false);
+    const [ticketTypes, setTicketTypes] = useState([]);
+
+    // Form states for first visitor (simplified for this task)
+    const [visitorData, setVisitorData] = useState({
+        full_name: user?.full_name || "",
+        email: user?.email || "",
+        phone: ""
+    });
 
     useEffect(() => {
-        const allEvents = [...topEvents, ...newEvents, ...recommendedEvents];
-        const foundEvent = allEvents.find((ev) => ev.id === parseInt(id));
-        setEvent(foundEvent);
+        if (!event) {
+            navigate(`/event/${id}`);
+            return;
+        }
+
+        const fetchTicketTypes = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("ticket_types")
+                    .select("*")
+                    .eq("event_id", id);
+                if (error) throw error;
+                setTicketTypes(data || []);
+            } catch (error) {
+                console.error("Error fetching ticket types:", error);
+            }
+        };
+
+        fetchTicketTypes();
         window.scrollTo(0, 0);
-    }, [id]);
+    }, [id, event, navigate]);
 
-    if (!event) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 uppercase font-bold tracking-widest text-gray-400">
-                Memuat...
-            </div>
-        );
-    }
+    if (!event) return null;
 
-    const subtotal = ticketCount * event.price;
-    const internetFee = 8657; // Mock fee from image
-    const total = currentStep === 1 ? subtotal : subtotal + internetFee;
+    const internetFee = 8500;
+    const finalTotal = currentStep === 1 ? totalAmount : totalAmount + internetFee;
+
+    const handleCreateOrder = async () => {
+        setLoading(true);
+        try {
+            // 1. Create Order
+            const { data: order, error: orderError } = await supabase
+                .from("orders")
+                .insert({
+                    user_id: user.id,
+                    total: totalAmount + internetFee,
+                    status: "pending"
+                })
+                .select()
+                .single();
+
+            if (orderError) throw orderError;
+
+            // 2. Create Tickets for each type and quantity
+            const ticketsToCreate = [];
+            Object.entries(selectedTickets).forEach(([typeId, count]) => {
+                for (let i = 0; i < count; i++) {
+                    ticketsToCreate.push({
+                        order_id: order.id,
+                        ticket_type_id: typeId,
+                        qr_code: `QR-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+                        status: "unused"
+                    });
+                }
+            });
+
+            const { error: ticketError } = await supabase
+                .from("tickets")
+                .insert(ticketsToCreate);
+
+            if (ticketError) throw ticketError;
+
+            // 3. Move to Payment
+            navigate(`/payment/${id}`, {
+                state: {
+                    total: totalAmount + internetFee,
+                    selectedPayment,
+                    orderId: order.id,
+                    eventTitle: event.title
+                }
+            });
+
+        } catch (error) {
+            alert("Error creating order: " + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleNextStep = () => {
         setCurrentStep(2);
@@ -178,7 +226,9 @@ export default function Checkout() {
                                             <div className="space-y-4">
                                                 <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
                                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kategori Tiket</p>
-                                                    <p className="font-bold text-slate-800">Reguler</p>
+                                                    <p className="font-bold text-slate-800">
+                                                        {ticketTypes?.find(tt => selectedTickets?.[tt.id] > 0)?.name || "Tiket Terpilih"}
+                                                    </p>
                                                 </div>
 
                                                 <div className="space-y-2">
@@ -326,12 +376,23 @@ export default function Checkout() {
 
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between text-sm">
-                                        <span className="text-slate-500 font-medium">{ticketCount} Tiket Dipesan</span>
-                                        <button className="text-blue-600 font-bold text-xs hover:underline">Lihat Detail</button>
+                                        <span className="text-slate-500 font-medium">Tiket Dipesan</span>
                                     </div>
-                                    <div className="flex items-center justify-between text-sm font-bold">
+                                    <div className="space-y-2">
+                                        {selectedTickets && Object.entries(selectedTickets).map(([typeId, count]) => {
+                                            const tt = ticketTypes?.find(t => t.id === typeId);
+                                            if (!count || !tt) return null;
+                                            return (
+                                                <div key={typeId} className="flex items-center justify-between text-sm font-bold">
+                                                    <span className="text-slate-600">{count}x {tt.name}</span>
+                                                    <span className="text-slate-900">{rupiah(count * tt.price)}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm font-bold pt-2 border-t border-slate-50">
                                         <span className="text-slate-600">Subtotal</span>
-                                        <span className="text-slate-900">{rupiah(subtotal)}</span>
+                                        <span className="text-slate-900">{rupiah(totalAmount)}</span>
                                     </div>
                                     {currentStep === 2 && (
                                         <div className="flex items-center justify-between text-sm font-bold">
@@ -346,10 +407,10 @@ export default function Checkout() {
                                     <button className="text-blue-700 font-bold text-[13px] hover:underline">Tambahkan</button>
                                 </div>
 
-                                <div className="pt-2">
+                                <div className="pt-2 border-t border-slate-100">
                                     <div className="flex items-center justify-between mb-6">
                                         <span className="font-bold text-slate-700">Total</span>
-                                        <span className="text-xl font-black text-slate-900">{rupiah(total)}</span>
+                                        <span className="text-xl font-black text-slate-900">{rupiah(finalTotal)}</span>
                                     </div>
 
                                     <div className="space-y-3">
@@ -363,10 +424,11 @@ export default function Checkout() {
                                         ) : (
                                             <>
                                                 <button
-                                                    onClick={() => navigate(`/payment/${event.id}`, { state: { total, selectedPayment } })}
-                                                    className="w-full bg-[#1b3bb6] hover:bg-[#16319c] text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-blue-100"
+                                                    disabled={loading}
+                                                    onClick={handleCreateOrder}
+                                                    className="w-full bg-[#1b3bb6] hover:bg-[#16319c] text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 disabled:opacity-50"
                                                 >
-                                                    Bayar Sekarang
+                                                    {loading ? "Memproses..." : "Bayar Sekarang"}
                                                 </button>
                                                 <button
                                                     onClick={handlePrevStep}

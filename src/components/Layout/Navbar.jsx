@@ -19,15 +19,31 @@ const Navbar = () => {
     // Auth state
     useEffect(() => {
         const getUser = async () => {
-            const { data } = await supabase.auth.getUser();
-            setUser(data.user);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("role")
+                    .eq("id", user.id)
+                    .single();
+                setUser({ ...user, role: profile?.role });
+            }
         };
 
         getUser();
 
         const { data: authListener } = supabase.auth.onAuthStateChange(
-            (_event, session) => {
-                setUser(session?.user ?? null);
+            async (_event, session) => {
+                if (session?.user) {
+                    const { data: profile } = await supabase
+                        .from("profiles")
+                        .select("role")
+                        .eq("id", session.user.id)
+                        .single();
+                    setUser({ ...session.user, role: profile?.role });
+                } else {
+                    setUser(null);
+                }
             }
         );
 
@@ -123,6 +139,26 @@ const Navbar = () => {
                                     <FiUser size={16} />
                                     <span>Profile</span>
                                 </Link>
+
+                                {user?.role === "creator" && (
+                                    <a
+                                        href={`http://creator.${window.location.hostname.includes("localhost") ? "localhost" : "heroestix.com"}${window.location.port ? ":" + window.location.port : ""}`}
+                                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-t border-white/5"
+                                    >
+                                        <div className="w-4 h-4 rounded-sm border border-white/40 flex items-center justify-center text-[10px] font-bold">C</div>
+                                        <span>Creator Portal</span>
+                                    </a>
+                                )}
+
+                                {user?.role === "developer" && (
+                                    <a
+                                        href={`http://dev.${window.location.hostname.includes("localhost") ? "localhost" : "heroestix.com"}${window.location.port ? ":" + window.location.port : ""}`}
+                                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-t border-white/5"
+                                    >
+                                        <div className="w-4 h-4 rounded-sm border border-white/40 flex items-center justify-center text-[10px] font-bold">D</div>
+                                        <span>Dev Portal</span>
+                                    </a>
+                                )}
                                 <button
                                     onClick={handleLogout}
                                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 text-red-400 transition-colors border-t border-white/5"

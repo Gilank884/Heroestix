@@ -3,10 +3,10 @@ import RegisterNav from "../../components/Layout/RegisterNav";
 import Footer from "../../components/Layout/Footer";
 import { motion } from "framer-motion";
 
-export default function DaftarPage() {
+export default function DaftarPage({ role = "user" }) {
     return (
         <>
-            <RegisterNav />
+            <RegisterNav role={role} />
 
             {/* PAGE ENTER ANIMATION */}
             <motion.main
@@ -17,7 +17,7 @@ export default function DaftarPage() {
                     ease: [0.22, 1, 0.36, 1], // smooth cinematic
                 }}
             >
-                <Daftar />
+                <Daftar role={role} />
             </motion.main>
         </>
     );

@@ -8,19 +8,24 @@ const useAuthStore = create(
             token: null,
             role: null, // 'user', 'creator', 'developer'
             isAuthenticated: false,
+            isChecking: true,
+
+            setChecking: (val) => set({ isChecking: val }),
 
             login: (userData, token, role) => set({
                 user: userData,
                 token: token,
                 role: role,
-                isAuthenticated: true
+                isAuthenticated: true,
+                isChecking: false
             }),
 
             logout: () => set({
                 user: null,
                 token: null,
                 role: null,
-                isAuthenticated: false
+                isAuthenticated: false,
+                isChecking: false
             }),
 
             updateProfile: (userData) => set((state) => ({
