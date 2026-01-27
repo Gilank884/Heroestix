@@ -18,27 +18,42 @@ const HeroSection = () => {
     }, [banners.length]);
 
     return (
-        <section className="relative w-full pt-28 md:pt-36 pb-10 px-4 sm:px-6 lg:px-12 overflow-hidden">
-            {/* BROWN GRADIENT & PATTERN BACKGROUND */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#4a2e1d] via-[#b1451a] to-[#f59e0b]">
-                <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] animate-pulse"></div>
+        <section className="relative w-full pt-32 md:pt-40 pb-16 px-4 sm:px-6 lg:px-12 overflow-hidden bg-slate-950">
+            {/* PROFESSIONAL BLUE & SLATE BACKGROUND */}
+            <div className="absolute inset-0">
+                {/* Deep Background Gradient */}
+                <div className="absolute inset-0 bg-slate-950"></div>
 
-                {/* Decorative Blobs */}
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-400 blur-[120px] rounded-full opacity-30"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-orange-900 blur-[150px] rounded-full opacity-20"></div>
+                {/* Modern Lens Flare / Glows */}
+                <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-blue-600/20 blur-[120px] rounded-full"></div>
+                <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[100px] rounded-full"></div>
+
+                {/* Subtle Grid - Professional Tech Look */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
             </div>
 
-            <div className="max-w-5xl mx-auto relative z-10">
-                {/* 16:9 Aspect Ratio Container */}
-                <div className="relative w-full aspect-video overflow-hidden rounded-2xl shadow-xl">
+            <div className="max-w-6xl mx-auto relative z-10">
+                {/* Main Headline (Optional, but adds professionalism) */}
+                <div className="text-center mb-12 space-y-4">
+                    <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight">
+                        Experience <span className="text-blue-500">Unforgettable</span> Events
+                    </h1>
+                    <p className="text-slate-400 text-lg max-w-2xl mx-auto font-medium">
+                        Your gateway to the most exclusive concerts, festivals, and cultural experiences.
+                    </p>
+                </div>
+
+                {/* 21:9 or 16:9 Aspect Ratio Container - Sleek & High fidelity */}
+                <div className="relative w-full aspect-[21/9] md:aspect-[3/1] overflow-hidden rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] border border-white/10">
                     {banners.map((banner, index) => (
                         <div
                             key={index}
                             className={`
-                                absolute inset-0 transition-opacity duration-1000 ease-in-out
-                                ${index === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0"}
+                                absolute inset-0 transition-all duration-1000 ease-in-out transform
+                                ${index === currentIndex ? "opacity-100 scale-100 z-10" : "opacity-0 scale-105 z-0"}
                             `}
                         >
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent z-10"></div>
                             <img
                                 src={banner}
                                 alt={`Banner ${index + 1}`}
@@ -47,15 +62,15 @@ const HeroSection = () => {
                         </div>
                     ))}
 
-                    {/* Navigation Dots */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                    {/* Navigation Dots - Professional Style */}
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-20">
                         {banners.map((_, index) => (
                             <button
                                 key={index}
                                 onClick={() => setCurrentIndex(index)}
                                 className={`
-                                    w-2 h-2 rounded-full transition-all duration-300
-                                    ${index === currentIndex ? "w-6 bg-white" : "bg-white/50"}
+                                    h-1.5 rounded-full transition-all duration-500
+                                    ${index === currentIndex ? "w-10 bg-blue-500" : "w-4 bg-white/30 hover:bg-white/50"}
                                 `}
                             />
                         ))}
@@ -67,3 +82,4 @@ const HeroSection = () => {
 };
 
 export default HeroSection;
+

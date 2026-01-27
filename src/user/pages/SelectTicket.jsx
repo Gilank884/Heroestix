@@ -2,7 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import EventNavbar from "../../components/Layout/EventNavbar";
 import Footer from "../../components/Layout/Footer";
-import { HiCalendar, HiLocationMarker } from "react-icons/hi";
+import {
+    Calendar,
+    MapPin,
+    Minus,
+    Plus,
+    ChevronLeft,
+    ShoppingBag,
+    Info
+} from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 
 const rupiah = (value) => {
@@ -70,8 +78,8 @@ export default function SelectTicket() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 uppercase font-bold tracking-widest text-gray-400">
-                Memuat...
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 uppercase font-bold tracking-widest text-slate-300">
+                Memuat Tiket...
             </div>
         );
     }
@@ -80,19 +88,32 @@ export default function SelectTicket() {
     const totalAmount = ticketTypes.reduce((acc, tt) => acc + (selectedTickets[tt.id] || 0) * tt.price, 0);
 
     return (
-        <div className="bg-[#fbffff] min-h-screen font-sans text-slate-900">
+        <div className="bg-slate-50 min-h-screen font-sans text-slate-900">
             <EventNavbar />
 
             <div className="pt-28 pb-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+
+                    {/* BACK BUTTON */}
+                    <button
+                        onClick={() => navigate(`/event/${id}`)}
+                        className="mb-8 flex items-center gap-2 text-slate-500 hover:text-blue-600 font-semibold transition-colors group"
+                    >
+                        <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                        Back to Event Details
+                    </button>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                         {/* LEFT COLUMN: TICKET CATEGORIES */}
-                        <div className="lg:col-span-8 space-y-6">
-                            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                                <div className="p-6 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
-                                    <h2 className="text-xl font-bold">Kategori Tiket</h2>
+                        <div className="lg:col-span-8 space-y-8">
+                            <div className="bg-white rounded-[2rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
+                                <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+                                    <h2 className="text-2xl font-bold text-slate-900">Pilih Kategori Tiket</h2>
+                                    <div className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-widest">
+                                        Limited Supply
+                                    </div>
                                 </div>
-                                <div className="p-6 space-y-6">
+                                <div className="p-8 space-y-8">
                                     {ticketTypes.map((tt) => {
                                         const now = new Date();
                                         const saleStart = tt.start_date ? new Date(tt.start_date) : null;
@@ -108,50 +129,52 @@ export default function SelectTicket() {
                                             if (isInactive || isNotStarted) return "Segera";
                                             if (isSoldOut) return "Habis";
                                             if (isEnded) return "Berakhir";
-                                            return (selectedTickets[tt.id] || 0) > 0 ? "+" : "Tambah";
+                                            return "Pilih";
                                         };
 
                                         return (
-                                            <div key={tt.id} className={`border rounded-xl p-6 space-y-4 transition-all ${isAvailable ? 'border-slate-200' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
-                                                <div className="flex items-center justify-between">
-                                                    <div className="text-left">
-                                                        <h3 className="text-lg font-bold">{tt.name}</h3>
-                                                        <p className="text-[#b1451a] font-extrabold text-lg">{rupiah(tt.price)}</p>
+                                            <div key={tt.id} className={`group border rounded-2xl p-6  transition-all duration-300 ${isAvailable ? 'border-slate-100 hover:border-blue-200 hover:bg-blue-50/20' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                                    <div className="text-left space-y-2">
+                                                        <h3 className="text-xl font-bold text-slate-900">{tt.name}</h3>
+                                                        <p className="text-blue-600 font-extrabold text-2xl">{rupiah(tt.price)}</p>
 
-                                                        <div className="flex flex-wrap gap-2 mt-2">
-                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-white px-2 py-0.5 rounded border border-slate-100">
+                                                        <div className="flex flex-wrap gap-2 mt-4">
+                                                            <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
+                                                                <Info size={12} className="text-blue-500" />
                                                                 Quota: {tt.quota - tt.sold} Remaining
-                                                            </p>
+                                                            </div>
                                                             {isNotStarted && (
-                                                                <p className="text-[10px] text-blue-600 font-bold uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                                                <p className="text-[10px] text-blue-600 font-bold uppercase tracking-widest bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
                                                                     Starts: {saleStart.toLocaleDateString('id-ID')}
                                                                 </p>
                                                             )}
                                                             {isEnded && (
-                                                                <p className="text-[10px] text-red-600 font-bold uppercase tracking-widest bg-red-50 px-2 py-0.5 rounded border border-red-100">
+                                                                <p className="text-[10px] text-red-600 font-bold uppercase tracking-widest bg-red-50 px-2.5 py-1 rounded-lg border border-red-100">
                                                                     Sale Ended
                                                                 </p>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-4">
+                                                    <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm self-start md:self-center">
                                                         {(selectedTickets[tt.id] || 0) > 0 && (
                                                             <button
                                                                 onClick={() => handleTicketChange(tt.id, -1)}
-                                                                className="w-10 h-10 rounded-xl border-2 border-[#b1451a] text-[#b1451a] font-bold flex items-center justify-center hover:bg-orange-50 transition-all"
+                                                                className="w-10 h-10 rounded-xl border border-slate-100 text-slate-400 font-bold flex items-center justify-center hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all"
                                                             >
-                                                                -
+                                                                <Minus size={18} />
                                                             </button>
                                                         )}
-                                                        {(selectedTickets[tt.id] || 0) > 0 && <span className="text-lg font-bold w-6 text-center">{selectedTickets[tt.id]}</span>}
+                                                        {(selectedTickets[tt.id] || 0) > 0 && <span className="text-xl font-extrabold w-8 text-center text-slate-900">{selectedTickets[tt.id]}</span>}
                                                         <button
                                                             disabled={!isAvailable}
                                                             onClick={() => handleTicketChange(tt.id, 1)}
-                                                            className={`px-6 py-2 rounded-xl font-bold transition-all ${isAvailable
-                                                                ? ((selectedTickets[tt.id] || 0) > 0 ? 'bg-[#b1451a] text-white' : 'bg-orange-50 text-[#b1451a] border border-orange-100 hover:bg-orange-100')
+                                                            className={`px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${isAvailable
+                                                                ? ((selectedTickets[tt.id] || 0) > 0 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-900 text-white hover:bg-blue-600')
                                                                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                                                                 }`}
                                                         >
+                                                            {isAvailable && (selectedTickets[tt.id] || 0) === 0 && <Plus size={18} />}
                                                             {getStatusLabel()}
                                                         </button>
                                                     </div>
@@ -165,48 +188,62 @@ export default function SelectTicket() {
 
                         {/* RIGHT COLUMN: ORDER DETAILS */}
                         <div className="lg:col-span-4">
-                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6 sticky top-28">
-                                <h2 className="text-xl font-bold">Detail Pesanan</h2>
+                            <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 sticky top-32">
+                                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-3">
+                                    <ShoppingBag size={22} className="text-blue-600" />
+                                    Ringkasan Pesanan
+                                </h2>
 
-                                <div className="flex gap-4">
-                                    <img
-                                        src={event.image || "https://images.unsplash.com/photo-1540575861501-7ad05823c93f?q=80&w=2070&auto=format&fit=crop"}
-                                        alt={event.title}
-                                        className="w-24 h-16 object-cover rounded-lg shadow-sm"
-                                    />
-                                    <div className="space-y-1">
-                                        <h3 className="font-bold text-sm leading-tight">{event.title}</h3>
-                                        <div className="flex items-center gap-1.5 text-slate-500 text-xs">
-                                            <HiCalendar />
+                                <div className="flex gap-5">
+                                    <div className="w-24 h-16 rounded-xl overflow-hidden shadow-sm border border-slate-100 flex-shrink-0">
+                                        <img
+                                            src={event.image || "https://images.unsplash.com/photo-1540575861501-7ad05823c93f?q=80&w=2070&auto=format&fit=crop"}
+                                            alt={event.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                    <div className="space-y-1 overflow-hidden">
+                                        <h3 className="font-bold text-sm leading-tight text-slate-900 truncate">{event.title}</h3>
+                                        <div className="flex items-center gap-1.5 text-slate-400 text-[11px] font-bold">
+                                            <Calendar size={12} className="text-blue-500" />
                                             <span>{event.event_date}</span>
                                         </div>
-                                        <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{event.location}</p>
                                     </div>
                                 </div>
 
-                                <hr className="border-slate-100" />
+                                <hr className="border-slate-50" />
 
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {ticketTypes.map(tt => (selectedTickets[tt.id] || 0) > 0 && (
-                                        <div key={tt.id} className="flex items-center justify-between text-sm font-medium">
-                                            <span className="text-slate-500">{selectedTickets[tt.id]}x {tt.name}</span>
+                                        <div key={tt.id} className="flex items-center justify-between text-sm group">
+                                            <div className="flex flex-col">
+                                                <span className="text-slate-900 font-bold">{tt.name}</span>
+                                                <span className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">{selectedTickets[tt.id]} Ticket</span>
+                                            </div>
                                             <span className="text-slate-900 font-bold">{rupiah(selectedTickets[tt.id] * tt.price)}</span>
                                         </div>
                                     ))}
+                                    {totalItems === 0 && (
+                                        <div className="text-center py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                            <p className="text-slate-400 text-xs font-medium italic">Belum ada tiket terpilih</p>
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="pt-2 border-t border-slate-100">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <span className="font-bold">Total</span>
-                                        <span className="text-xl font-black">{rupiah(totalAmount)}</span>
+                                <div className="pt-6 border-t border-slate-50">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex flex-col">
+                                            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Total Bayar</span>
+                                            <span className="text-2xl font-black text-slate-900">{rupiah(totalAmount)}</span>
+                                        </div>
                                     </div>
 
                                     <button
                                         disabled={totalItems === 0}
                                         onClick={() => navigate(`/checkout/${event.id}`, { state: { selectedTickets, totalAmount, event } })}
-                                        className={`w-full py-4 rounded-xl font-bold transition-all ${totalItems > 0 ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+                                        className={`w-full py-5 rounded-[1.25rem] font-extrabold transition-all text-sm uppercase tracking-widest ${totalItems > 0 ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-500/20 active:scale-[0.98]' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
                                     >
-                                        {totalItems > 0 ? "Checkout" : "Pilih Tiket Dulu"}
+                                        {totalItems > 0 ? "Continue to Checkout" : "Pilih Tiket"}
                                     </button>
                                 </div>
                             </div>
@@ -219,3 +256,4 @@ export default function SelectTicket() {
         </div>
     );
 }
+

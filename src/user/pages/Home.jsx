@@ -7,6 +7,7 @@ import FeaturesSection from "../../components/home/FeaturesSection";
 import BottomBar from "../../components/Layout/Footer";
 
 import { FiSearch } from "react-icons/fi";
+import { Search } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 
 export default function Home() {
@@ -86,104 +87,70 @@ export default function Home() {
             {/* HERO SECTION */}
             <HeroSection />
 
-            {/* MARQUEE SECTION - Seamless Divider */}
-            <section className="relative z-30 overflow-hidden -mt-10">
-                <div className="w-full bg-[#b1451a] py-6 shadow-[0_15px_30px_rgba(0,0,0,0.1)] skew-y-[-1deg] border-y-4 border-orange-300/30">
-                    <div className="flex whitespace-nowrap animate-marquee">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <span key={i} className="text-3xl md:text-5xl font-black text-white px-8 uppercase tracking-tighter italic">
-                                LETS COLLABORATE WITH US •
-                            </span>
-                        ))}
-                    </div>
-                </div>
+            <main className="w-full bg-slate-50 relative z-20 pb-32">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-24">
 
-                <style dangerouslySetInnerHTML={{
-                    __html: `
-                    @keyframes marquee {
-                        0% { transform: translateX(0); }
-                        100% { transform: translateX(-50%); }
-                    }
-                    .animate-marquee {
-                        display: flex;
-                        width: max-content;
-                        animation: marquee 20s linear infinite;
-                    }
-                    @keyframes marquee-reverse {
-                        0% { transform: translateX(-50%); }
-                        100% { transform: translateX(0); }
-                    }
-                    .animate-marquee-reverse {
-                        display: flex;
-                        width: max-content;
-                        animation: marquee-reverse 20s linear infinite;
-                    }
-                `}} />
-            </section>
-
-            <main className="w-full bg-[#5d3a24] relative z-20 pb-32">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-16">
-                    {/* EVENTS GRID */}
-                    <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-                        <div className="space-y-2">
-                            <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter">
-                                UPCOMING <span className="text-[#b1451a]">EVENTS</span>
+                    {/* SECTION HEADER - Professional Style */}
+                    <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
+                        <div className="space-y-4">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-widest">
+                                <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                                Top Pick Events
+                            </div>
+                            <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
+                                Recommended <span className="text-blue-600">Experiences</span>
                             </h2>
-                            <p className="text-orange-200/60 font-medium">Temukan event seru yang akan datang</p>
+                            <p className="text-slate-500 font-medium text-lg max-w-xl">Curated collection of the best events happening right now near you.</p>
                         </div>
-                        <div className="hidden md:flex gap-2">
-                            <span className="text-sm font-bold text-white py-2.5 px-6 bg-white/10 rounded-full border border-white/10 backdrop-blur-sm">Explore Semuanya</span>
+
+                        {/* Search Bar - Professional Integration */}
+                        <div className="relative w-full md:w-96 group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Search by event or venue..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all shadow-sm group-hover:border-slate-300"
+                            />
                         </div>
                     </div>
 
                     {loading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                             {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="bg-white/5 rounded-xl aspect-[4/5] animate-pulse border border-white/10" />
+                                <div key={i} className="bg-slate-200 rounded-xl aspect-[16/20] animate-pulse" />
                             ))}
                         </div>
                     ) : error ? (
-                        <div className="text-center py-24 bg-white/5 rounded-xl border-2 border-dashed border-red-500/20 backdrop-blur-sm">
-                            <div className="bg-red-500/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/10">
-                                <FiSearch size={40} className="text-red-300" />
+                        <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-slate-100">
+                            <div className="bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-100">
+                                <FiSearch size={40} className="text-red-400" />
                             </div>
-                            <h3 className="text-xl font-bold text-white">Oops! Terjadi Kesalahan</h3>
-                            <p className="text-red-200/60 mt-2 font-medium">{error}</p>
+                            <h3 className="text-xl font-bold text-slate-900">Oops! Something went wrong</h3>
+                            <p className="text-slate-500 mt-2 font-medium">{error}</p>
                             <button
                                 onClick={fetchEvents}
-                                className="mt-8 px-8 py-3 bg-[#b1451a] hover:bg-[#8e3715] text-white rounded-xl font-bold transition-all shadow-lg shadow-orange-900/40"
+                                className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/10"
                             >
-                                Coba Lagi
+                                Try Again
                             </button>
                         </div>
                     ) : filteredEvents.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                             {filteredEvents.map((ev) => (
                                 <Card key={ev.id} {...ev} />
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-24 bg-white/5 rounded-xl border-2 border-dashed border-white/10 backdrop-blur-sm">
-                            <div className="bg-white/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
-                                <FiSearch size={40} className="text-orange-200" />
+                        <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-slate-100">
+                            <div className="bg-slate-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
+                                <FiSearch size={40} className="text-slate-300" />
                             </div>
-                            <h3 className="text-xl font-bold text-white">Event tidak ditemukan</h3>
-                            <p className="text-orange-200/60 mt-2 font-medium">Coba gunakan kata kunci atau filter lain</p>
+                            <h3 className="text-xl font-bold text-slate-900">No events found</h3>
+                            <p className="text-slate-500 mt-2 font-medium">Try using different keywords or filters</p>
                         </div>
                     )}
-                </div>
-
-                {/* BOTTOM REVERSE MARQUEE */}
-                <div className="mt-20 overflow-hidden">
-                    <div className="w-full bg-[#b1451a] py-6 shadow-[0_-15px_30px_rgba(0,0,0,0.1)] skew-y-[1deg] border-y-4 border-orange-300/30">
-                        <div className="flex whitespace-nowrap animate-marquee-reverse">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <span key={i} className="text-3xl md:text-5xl font-black text-white px-8 uppercase tracking-tighter italic">
-                                    HEROESTIX BY PERISTIWA •
-                                </span>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             </main>
 
@@ -198,3 +165,4 @@ export default function Home() {
         </div>
     );
 }
+

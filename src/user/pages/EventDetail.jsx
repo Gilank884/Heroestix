@@ -2,8 +2,16 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import EventNavbar from "../../components/Layout/EventNavbar";
 import BottomBar from "../../components/Layout/Footer";
-import { HiLocationMarker, HiCalendar, HiTicket, HiClock } from "react-icons/hi";
-import { FiChevronLeft } from "react-icons/fi";
+import {
+    MapPin,
+    Calendar,
+    Ticket,
+    Clock,
+    ChevronLeft,
+    Share2,
+    Instagram,
+    ExternalLink
+} from "lucide-react";
 import { FaInstagram, FaTiktok } from "react-icons/fa";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -77,123 +85,164 @@ export default function EventDetail() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 uppercase font-bold tracking-widest text-gray-400">
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 uppercase font-bold tracking-widest text-slate-300">
                 Memuat Event...
             </div>
         );
     }
 
     return (
-        <div className="bg-[#fdf5f2] min-h-screen font-sans text-slate-900">
+        <div className="bg-slate-50 min-h-screen font-sans text-slate-900">
             <EventNavbar />
 
             <div className="pt-28 pb-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+
+                    {/* BACK BUTTON */}
+                    <button
+                        onClick={() => navigate("/")}
+                        className="mb-8 flex items-center gap-2 text-slate-500 hover:text-blue-600 font-semibold transition-colors group"
+                    >
+                        <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                        Back to Events
+                    </button>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                         {/* LEFT COLUMN: IMAGE & DESCRIPTION */}
-                        <div className="lg:col-span-8">
-                            <div className="rounded-2xl overflow-hidden shadow-sm mb-10">
+                        <div className="lg:col-span-8 space-y-8">
+                            <div className="rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/5 border border-slate-100 relative group">
                                 <img
                                     src={event.image || "https://images.unsplash.com/photo-1540575861501-7ad05823c93f?q=80&w=2070&auto=format&fit=crop"}
                                     alt={event.title}
-                                    className="w-full h-auto object-cover aspect-[16/9]"
+                                    className="w-full h-auto object-cover aspect-[21/9] md:aspect-[16/8]"
                                 />
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent"></div>
                             </div>
 
-                            <section className="space-y-6">
-                                <h2 className="text-2xl font-bold">Deskripsi</h2>
-                                <div className={`text-slate-600 leading-relaxed space-y-4 ${!showFullDesc && "line-clamp-4 relative"}`}>
+                            <section className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                                        <div className="w-2 h-8 bg-blue-600 rounded-full"></div>
+                                        Deskripsi Event
+                                    </h2>
+                                    <button className="p-2 rounded-xl border border-slate-100 hover:bg-slate-50 text-slate-400 hover:text-blue-600 transition-all">
+                                        <Share2 size={20} />
+                                    </button>
+                                </div>
+                                <div className={`text-slate-600 leading-relaxed space-y-4 text-lg ${!showFullDesc && "line-clamp-6 relative"}`}>
                                     <p>
                                         {event.description || "Tidak ada deskripsi untuk event ini."}
                                     </p>
                                     {!showFullDesc && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#fdf5f2] to-transparent" />
+                                        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent" />
                                     )}
                                 </div>
                                 <button
                                     onClick={() => setShowFullDesc(!showFullDesc)}
-                                    className="text-[#b1451a] font-bold hover:underline py-2"
+                                    className="text-blue-600 font-bold hover:text-blue-700 transition-colors py-2 flex items-center gap-2"
                                 >
                                     {showFullDesc ? "Tampilkan Lebih Sedikit" : "Tampilkan Lebih Banyak"}
                                 </button>
                             </section>
 
-                            <hr className="my-12 border-slate-100" />
+                            <hr className="my-12 border-slate-200/50" />
                         </div>
 
                         {/* RIGHT COLUMN: EVENT INFO, PRICE, SOCIAL MEDIA */}
                         <div className="lg:col-span-4 space-y-8">
                             {/* EVENT INFO CARD */}
-                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
-                                <h1 className="text-2xl font-extrabold tracking-tight leading-tight">
-                                    {event.title}
-                                </h1>
-
+                            <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 sticky top-32">
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-3 text-slate-600">
-                                        <HiCalendar className="text-xl shrink-0" />
-                                        <span className="text-[15px] font-medium">{event.date}</span>
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-widest">
+                                        Official Event
                                     </div>
-                                    <div className="flex items-center gap-3 text-slate-600">
-                                        <HiClock className="text-xl shrink-0" />
-                                        <span className="text-[15px] font-medium">{event.event_time?.substring(0, 5)} WIB</span>
+                                    <h1 className="text-3xl font-extrabold tracking-tight leading-tight text-slate-900">
+                                        {event.title}
+                                    </h1>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-4 text-slate-600 group">
+                                        <div className="p-3 rounded-2xl bg-slate-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                                            <Calendar size={20} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Event Date</span>
+                                            <span className="text-[15px] font-bold text-slate-700">{event.date}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-start gap-3 text-slate-600">
-                                        <HiLocationMarker className="text-xl shrink-0 mt-0.5" />
-                                        <div className="space-y-1">
-                                            <p className="text-[14px] leading-tight font-medium">{event.location}</p>
-                                            <a href="#" className="text-[#b1451a] font-bold text-xs hover:underline block">Petunjuk Arah</a>
+                                    <div className="flex items-center gap-4 text-slate-600 group">
+                                        <div className="p-3 rounded-2xl bg-slate-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                                            <Clock size={20} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Gate Open</span>
+                                            <span className="text-[15px] font-bold text-slate-700">{event.event_time?.substring(0, 5)} WIB</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-4 text-slate-600 group">
+                                        <div className="p-3 rounded-2xl bg-slate-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                                            <MapPin size={20} />
+                                        </div>
+                                        <div className="flex flex-col flex-1">
+                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Location</span>
+                                            <p className="text-[14px] leading-tight font-bold text-slate-700 mb-1">{event.location}</p>
+                                            <a href="#" className="text-blue-600 font-bold text-xs hover:underline flex items-center gap-1">
+                                                Open Maps <ExternalLink size={12} />
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
 
                                 <hr className="border-slate-100" />
 
-                                <div className="space-y-1">
-                                    <p className="text-slate-400 text-[13px]">Dibuat Oleh</p>
-                                    <p className="font-bold text-[15px] text-slate-800">{event.creators?.brand_name || "Creator"}</p>
-                                </div>
-                            </div>
-
-                            {/* PRICE & ACTION CARD */}
-                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
-                                {hasInactiveTickets && (
-                                    <div className="flex items-center gap-3 bg-orange-50 border border-orange-100 p-3.5 rounded-xl animate-in fade-in slide-in-from-top-2 duration-700">
-                                        <div className="w-8 h-8 rounded-full bg-[#b1451a]/10 flex items-center justify-center text-[#b1451a]">
-                                            <HiTicket size={18} />
-                                        </div>
-                                        <div>
-                                            <p className="text-[11px] font-black text-[#b1451a] uppercase tracking-widest leading-none mb-1">Coming Soon</p>
-                                            <p className="text-[13px] font-bold text-slate-900 leading-tight">Tiket Segera Tersedia</p>
-                                        </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white text-xl font-bold italic">
+                                        {event.creators?.brand_name?.charAt(0) || "C"}
                                     </div>
-                                )}
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[15px] font-medium text-slate-700">Mulai Dari</span>
-                                    <span className="text-xl font-black text-slate-900">{rupiah(event.price)}</span>
+                                    <div className="flex flex-col">
+                                        <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">Organized By</p>
+                                        <p className="font-bold text-[15px] text-slate-900">{event.creators?.brand_name || "Creator"}</p>
+                                    </div>
                                 </div>
-                                <button
-                                    onClick={() => navigate(`/select-ticket/${event.id}`)}
-                                    className="w-full bg-[#b1451a] hover:bg-[#8e3715] text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-orange-900/10 active:scale-[0.98]"
-                                >
-                                    Beli Sekarang
-                                </button>
-                            </div>
 
-                            {/* SOCIAL MEDIA SECTION */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-bold">Media Sosial</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button className="flex items-center justify-center gap-2 bg-white border border-slate-200 py-3.5 rounded-xl hover:bg-slate-50 transition-all">
-                                        <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">
-                                            <FaInstagram className="text-sm" />
+                                {/* PRICE & ACTION SECTION */}
+                                <div className="space-y-6 pt-4">
+                                    {hasInactiveTickets && (
+                                        <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 p-4 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-700">
+                                            <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-600">
+                                                <Ticket size={24} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Coming Soon</p>
+                                                <p className="text-[13px] font-bold text-slate-900 leading-tight">Ticket availability update soon</p>
+                                            </div>
                                         </div>
-                                        <span className="font-bold text-sm">Instagram</span>
+                                    )}
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Ticket Price Starting At</span>
+                                        <span className="text-3xl font-black text-blue-600">{rupiah(event.price)}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => navigate(`/select-ticket/${event.id}`)}
+                                        className="w-full bg-slate-900 hover:bg-blue-600 text-white py-5 rounded-[1.25rem] font-bold transition-all shadow-xl shadow-slate-900/10 active:scale-[0.98] flex items-center justify-center gap-2 group/btn"
+                                    >
+                                        Beli Sekarang
+                                        <Ticket className="group-hover:rotate-12 transition-transform" size={20} />
                                     </button>
-                                    <button className="flex items-center justify-center gap-2 bg-white border border-slate-200 py-3.5 rounded-xl hover:bg-slate-50 transition-all">
-                                        <FaTiktok className="text-xl" />
-                                        <span className="font-bold text-sm">Tiktok</span>
-                                    </button>
+                                </div>
+
+                                {/* SOCIAL MEDIA COMPACT */}
+                                <div className="pt-4 flex items-center justify-center gap-6">
+                                    <a href="#" className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-100">
+                                        <FaInstagram size={18} />
+                                    </a>
+                                    <a href="#" className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-100">
+                                        <FaTiktok size={18} />
+                                    </a>
+                                    <a href="#" className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-100">
+                                        <Share2 size={18} />
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -205,3 +254,4 @@ export default function EventDetail() {
         </div>
     );
 }
+
