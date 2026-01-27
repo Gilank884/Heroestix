@@ -7,7 +7,7 @@ import FeaturesSection from "../../components/home/FeaturesSection";
 import BottomBar from "../../components/Layout/Footer";
 
 import { FiSearch } from "react-icons/fi";
-import { Search } from "lucide-react";
+import { Search, Ticket } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 
 export default function Home() {
@@ -17,7 +17,8 @@ export default function Home() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        fetchEvents();
+        console.log("Home component mounted");
+        fetchEvents(true);
 
         // ⚡️ REAL-TIME SYNC
         const channel = supabase
@@ -27,29 +28,41 @@ export default function Home() {
                 schema: 'public',
                 table: 'events'
             }, () => {
-                fetchEvents();
+                console.log("Real-time update triggered on Home");
+                fetchEvents(false); // Silent refresh for real-time updates
             })
             .subscribe();
 
         return () => {
+            console.log("Home component unmounted");
             supabase.removeChannel(channel);
         };
     }, []);
 
-    const fetchEvents = async () => {
-        setLoading(true);
+    const fetchEvents = async (showLoading = false) => {
+        if (showLoading) setLoading(true);
         setError(null);
         try {
+            // Simplified query to ensure maximum compatibility and speed
             const { data, error } = await supabase
                 .from("events")
-                .select("*, ticket_types(price)")
-                .eq("status", "active");
-
+                .select(`
+                    *,
+                    ticket_types (
+                        price,
+                        quota,
+                        sold
+                    )
+                `)
+                .neq("status", "archived")
+                .order('created_at', { ascending: false });
 
             if (error) throw error;
 
+            console.log("Fetched events count:", data?.length || 0);
+
             // Map the data for the Card component
-            const formatted = data.map(ev => {
+            const formatted = (data || []).map(ev => {
                 const prices = ev.ticket_types?.map(tt => tt.price) || [];
                 const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
 
@@ -59,14 +72,15 @@ export default function Home() {
                     location: ev.location,
                     date: ev.event_date,
                     image: ev.poster_url,
-                    price: minPrice
+                    price: minPrice,
+                    status: ev.status
                 };
             });
 
             setEvents(formatted);
         } catch (error) {
             console.error("Error fetching events:", error.message);
-            setError(error.message || "Gagal memuat event. Silakan periksa koneksi internet Anda.");
+            setError("Gagal memuat event. Silakan periksa koneksi internet Anda.");
         } finally {
             setLoading(false);
         }
@@ -88,32 +102,14 @@ export default function Home() {
             <HeroSection />
 
             <main className="w-full bg-slate-50 relative z-20 pb-32">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-24">
-
-                    {/* SECTION HEADER - Professional Style */}
-                    <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
-                        <div className="space-y-4">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-widest">
-                                <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-                                Top Pick Events
-                            </div>
-                            <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
-                                Recommended <span className="text-blue-600">Experiences</span>
-                            </h2>
-                            <p className="text-slate-500 font-medium text-lg max-w-xl">Curated collection of the best events happening right now near you.</p>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-16">
+                    <div className="flex items-center gap-3 mb-10">
+                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
+                            <Ticket size={24} />
                         </div>
-
-                        {/* Search Bar - Professional Integration */}
-                        <div className="relative w-full md:w-96 group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Search by event or venue..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all shadow-sm group-hover:border-slate-300"
-                            />
-                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                            Ticket Yang Tersedia
+                        </h2>
                     </div>
 
                     {loading ? (
@@ -145,7 +141,7 @@ export default function Home() {
                     ) : (
                         <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-slate-100">
                             <div className="bg-slate-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
-                                <FiSearch size={40} className="text-slate-300" />
+                                <Search size={40} className="text-slate-300" />
                             </div>
                             <h3 className="text-xl font-bold text-slate-900">No events found</h3>
                             <p className="text-slate-500 mt-2 font-medium">Try using different keywords or filters</p>
@@ -165,4 +161,3 @@ export default function Home() {
         </div>
     );
 }
-

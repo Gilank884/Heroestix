@@ -4,7 +4,8 @@ const HeroSection = () => {
     const banners = [
         "/assets/banner1.png",
         "/assets/banner2.png",
-        "/assets/banner3.png"
+        "/assets/banner3.png",
+        "/assets/banner4.png",
     ];
 
     const [currentIndex, setCurrentIndex] = useState(0);

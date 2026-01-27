@@ -43,7 +43,7 @@ const Card = ({ id, image, title, date, location, price, status, variant }) => {
             {/* CARD TOP: IMAGE */}
             <div className="relative aspect-[16/9] overflow-hidden">
                 <img
-                    src={image || "https://images.unsplash.com/photo-1540575861501-7ad05823c93f?q=80&w=2070&auto=format&fit=crop"}
+                    src={image || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop"}
                     alt={title}
                     className={`w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 ${!isAvailable ? "grayscale opacity-70" : ""}`}
                 />
@@ -57,19 +57,25 @@ const Card = ({ id, image, title, date, location, price, status, variant }) => {
             </div>
 
             {/* CARD BODY: CONTENT */}
-            <div className="p-4 flex-1 flex flex-col justify-between">
-                <div className="space-y-1.5">
-                    <h3 className="font-extrabold text-[#111827] text-[15px] uppercase leading-tight tracking-tight line-clamp-2 min-h-[40px]">
+            <div className="p-4 flex-1 flex flex-col justify-start">
+                <div className="space-y-3">
+                    <h3 className="font-extrabold text-[#111827] text-[15px] uppercase leading-tight tracking-tight line-clamp-2">
                         {title}
                     </h3>
 
-                    <div className="space-y-1">
-                        <p className="text-[14px] font-bold text-[#374151]">
-                            {date || "Coming Soon"}
-                        </p>
-                        <p className="text-[13px] font-medium text-slate-400 truncate">
-                            {location || "Venue TBA"}
-                        </p>
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[#374151]">
+                            <Calendar size={14} className="text-blue-600 shrink-0" />
+                            <p className="text-[14px] font-bold">
+                                {date || "Coming Soon"}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 text-slate-400">
+                            <MapPin size={14} className="text-blue-600 shrink-0" />
+                            <p className="text-[13px] font-medium truncate">
+                                {location || "Venue TBA"}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

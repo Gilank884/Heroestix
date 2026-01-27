@@ -3,18 +3,22 @@ import { Link } from "react-router-dom";
 import { FiUser, FiLogOut } from "react-icons/fi";
 import { supabase } from "../../lib/supabaseClient";
 
-const Navbar = () => {
-    const [scrolled, setScrolled] = useState(false);
+const Navbar = ({ alwaysScrolled = false }) => {
+    const [scrolled, setScrolled] = useState(alwaysScrolled);
     const [user, setUser] = useState(null);
 
     // Scroll effect
     useEffect(() => {
+        if (alwaysScrolled) {
+            setScrolled(true);
+            return;
+        }
         const handleScroll = () => {
             setScrolled(window.scrollY > 20);
         };
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+    }, [alwaysScrolled]);
 
     // Auth state
     useEffect(() => {

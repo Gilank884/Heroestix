@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import EventNavbar from "../../components/Layout/EventNavbar";
+import Navbar from "../../components/Layout/Navbar";
 import Footer from "../../components/Layout/Footer";
 import {
     Calendar,
@@ -9,7 +9,8 @@ import {
     Plus,
     ChevronLeft,
     ShoppingBag,
-    Info
+    Info,
+    Clock
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -48,7 +49,8 @@ export default function SelectTicket() {
             if (eventError) throw eventError;
             setEvent({
                 ...eventData,
-                image: eventData.poster_url
+                image: eventData.poster_url,
+                date: eventData.event_date
             });
 
             // 2. Fetch Ticket Types
@@ -88,8 +90,8 @@ export default function SelectTicket() {
     const totalAmount = ticketTypes.reduce((acc, tt) => acc + (selectedTickets[tt.id] || 0) * tt.price, 0);
 
     return (
-        <div className="bg-slate-50 min-h-screen font-sans text-slate-900">
-            <EventNavbar />
+        <div className="bg-slate-50/30 min-h-screen font-sans text-slate-900">
+            <Navbar alwaysScrolled={true} />
 
             <div className="pt-28 pb-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
@@ -104,8 +106,31 @@ export default function SelectTicket() {
                     </button>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                        {/* LEFT COLUMN: TICKET CATEGORIES */}
+                        {/* LEFT COLUMN: EVENT INFO & TICKET CATEGORIES */}
                         <div className="lg:col-span-8 space-y-8">
+
+                            {/* SIMPLIFIED HEADER (Matches EventDetail Info Card Style) */}
+                            <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm space-y-6">
+                                <h1 className="text-xl md:text-2xl font-extrabold text-[#111827] leading-tight">
+                                    {event.title}
+                                </h1>
+
+                                <div className="flex flex-wrap gap-x-8 gap-y-4">
+                                    <div className="flex items-center gap-2.5">
+                                        <Calendar size={18} className="text-slate-400" />
+                                        <p className="text-sm font-bold text-slate-700">{event.date}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2.5">
+                                        <Clock size={18} className="text-slate-400" />
+                                        <p className="text-sm font-bold text-slate-700">{event.event_time?.substring(0, 5) || "10:00"} WIB</p>
+                                    </div>
+                                    <div className="flex items-center gap-2.5">
+                                        <MapPin size={18} className="text-slate-400" />
+                                        <p className="text-sm font-bold text-slate-700">{event.location}</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
                                 <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
                                     <h2 className="text-2xl font-bold text-slate-900">Pilih Kategori Tiket</h2>
@@ -197,7 +222,7 @@ export default function SelectTicket() {
                                 <div className="flex gap-5">
                                     <div className="w-24 h-16 rounded-xl overflow-hidden shadow-sm border border-slate-100 flex-shrink-0">
                                         <img
-                                            src={event.image || "https://images.unsplash.com/photo-1540575861501-7ad05823c93f?q=80&w=2070&auto=format&fit=crop"}
+                                            src={event.image || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop"}
                                             alt={event.title}
                                             className="w-full h-full object-cover"
                                         />
@@ -206,7 +231,7 @@ export default function SelectTicket() {
                                         <h3 className="font-bold text-sm leading-tight text-slate-900 truncate">{event.title}</h3>
                                         <div className="flex items-center gap-1.5 text-slate-400 text-[11px] font-bold">
                                             <Calendar size={12} className="text-blue-500" />
-                                            <span>{event.event_date}</span>
+                                            <span>{event.date}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -256,4 +281,3 @@ export default function SelectTicket() {
         </div>
     );
 }
-
