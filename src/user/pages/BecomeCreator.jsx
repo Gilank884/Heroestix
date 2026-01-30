@@ -35,46 +35,66 @@ const BecomeCreator = () => {
         <div className="min-h-screen bg-white">
             <Navbar />
 
-            {/* Hero Section - Simple & Clean */}
-            <section className="pt-40 pb-20 px-6 bg-white">
-                <div className="max-w-7xl mx-auto text-center">
+            {/* Hero Section - Professional & Tech-focused */}
+            <section className="relative pt-40 pb-28 px-6 overflow-hidden">
+                {/* Modern Grid Background */}
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:32px_32px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-40" />
+                </div>
+
+                {/* Decorative Blobs */}
+                <div className="absolute top-1/4 -left-20 w-96 h-96 bg-blue-100 rounded-full blur-[120px] opacity-40 z-0" />
+                <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-blue-50 rounded-full blur-[120px] opacity-60 z-0" />
+
+                <div className="max-w-7xl mx-auto text-center relative z-10">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="inline-block px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-[0.2em] mb-8"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/5 border border-blue-100 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.25em] mb-10 shadow-sm"
                     >
-                        Mitra Creator
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                        Mitra Creator Portal
                     </motion.div>
+
                     <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter mb-8 leading-tight"
+                        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                        className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter mb-8 leading-[0.95]"
                     >
-                        Jadi Bagian dari <span className="text-blue-600">Ekosistem Event</span> Terbesar
+                        Jadi Bagian dari <br />
+                        <span className="text-blue-600">Ekosistem Event</span> Terbesar
                     </motion.h1>
+
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-lg text-slate-500 max-w-2xl mx-auto mb-12 font-medium"
+                        transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                        className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto mb-14 font-medium leading-relaxed"
                     >
-                        Kelola event kamu dengan profesional, jangkau audiens lebih luas, dan tingkatkan pendapatan kamu bersama Heroestix.
+                        Kelola event kamu dengan profesional, jangkau audiens lebih luas, <br className="hidden md:block" />
+                        dan tingkatkan pendapatan kamu bersama platform terbaik.
                     </motion.p>
-                    <div className="flex flex-col sm:flex-row justify-center gap-6">
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        className="flex flex-col sm:flex-row justify-center items-center gap-5"
+                    >
                         <a
                             href={getSubdomainUrl("creator", "/daftar")}
-                            className="px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black tracking-wide shadow-xl shadow-blue-600/20 transition-all"
+                            className="w-full sm:w-auto px-12 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-[1.25rem] font-black tracking-wide shadow-2xl shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98] text-sm uppercase"
                         >
                             Daftar Sekarang
                         </a>
                         <a
                             href={getSubdomainUrl("creator", "/masuk")}
-                            className="px-10 py-4 bg-white text-slate-900 rounded-2xl font-black tracking-wide border border-slate-200 hover:border-slate-300 transition-all font-medium"
+                            className="w-full sm:w-auto px-12 py-5 bg-white text-slate-900 rounded-[1.25rem] font-bold tracking-wide border border-slate-200 hover:border-slate-800 transition-all active:scale-[0.98] text-sm"
                         >
                             Masuk Dashboard
                         </a>
-                    </div>
+                    </motion.div>
                 </div>
             </section>
 

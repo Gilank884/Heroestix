@@ -17,7 +17,6 @@ const Masuk = ({ role = "user" }) => {
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState(urlError === "unregistered" ? "Akun anda belum registrasi. Silahkan daftar terlebih dahulu." : "");
 
-    // 🔄 Auto-redirect if already logged in (Sync with subdomain)
     React.useEffect(() => {
         const checkExistingSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
@@ -31,8 +30,6 @@ const Masuk = ({ role = "user" }) => {
                 if (profile) {
                     const profileRole = profile.role;
                     const host = window.location.hostname;
-
-                    // Already on the right place? Redirect to dashboard
                     if (profileRole === "creator" && host.startsWith("creator.")) {
                         navigate("/");
                     } else if (profileRole === "developer" && host.startsWith("dev.")) {
@@ -44,7 +41,6 @@ const Masuk = ({ role = "user" }) => {
         checkExistingSession();
     }, [navigate]);
 
-    // 🔐 Login Email & Password (LOGIC ASLI)
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -63,7 +59,6 @@ const Masuk = ({ role = "user" }) => {
         }
 
         if (authData.user) {
-            // Fetch profile to get role
             const { data: profile, error: profileError } = await supabase
                 .from("profiles")
                 .select("role")
@@ -80,13 +75,9 @@ const Masuk = ({ role = "user" }) => {
             const profileRole = profile.role;
             const host = window.location.hostname;
             const isLocalhost = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
-            const port = window.location.port ? `:${window.location.port}` : "";
-
             const baseDomain = getBaseDomain();
             const isBaseDomain = host === baseDomain;
 
-            // Redirection logic: Only redirect if on a DIFFERENT/WRONG subdomain
-            // If on base domain (home), STAY at home.
             if (profileRole === "creator") {
                 if (host.startsWith("dev.") || (!host.startsWith("creator.") && !isBaseDomain)) {
                     window.location.href = getSubdomainUrl("creator", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
@@ -105,13 +96,10 @@ const Masuk = ({ role = "user" }) => {
                 navigate("/");
             }
         }
-
         setLoading(false);
     };
 
-    // 🔐 Login Google (LOGIC ASLI)
     const handleGoogleLogin = async () => {
-        // If we are on a specific portal (creator/dev), treat as register to ensure profile has correct role
         if (role !== "user") {
             localStorage.setItem("auth_mode", "register");
             localStorage.setItem("auth_role", role);
@@ -131,251 +119,115 @@ const Masuk = ({ role = "user" }) => {
         }
     };
 
-    // REFINED COMPACT & PROFESSIONAL LAYOUT
-    if (role === "creator" || role === "developer") {
-        const isCreator = role === "creator";
+    const isInternalPortal = role === "creator" || role === "developer";
 
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
-                <div className="w-full max-w-[400px]">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-8 md:p-10 shadow-sm relative overflow-hidden">
-                        {/* Header */}
-                        <div className="text-center mb-10">
-                            <h1 className="text-xl font-bold text-slate-900 mb-1.5">
-                                {isCreator ? "Creator Portal" : "Dev Console"}
-                            </h1>
-                            <p className="text-[13px] text-slate-500 font-medium">
-                                Masuk ke dashboard pengelolaan Heroestix
-                            </p>
-                        </div>
-
-                        {/* Error */}
-                        {errorMsg && (
-                            <div className="bg-red-50 border border-red-100 text-red-600 text-[12px] px-4 py-3 rounded-xl mb-8 flex items-center gap-3 animate-in fade-in duration-300">
-                                <div className="w-1 h-1 rounded-full bg-red-600" />
-                                <span className="font-semibold">{errorMsg}</span>
-                            </div>
-                        )}
-
-                        {/* FORM */}
-                        <form onSubmit={handleLogin} className="space-y-5">
-                            <div className="space-y-1.5">
-                                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-0.5">Alamat Email</label>
-                                <input
-                                    type="email"
-                                    placeholder="nama@email.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    className="w-full rounded-xl px-4 py-3 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-900 text-sm outline-none transition-all placeholder:text-slate-400 font-medium"
-                                />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <div className="flex justify-between items-center ml-0.5">
-                                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Kata Sandi</label>
-                                    <button type="button" className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-tight">Lupa sandi?</button>
-                                </div>
-                                <div className="relative">
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        placeholder="••••••••"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                        className="w-full rounded-xl px-4 py-3 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-900 text-sm outline-none transition-all placeholder:text-slate-400 font-medium pr-12"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
-                                    >
-                                        {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-[13px] hover:bg-blue-700 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 mt-4 h-12 flex items-center justify-center"
-                            >
-                                {loading ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        <span>Menghubungkan...</span>
-                                    </div>
-                                ) : "Masuk Sekarang"}
-                            </button>
-                        </form>
-
-                        {/* Divider */}
-                        <div className="flex items-center gap-4 my-8">
-                            <div className="flex-1 h-px bg-slate-100" />
-                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-                                Atau
-                            </span>
-                            <div className="flex-1 h-px bg-slate-100" />
-                        </div>
-
-                        {/* Google */}
-                        <button
-                            onClick={handleGoogleLogin}
-                            className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-700 rounded-xl py-3 text-[13px] font-bold hover:bg-slate-50 transition-all active:scale-[0.98] h-12"
-                        >
-                            <FcGoogle size={20} />
-                            <span>Lanjutkan dengan Google</span>
-                        </button>
-                    </div>
-
-                    <div className="mt-8 text-center">
-                        {isCreator && (
-                            <p className="text-[13px] text-slate-500 font-medium">
-                                Belum terdaftar?{" "}
-                                <Link
-                                    to="/daftar"
-                                    className="text-blue-600 font-bold hover:underline underline-offset-4"
-                                >
-                                    Gabung Mitra Heroestix
-                                </Link>
-                            </p>
-                        )}
-                        <p className="mt-6 text-[11px] text-slate-400 font-medium">
-                            &copy; 2024 Heroestix. Platform Manajemen Tiket Modern.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-
-    // ORIGINAL SPLIT LAYOUT (For regular Users)
     return (
-        <div className="min-h-screen flex">
-            {/* ================= LEFT (FORM) ================= */}
-            <div className="w-full md:w-[30%] flex items-center justify-center bg-gradient-to-b from-[#b1451a] to-[#8e3715] px-8">
-                <div className="w-full max-w-sm">
+        <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4 relative overflow-hidden">
+            {/* Background Grid Pattern */}
+            <div className="absolute inset-0 z-0">
+                <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
+            </div>
+
+            <div className="w-full max-w-[420px] relative z-10">
+                <div className="bg-white border border-slate-200 rounded-3xl p-8 md:p-10 shadow-sm">
                     {/* Header */}
-                    <div className="mb-8 mt-10 text-center">
-                        <h1 className="text-3xl font-bold text-white mb-2 italic uppercase tracking-tighter">
-                            Heroestix Login
+                    <div className="text-center mb-10">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest mb-6">
+                            <div className="w-1 h-1 rounded-full bg-blue-600 animate-pulse" />
+                            {isInternalPortal ? `${role.toUpperCase()} ACCESS` : "Beli Tiket Event"}
+                        </div>
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                            {isInternalPortal ? "Masuk Portal" : "Selamat Datang"}
                         </h1>
-                        <p className="text-[#f9e2d2] text-sm">
-                            Masuk ke akun Heroestix kamu
+                        <p className="text-[13px] text-slate-500 font-medium mt-1">
+                            Silakan masuk menggunakan akun Heroestix Anda
                         </p>
                     </div>
 
                     {/* Error */}
                     {errorMsg && (
-                        <div className="bg-red-500/20 border border-red-400/30 text-red-200 text-sm px-4 py-3 rounded-lg mb-5">
-                            {errorMsg}
+                        <div className="bg-red-50 border border-red-100 text-red-600 text-[12px] px-4 py-3 rounded-xl mb-8 flex items-center gap-3">
+                            <span className="font-bold">{errorMsg}</span>
                         </div>
                     )}
 
                     {/* FORM */}
-                    <form onSubmit={handleLogin} className="space-y-4">
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="
-                                w-full rounded-xl px-4 py-3
-                                bg-[#b1451a] text-white
-                                focus:ring-2 focus:ring-white outline-none
-                                autofill:bg-[#b1451a] border border-white/10
-                            "
-                            style={{
-                                WebkitBoxShadow:
-                                    "0 0 0 1000px rgb(177 69 26) inset",
-                                WebkitTextFillColor: "white",
-                            }}
-                        />
+                    <form onSubmit={handleLogin} className="space-y-5">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Email</label>
+                            <input
+                                type="email"
+                                placeholder="nama@email.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                            />
+                        </div>
 
-                        <input
-                            type="password"
-                            placeholder="Sandi"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            className="
-                                w-full rounded-xl px-4 py-3
-                                bg-[#b1451a] text-white
-                                focus:ring-2 focus:ring-white outline-none
-                                autofill:bg-[#b1451a] border border-white/10
-                            "
-                            style={{
-                                WebkitBoxShadow:
-                                    "0 0 0 1000px rgb(177 69 26) inset",
-                                WebkitTextFillColor: "white",
-                            }}
-                        />
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between items-center ml-1">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sandi</label>
+                                <button type="button" className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest">Lupa?</button>
+                            </div>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400 pr-12"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                                >
+                                    {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                </button>
+                            </div>
+                        </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-[#8e3715] text-white py-3 rounded-xl font-semibold hover:bg-[#5e240a] transition disabled:opacity-50"
+                            className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50 mt-4 flex items-center justify-center"
                         >
-                            {loading ? "Memproses..." : "Masuk"}
+                            {loading ? "Menghubungkan..." : "Masuk Sekarang"}
                         </button>
                     </form>
 
                     {/* Divider */}
                     <div className="flex items-center gap-4 my-8">
-                        <div className="flex-1 h-px bg-[#f9e2d2]/30" />
-                        <span className="text-sm text-[#f9e2d2]">
-                            Atau lanjutkan dengan
-                        </span>
-                        <div className="flex-1 h-px bg-[#f9e2d2]/30" />
+                        <div className="flex-1 h-px bg-slate-100" />
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Atau</span>
+                        <div className="flex-1 h-px bg-slate-100" />
                     </div>
 
                     {/* Google */}
                     <button
                         onClick={handleGoogleLogin}
-                        className="w-full flex items-center justify-center gap-3 bg-[#b1451a] text-white rounded-xl py-3 hover:bg-[#8e3715] transition shadow-md border border-white/10"
+                        className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-900 rounded-2xl py-3.5 text-sm font-bold hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
                     >
-                        <FcGoogle size={22} />
-                        <span className="font-medium">
-                            Masuk dengan Google
-                        </span>
+                        <FcGoogle size={20} />
+                        <span>Google</span>
                     </button>
+                </div>
 
-                    {/* Footer */}
-                    <p className="text-sm mt-8 text-[#f9e2d2] text-center">
+                <div className="mt-8 text-center space-y-4">
+                    <p className="text-sm text-slate-500 font-bold">
                         Belum punya akun?{" "}
                         <Link
                             to="/daftar"
-                            className="text-white font-semibold hover:underline"
+                            className="text-blue-600 hover:underline underline-offset-4"
                         >
-                            Daftar
+                            Daftar Sekarang
                         </Link>
                     </p>
-                </div>
-            </div>
-
-            {/* ================= RIGHT (IMAGE + GRID) ================= */}
-            <div className="hidden md:flex w-[70%] relative items-center justify-center bg-white overflow-hidden">
-                {/* Grid Pattern */}
-                <div
-                    className="absolute inset-0 opacity-20"
-                    style={{
-                        backgroundImage:
-                            "linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)",
-                        backgroundSize: "36px 36px",
-                    }}
-                />
-
-                {/* Banner */}
-                <div className="relative z-10 w-[70%]">
-                    <div className="rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.25)]">
-                        <img
-                            src="/assets/Dongker.png"
-                            alt="Heroestix Banner"
-                            className="w-full h-[220px] object-cover"
-                        />
-                    </div>
+                    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">
+                        &copy; 2024 Heroestix Ticket.
+                    </p>
                 </div>
             </div>
         </div>

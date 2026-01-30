@@ -139,11 +139,26 @@ const Navbar = ({ alwaysScrolled = false }) => {
                     {user ? (
                         <div className="relative group">
                             <div className={`
-                                flex items-center gap-2 cursor-pointer transition-all
-                                ${scrolled ? "text-slate-900" : "text-white"}
-                            `}>
-                                <div className="w-9 h-9 rounded-full bg-blue-600/10 flex items-center justify-center border border-blue-600/20">
-                                    <FiUser size={16} className="text-blue-600" />
+                                            flex items-center gap-2 cursor-pointer transition-all
+                                            ${scrolled ? "text-slate-900" : "text-white"}
+                                        `}>
+                                <div className="w-9 h-9 rounded-xl bg-blue-600/10 overflow-hidden flex items-center justify-center border border-blue-600/20">
+                                    {user.user_metadata?.avatar_url ? (
+                                        <img
+                                            src={user.user_metadata.avatar_url}
+                                            alt="Avatar"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.nextSibling.style.display = 'block';
+                                            }}
+                                        />
+                                    ) : null}
+                                    <FiUser
+                                        size={16}
+                                        className="text-blue-600"
+                                        style={{ display: user.user_metadata?.avatar_url ? 'none' : 'block' }}
+                                    />
                                 </div>
                                 <span className="hidden sm:inline text-sm font-medium">{displayName}</span>
                             </div>
