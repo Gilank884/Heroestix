@@ -3,6 +3,8 @@ import { supabase } from "../../lib/supabaseClient";
 import { FcGoogle } from "react-icons/fc";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { Link } from "react-router-dom";
+import { getSubdomainUrl } from "../../lib/navigation";
+
 
 const Daftar = ({ role = "user" }) => {
     const [form, setForm] = useState({
@@ -127,215 +129,220 @@ const Daftar = ({ role = "user" }) => {
         }
     };
 
+    // CLEAN & PROFESSIONAL REGISTRATION (For Creator)
     if (role === "creator") {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-20 relative overflow-hidden">
-                {/* Background Blobs */}
-                <div className="absolute top-0 -left-20 w-[30rem] h-[30rem] bg-orange-600 rounded-full mix-blend-screen filter blur-3xl opacity-5 animate-pulse" />
-                <div className="absolute bottom-0 -right-20 w-[30rem] h-[30rem] bg-cyan-600 rounded-full mix-blend-screen filter blur-3xl opacity-5 animate-pulse delay-1000" />
+            <div className="min-h-screen bg-slate-50 py-20 px-4 relative overflow-hidden">
+                {/* Decorative Background Elements */}
+                <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-blue-600/10 to-transparent" />
+                <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl" />
+                <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl" />
 
-                <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-[3.5rem] p-12 shadow-2xl relative z-10">
-                    <div className="relative z-10 w-full">
-                        {/* Header */}
-                        <div className="text-center mb-12">
-                            <div className="mb-6 inline-block">
-                                <span className="px-5 py-2 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-400">
-                                    Creator Enrollment
-                                </span>
+                <div className="max-w-4xl mx-auto">
+                    {/* Header Section */}
+                    <div className="text-center mb-12 relative z-10">
+                        <Link to="/" className="inline-flex items-center gap-2 mb-8 group">
+                            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform">
+                                <img src="/Logo/Logo.png" alt="Logo" className="h-8 w-auto brightness-0 invert" />
                             </div>
-                            <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tighter italic uppercase">
-                                Heroestix <span className="text-orange-500">Core</span>
-                            </h1>
-                            <p className="text-slate-400 font-bold max-w-md mx-auto">
-                                Join the elite network of event creators and high-impact organizers
+                            <span className="text-2xl font-black text-slate-900 tracking-tight">Heroestix</span>
+                        </Link>
+                        <h1 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Jadilah Mitra Creator</h1>
+                        <p className="text-slate-500 font-semibold max-w-md mx-auto leading-relaxed">
+                            Mulai kelola event kamu dengan profesional dan jangkau lebih banyak audiens.
+                        </p>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.04)] overflow-hidden relative z-10">
+                        {/* Form Body */}
+                        <div className="p-8 md:p-16">
+                            {/* Error Alert */}
+                            {errorMsg && (
+                                <div className="bg-red-50 border border-red-100 text-red-600 text-sm px-6 py-4 rounded-2xl mb-10 flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+                                    <div className="w-2 h-2 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.5)]" />
+                                    <span className="font-bold">{errorMsg}</span>
+                                </div>
+                            )}
+
+                            <form onSubmit={handleEmailRegister} className="space-y-12">
+                                {/* Section 1: Akun Dasat */}
+                                <div className="space-y-8">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm">01</div>
+                                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-wider">Informasi Akun</h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nama Lengkap</label>
+                                            <input
+                                                type="text"
+                                                name="nama"
+                                                placeholder="Nama sesuai KTP"
+                                                value={form.nama}
+                                                onChange={handleChange}
+                                                required
+                                                className="w-full rounded-2xl px-6 py-4 bg-slate-50 border border-slate-100 focus:border-blue-600 focus:bg-white text-slate-900 outline-none transition-all font-semibold placeholder:text-slate-400"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Email Mitra</label>
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                placeholder="email@bisnis.com"
+                                                value={form.email}
+                                                onChange={handleChange}
+                                                required
+                                                className="w-full rounded-2xl px-6 py-4 bg-slate-50 border border-slate-100 focus:border-blue-600 focus:bg-white text-slate-900 outline-none transition-all font-semibold placeholder:text-slate-400"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Sandi Keamanan</label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showPassword ? "text" : "password"}
+                                                    name="password"
+                                                    placeholder="Minimal 8 karakter"
+                                                    value={form.password}
+                                                    onChange={handleChange}
+                                                    required
+                                                    className="w-full rounded-2xl px-6 py-4 bg-slate-50 border border-slate-100 focus:border-blue-600 focus:bg-white text-slate-900 outline-none transition-all font-semibold placeholder:text-slate-400 pr-14"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                                                >
+                                                    {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Konfirmasi Sandi</label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showConfirmPassword ? "text" : "password"}
+                                                    name="confirm_password"
+                                                    placeholder="Ulangi sandi"
+                                                    value={form.confirm_password}
+                                                    onChange={handleChange}
+                                                    required
+                                                    className="w-full rounded-2xl px-6 py-4 bg-slate-50 border border-slate-100 focus:border-blue-600 focus:bg-white text-slate-900 outline-none transition-all font-semibold placeholder:text-slate-400 pr-14"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                    className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                                                >
+                                                    {showConfirmPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2 md:col-span-2">
+                                            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Tanggal Lahir</label>
+                                            <input
+                                                type="date"
+                                                name="tanggal_lahir"
+                                                value={form.tanggal_lahir}
+                                                onChange={handleChange}
+                                                required
+                                                className="w-full rounded-2xl px-6 py-4 bg-slate-50 border border-slate-100 focus:border-blue-600 focus:bg-white text-slate-900 outline-none transition-all font-semibold text-slate-500"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 2: Informasi Brand & Finansial */}
+                                <div className="space-y-8">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm">02</div>
+                                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-wider">Identitas Bisnis</h3>
+                                    </div>
+
+                                    <div className="space-y-8">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nama Brand / Organisasi</label>
+                                            <input
+                                                type="text"
+                                                name="brand_name"
+                                                placeholder="Nama yang akan tampil di tiket"
+                                                value={form.brand_name}
+                                                onChange={handleChange}
+                                                required
+                                                className="w-full rounded-2xl px-6 py-4 bg-slate-50 border border-slate-100 focus:border-blue-600 focus:bg-white text-slate-900 outline-none transition-all font-semibold placeholder:text-slate-400"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nama Bank</label>
+                                                <input
+                                                    type="text"
+                                                    name="bank_name"
+                                                    placeholder="Contoh: BCA / Mandiri / BNI"
+                                                    value={form.bank_name}
+                                                    onChange={handleChange}
+                                                    required
+                                                    className="w-full rounded-2xl px-6 py-4 bg-slate-50 border border-slate-100 focus:border-blue-600 focus:bg-white text-slate-900 outline-none transition-all font-semibold placeholder:text-slate-400"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nomor Rekening</label>
+                                                <input
+                                                    type="text"
+                                                    name="bank_account"
+                                                    placeholder="Untuk pencairan dana"
+                                                    value={form.bank_account}
+                                                    onChange={handleChange}
+                                                    required
+                                                    className="w-full rounded-2xl px-6 py-4 bg-slate-50 border border-slate-100 focus:border-blue-600 focus:bg-white text-slate-900 outline-none transition-all font-semibold placeholder:text-slate-400"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-10 border-t border-slate-100">
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full bg-blue-600 text-white py-6 rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm hover:bg-blue-700 transition-all shadow-2xl shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50"
+                                    >
+                                        {loading ? "Mendaftarkan Akun..." : "Daftar Sekarang"}
+                                    </button>
+
+                                    <div className="flex items-center gap-4 my-10">
+                                        <div className="flex-1 h-px bg-slate-100" />
+                                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest whitespace-nowrap">Atau Daftar Dengan</span>
+                                        <div className="flex-1 h-px bg-slate-100" />
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleGoogleLogin}
+                                        className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-700 rounded-[2rem] py-5 font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all active:scale-[0.98]"
+                                    >
+                                        <FcGoogle size={24} />
+                                        <span>Gunakan Akun Google</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Summary Footer */}
+                        <div className="bg-slate-50 px-8 py-8 text-center border-t border-slate-100">
+                            <p className="text-slate-400 font-bold text-sm">
+                                Sudah punya akun mitra?{" "}
+                                <Link to="/masuk" className="text-blue-600 hover:underline underline-offset-4 ml-1">Masuk Portal</Link>
                             </p>
                         </div>
-
-                        {/* Error */}
-                        {errorMsg && (
-                            <div className="bg-red-500/10 border border-red-500/30 text-red-100 text-sm px-6 py-4 rounded-[1.5rem] mb-8 flex items-center gap-4">
-                                <div className="w-2 h-2 rounded-full bg-red-500" />
-                                <span className="font-bold">{errorMsg}</span>
-                            </div>
-                        )}
-
-                        {/* FORM */}
-                        <form onSubmit={handleEmailRegister} className="space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Full Identity</label>
-                                    <input
-                                        type="text"
-                                        name="nama"
-                                        placeholder="Full legal name"
-                                        value={form.nama}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full rounded-2xl px-6 py-4 bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white outline-none transition-all font-bold placeholder:text-slate-600"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Environment Email</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        placeholder="yourname@heroestix.com"
-                                        value={form.email}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full rounded-2xl px-6 py-4 bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white outline-none transition-all font-bold placeholder:text-slate-600"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Security Passkey</label>
-                                    <div className="relative">
-                                        <input
-                                            type={showPassword ? "text" : "password"}
-                                            name="password"
-                                            placeholder="••••••••"
-                                            value={form.password}
-                                            onChange={handleChange}
-                                            required
-                                            className="w-full rounded-2xl px-6 py-4 bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white outline-none transition-all font-bold placeholder:text-slate-600 pr-14"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors"
-                                        >
-                                            {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Confirm Security Passkey</label>
-                                    <div className="relative">
-                                        <input
-                                            type={showConfirmPassword ? "text" : "password"}
-                                            name="confirm_password"
-                                            placeholder="••••••••"
-                                            value={form.confirm_password}
-                                            onChange={handleChange}
-                                            required
-                                            className="w-full rounded-2xl px-6 py-4 bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white outline-none transition-all font-bold placeholder:text-slate-600 pr-14"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors"
-                                        >
-                                            {showConfirmPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Birth Date Reference</label>
-                                <input
-                                    type="date"
-                                    name="tanggal_lahir"
-                                    value={form.tanggal_lahir}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full rounded-2xl px-6 py-4 bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white outline-none transition-all font-bold text-slate-400"
-                                />
-                            </div>
-
-                            <div className="pt-6 border-t border-slate-800 mt-8">
-                                <h3 className="text-[12px] font-black uppercase tracking-[0.2em] text-cyan-400 mb-8 flex items-center gap-3">
-                                    <span className="w-10 h-[2px] bg-orange-500"></span>
-                                    Registry Information
-                                </h3>
-
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Brand / Organization Architecture</label>
-                                        <input
-                                            type="text"
-                                            name="brand_name"
-                                            placeholder="Your brand entity"
-                                            value={form.brand_name}
-                                            onChange={handleChange}
-                                            required
-                                            className="w-full rounded-2xl px-6 py-4 bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white outline-none transition-all font-bold placeholder:text-slate-600"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Bank Institution</label>
-                                            <input
-                                                type="text"
-                                                name="bank_name"
-                                                placeholder="BCA / Mandiri / etc"
-                                                value={form.bank_name}
-                                                onChange={handleChange}
-                                                required
-                                                className="w-full rounded-2xl px-6 py-4 bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white outline-none transition-all font-bold placeholder:text-slate-600"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-4">Account Terminal</label>
-                                            <input
-                                                type="text"
-                                                name="bank_account"
-                                                placeholder="Account sequence"
-                                                value={form.bank_account}
-                                                onChange={handleChange}
-                                                required
-                                                className="w-full rounded-2xl px-6 py-4 bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white outline-none transition-all font-bold placeholder:text-slate-600"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full bg-cyan-600 text-white py-6 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:bg-cyan-500 transition-all shadow-xl shadow-cyan-900/40 active:scale-[0.98] disabled:opacity-50 mt-10"
-                            >
-                                {loading ? "Broadcasting Registry..." : "Initialize Creator Account"}
-                            </button>
-                        </form>
-
-                        {/* Divider */}
-                        <div className="flex items-center gap-4 my-12">
-                            <div className="flex-1 h-px bg-slate-800" />
-                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">
-                                Or Authenticate via Network
-                            </span>
-                            <div className="flex-1 h-px bg-slate-800" />
-                        </div>
-
-                        {/* Google */}
-                        <button
-                            onClick={handleGoogleLogin}
-                            className="w-full flex items-center justify-center gap-3 bg-slate-800 border border-slate-700 text-white rounded-2xl py-4 font-bold hover:bg-slate-700 transition-all active:scale-[0.98]"
-                        >
-                            <FcGoogle size={22} />
-                            <span>Continue with Identity Proxy</span>
-                        </button>
-
-                        {/* Footer */}
-                        <p className="text-sm mt-12 text-slate-500 text-center font-bold">
-                            Already part of Core?{" "}
-                            <Link
-                                to="/masuk"
-                                className="text-cyan-400 hover:text-cyan-300 hover:underline underline-offset-4"
-                            >
-                                Access Terminal
-                            </Link>
-                        </p>
                     </div>
                 </div>
             </div>
         );
     }
+
 
     // ORIGINAL SPLIT LAYOUT (For regular Users)
     return (

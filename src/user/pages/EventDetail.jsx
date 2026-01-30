@@ -22,7 +22,7 @@ import {
     MessageCircle
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
-import Card from "../../components/home/EventSection";
+import EventCard from "../../components/home/EventCard";
 
 const rupiah = (value) => {
     if (typeof value !== "number" || isNaN(value)) return "-";

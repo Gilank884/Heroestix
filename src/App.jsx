@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "./lib/supabaseClient";
+import ScrollToTop from "./components/ScrollToTop";
 
 // User Pages
 import Home from "./user/pages/Home";
@@ -39,6 +40,8 @@ import useAuthStore from "./auth/useAuthStore";
 
 // New User Pages
 import BecomeCreator from "./user/pages/BecomeCreator";
+import { getBaseDomain, getSubdomainUrl } from "./lib/navigation";
+
 
 
 
@@ -47,6 +50,8 @@ export default function App() {
 
   useEffect(() => {
     const host = window.location.hostname;
+    const baseDomain = getBaseDomain();
+
     if (host.startsWith("creator.")) {
       setSubdomain("creator");
     } else if (host.startsWith("dev.")) {
@@ -55,6 +60,7 @@ export default function App() {
       setSubdomain("user");
     }
   }, []);
+
 
   const { login, logout, setChecking } = useAuthStore();
 
@@ -83,12 +89,7 @@ export default function App() {
     };
     restoreSession();
 
-    const getBaseDomain = () => {
-      const host = window.location.hostname;
-      if (host === "localhost" || host === "127.0.0.1") return host;
-      if (host.endsWith(".localhost")) return "localhost";
-      return "heroestix.com";
-    };
+
 
     const checkRedirect = async (session) => {
       if (session?.user) {
@@ -160,19 +161,17 @@ export default function App() {
 
           if (role === "creator") {
             if (isDevSub || (shouldForceRedirect && !isCreatorSub && !isBaseDomain)) {
-              const hash = isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "";
-              window.location.href = `http://creator.${baseDomain}${port}/${hash}`;
+              window.location.href = getSubdomainUrl("creator", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
               return;
             }
           } else if (role === "developer") {
             if (isCreatorSub || (shouldForceRedirect && !isDevSub && !isBaseDomain)) {
-              const hash = isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "";
-              window.location.href = `http://dev.${baseDomain}${port}/${hash}`;
+              window.location.href = getSubdomainUrl("dev", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
               return;
             }
           } else if (role === "user") {
             if (isCreatorSub || isDevSub) {
-              window.location.href = `http://${baseDomain}${port}/`;
+              window.location.href = getSubdomainUrl(null);
               return;
             }
           }
@@ -298,20 +297,23 @@ export default function App() {
 
 
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/about-us" element={<AboutUsPage />} />
-      <Route path="/daftar" element={<Daftar />} />
-      <Route path="/masuk" element={<Masuk />} />
-      <Route path="/error" element={<Error />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/event/:id" element={<EventDetail />} />
-      <Route path="/select-ticket/:id" element={<SelectTicket />} />
-      <Route path="/checkout/:id" element={<Checkout />} />
-      <Route path="/payment/:id" element={<Payment />} />
-      <Route path="/transaction-detail/:id" element={<TransactionDetail />} />
-      <Route path="/become-creator" element={<BecomeCreator />} />
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about-us" element={<AboutUsPage />} />
+        <Route path="/daftar" element={<Daftar />} />
+        <Route path="/masuk" element={<Masuk />} />
+        <Route path="/error" element={<Error />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/event/:id" element={<EventDetail />} />
+        <Route path="/select-ticket/:id" element={<SelectTicket />} />
+        <Route path="/checkout/:id" element={<Checkout />} />
+        <Route path="/payment/:id" element={<Payment />} />
+        <Route path="/transaction-detail/:id" element={<TransactionDetail />} />
+        <Route path="/become-creator" element={<BecomeCreator />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </>
   );
 }

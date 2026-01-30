@@ -1,97 +1,152 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import {
-    MapPin,
-    Calendar,
-    ArrowRight,
-    Tag,
-    Clock,
-    ChevronRight
-} from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Search, Ticket } from "lucide-react";
+import { FiSearch } from "react-icons/fi";
+import { supabase } from "../../lib/supabaseClient";
+import EventCard from "./EventCard";
 
-// ✅ SAFE RUPIAH FORMATTER
-const rupiah = (value) => {
-    if (typeof value !== "number" || isNaN(value)) return "-";
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-    }).format(value);
-};
+export default function EventSection({ searchTerm = "" }) {
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-const Card = ({ id, image, title, date, location, price, status, variant }) => {
-    // Render "Load More" card variant
-    if (variant === "more") {
+    useEffect(() => {
+        // Always fetch fresh data on mount
+        fetchEvents(true);
+
+        // REAL-TIME SYNC
+        const channel = supabase
+            .channel('event_section_sync')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'events'
+            }, () => {
+                fetchEvents(false);
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
+    const fetchEvents = async (showLoading = false) => {
+        if (showLoading) setLoading(true);
+        setError(null);
+        console.log("EventSection: Starting fetchEvents...");
+        try {
+            // Simplified query to ensure maximum compatibility and speed
+            const { data, error, status, statusText } = await supabase
+                .from("events")
+                .select(`
+                    *,
+                    ticket_types (
+                        price,
+                        quota,
+                        sold
+                    )
+                `)
+                .neq("status", "archived")
+                .order('created_at', { ascending: false });
+
+            console.log(`EventSection: Supabase response status: ${status} ${statusText}`);
+
+            if (error) throw error;
+
+            console.log("EventSection: Fetched events count:", data?.length || 0);
+            if (data) {
+                console.log("EventSection: First event title (if any):", data[0]?.title);
+            }
+
+            // Map the data for the EventCard component
+            const formatted = (data || []).map(ev => {
+                const tt_data = ev.ticket_types || [];
+                // If ticket_types is not an array (due to some Supabase join edge case), handle it
+                const tt_array = Array.isArray(tt_data) ? tt_data : [tt_data];
+                const prices = tt_array.map(tt => tt.price).filter(p => p !== undefined && p !== null) || [];
+                const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+
+                return {
+                    id: ev.id,
+                    title: ev.title,
+                    location: ev.location,
+                    date: ev.event_date,
+                    image: ev.poster_url,
+                    price: minPrice,
+                    status: ev.status
+                };
+            });
+
+            setEvents(formatted);
+
+            // ⚡️ RETRY LOGIC: If no events found, maybe it's a cold start or session race
+            if (formatted.length === 0 && showLoading) {
+                console.warn("EventSection: No events found on initial load. Retrying in 2 seconds...");
+                setTimeout(() => fetchEvents(false), 2000);
+            }
+        } catch (error) {
+            console.error("EventSection: Error fetching events:", error.message);
+            setError("Gagal memuat event. Silakan periksa koneksi internet Anda.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Filter logic
+    const filteredEvents = useMemo(() => {
+        return events.filter(event => {
+            return event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                event.location?.toLowerCase().includes(searchTerm.toLowerCase());
+        });
+    }, [events, searchTerm]);
+
+    if (loading) {
         return (
-            <div className="bg-slate-900/5 backdrop-blur-md rounded-xl border border-slate-200 flex flex-col items-center justify-center p-8 text-center hover:bg-blue-50/50 hover:border-blue-400 transition-all duration-300 cursor-pointer group shadow-sm">
-                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white shadow-md transition-all duration-500">
-                    <ChevronRight className="text-slate-400 group-hover:text-white" size={24} />
-                </div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">See More</p>
+            <div className="flex flex-wrap justify-center gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-slate-200 rounded-xl aspect-[16/20] w-[280px] animate-pulse" />
+                ))}
             </div>
         );
     }
 
-    if (!title) return null;
-    const isAvailable = status !== "soldout";
+    if (error) {
+        return (
+            <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-slate-100">
+                <div className="bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-100">
+                    <FiSearch size={40} className="text-red-400" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">Oops! Something went wrong</h3>
+                <p className="text-slate-500 mt-2 font-medium">{error}</p>
+                <button
+                    onClick={() => fetchEvents(true)}
+                    className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/10"
+                >
+                    Try Again
+                </button>
+            </div>
+        );
+    }
+
+    if (filteredEvents.length === 0) {
+        return (
+            <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-slate-100">
+                <div className="bg-slate-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
+                    <Search size={40} className="text-slate-300" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">No events found</h3>
+                <p className="text-slate-500 mt-2 font-medium">Try using different keywords or filters</p>
+            </div>
+        );
+    }
 
     return (
-        <Link
-            to={`/event/${id}`}
-            className="group block bg-white rounded-lg overflow-hidden border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-500 flex flex-col h-full"
-        >
-            {/* CARD TOP: IMAGE */}
-            <div className="relative aspect-[16/9] overflow-hidden">
-                <img
-                    src={image || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop"}
-                    alt={title}
-                    className={`w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 ${!isAvailable ? "grayscale opacity-70" : ""}`}
-                />
-
-                {/* Subtle Overlay */}
-                {!isAvailable && (
-                    <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
-                        <span className="bg-white/90 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-[0.2em] text-slate-900">Sold Out</span>
-                    </div>
-                )}
-            </div>
-
-            {/* CARD BODY: CONTENT */}
-            <div className="p-4 flex-1 flex flex-col justify-start">
-                <div className="space-y-3">
-                    <h3 className="font-extrabold text-[#111827] text-[15px] uppercase leading-tight tracking-tight line-clamp-2">
-                        {title}
-                    </h3>
-
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-[#374151]">
-                            <Calendar size={14} className="text-blue-600 shrink-0" />
-                            <p className="text-[14px] font-bold">
-                                {date || "Coming Soon"}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 text-slate-400">
-                            <MapPin size={14} className="text-blue-600 shrink-0" />
-                            <p className="text-[13px] font-medium truncate">
-                                {location || "Venue TBA"}
-                            </p>
-                        </div>
-                    </div>
+        <div className="flex flex-wrap justify-center gap-10">
+            {filteredEvents.map((ev) => (
+                <div key={ev.id} className="w-full max-w-[320px]">
+                    <EventCard {...ev} />
                 </div>
-            </div>
-
-            {/* CARD FOOTER: PRICE */}
-            <div className="mt-auto px-4 py-3.5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-[13px] font-medium text-slate-500">
-                    Mulai Dari
-                </span>
-                <span className="text-[15px] font-extrabold text-slate-900">
-                    {price === 0 ? "FREE" : rupiah(price)}
-                </span>
-            </div>
-        </Link>
+            ))}
+        </div>
     );
-};
-
-export default Card;
-
+}

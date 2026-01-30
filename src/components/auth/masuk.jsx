@@ -3,6 +3,8 @@ import { supabase } from "../../lib/supabaseClient";
 import { FcGoogle } from "react-icons/fc";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useNavigate, Link } from "react-router-dom";
+import { getBaseDomain, getSubdomainUrl } from "../../lib/navigation";
+
 
 const Masuk = ({ role = "user" }) => {
     const navigate = useNavigate();
@@ -80,11 +82,6 @@ const Masuk = ({ role = "user" }) => {
             const isLocalhost = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
             const port = window.location.port ? `:${window.location.port}` : "";
 
-            const getBaseDomain = () => {
-                if (host === "localhost" || host === "127.0.0.1") return host;
-                if (host.endsWith(".localhost")) return "localhost";
-                return "heroestix.com";
-            };
             const baseDomain = getBaseDomain();
             const isBaseDomain = host === baseDomain;
 
@@ -92,20 +89,18 @@ const Masuk = ({ role = "user" }) => {
             // If on base domain (home), STAY at home.
             if (profileRole === "creator") {
                 if (host.startsWith("dev.") || (!host.startsWith("creator.") && !isBaseDomain)) {
-                    const hash = isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "";
-                    window.location.href = `http://creator.${baseDomain}${port}/${hash}`;
+                    window.location.href = getSubdomainUrl("creator", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
                 } else {
                     navigate("/");
                 }
             } else if (profileRole === "developer") {
                 if (host.startsWith("creator.") || (!host.startsWith("dev.") && !isBaseDomain)) {
-                    const hash = isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "";
-                    window.location.href = `http://dev.${baseDomain}${port}/${hash}`;
+                    window.location.href = getSubdomainUrl("dev", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
                 } else {
                     navigate("/");
                 }
             } else if (profileRole === "user" && (host.startsWith("creator.") || host.startsWith("dev."))) {
-                window.location.href = `http://${baseDomain}${port}/`;
+                window.location.href = getSubdomainUrl(null);
             } else {
                 navigate("/");
             }
@@ -136,55 +131,51 @@ const Masuk = ({ role = "user" }) => {
         }
     };
 
-    // CENTERED LAYOUT (For Creator / Dev)
+    // REFINED COMPACT & PROFESSIONAL LAYOUT
     if (role === "creator" || role === "developer") {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 relative overflow-hidden">
-                <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-[3rem] p-10 shadow-2xl relative z-10">
-                    {/* Background Blobs */}
-                    <div className="absolute top-0 -left-6 w-96 h-96 bg-orange-600 rounded-full mix-blend-screen filter blur-3xl opacity-10 animate-pulse" />
-                    <div className="absolute bottom-0 -right-6 w-96 h-96 bg-cyan-600 rounded-full mix-blend-screen filter blur-3xl opacity-10 animate-pulse delay-700" />
+        const isCreator = role === "creator";
 
-                    <div className="relative z-10 w-full">
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
+                <div className="w-full max-w-[400px]">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 md:p-10 shadow-sm relative overflow-hidden">
                         {/* Header */}
                         <div className="text-center mb-10">
-                            <div className="mb-6 inline-block">
-                                <span className="px-5 py-2 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-400">
-                                    {role} Portal
-                                </span>
-                            </div>
-                            <h1 className="text-4xl font-black text-white mb-3 tracking-tighter italic uppercase">
-                                Heroestix <span className="text-orange-500">Core</span>
+                            <h1 className="text-xl font-bold text-slate-900 mb-1.5">
+                                {isCreator ? "Creator Portal" : "Dev Console"}
                             </h1>
-                            <p className="text-slate-400 font-medium">
-                                Authentication for high-impact {role}s
+                            <p className="text-[13px] text-slate-500 font-medium">
+                                Masuk ke dashboard pengelolaan Heroestix
                             </p>
                         </div>
 
                         {/* Error */}
                         {errorMsg && (
-                            <div className="bg-red-500/10 border border-red-500/30 text-red-200 text-sm px-5 py-4 rounded-2xl mb-8 flex items-center gap-3">
-                                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                {errorMsg}
+                            <div className="bg-red-50 border border-red-100 text-red-600 text-[12px] px-4 py-3 rounded-xl mb-8 flex items-center gap-3 animate-in fade-in duration-300">
+                                <div className="w-1 h-1 rounded-full bg-red-600" />
+                                <span className="font-semibold">{errorMsg}</span>
                             </div>
                         )}
 
                         {/* FORM */}
-                        <form onSubmit={handleLogin} className="space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 pl-4">Environment Email</label>
+                        <form onSubmit={handleLogin} className="space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-0.5">Alamat Email</label>
                                 <input
                                     type="email"
-                                    placeholder="yourname@heroestix.com"
+                                    placeholder="nama@email.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    className="w-full rounded-2xl px-6 py-4 bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white outline-none transition-all placeholder:text-slate-600 font-bold"
+                                    className="w-full rounded-xl px-4 py-3 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-900 text-sm outline-none transition-all placeholder:text-slate-400 font-medium"
                                 />
                             </div>
 
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 pl-4">Security Passkey</label>
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between items-center ml-0.5">
+                                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Kata Sandi</label>
+                                    <button type="button" className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-tight">Lupa sandi?</button>
+                                </div>
                                 <div className="relative">
                                     <input
                                         type={showPassword ? "text" : "password"}
@@ -192,14 +183,14 @@ const Masuk = ({ role = "user" }) => {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
-                                        className="w-full rounded-2xl px-6 py-4 bg-slate-800 border border-slate-700 focus:border-cyan-500 text-white outline-none transition-all placeholder:text-slate-600 font-bold pr-14"
+                                        className="w-full rounded-xl px-4 py-3 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-900 text-sm outline-none transition-all placeholder:text-slate-400 font-medium pr-12"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
                                     >
-                                        {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                                        {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                                     </button>
                                 </div>
                             </div>
@@ -207,47 +198,57 @@ const Masuk = ({ role = "user" }) => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full bg-cyan-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-cyan-500 transition-all shadow-xl shadow-cyan-900/30 active:scale-[0.98] disabled:opacity-50 mt-4"
+                                className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-[13px] hover:bg-blue-700 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 mt-4 h-12 flex items-center justify-center"
                             >
-                                {loading ? "Synchronizing..." : "Initialize Session"}
+                                {loading ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <span>Menghubungkan...</span>
+                                    </div>
+                                ) : "Masuk Sekarang"}
                             </button>
                         </form>
 
                         {/* Divider */}
                         <div className="flex items-center gap-4 my-8">
-                            <div className="flex-1 h-px bg-slate-800" />
-                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">
-                                Or Continue Identity
+                            <div className="flex-1 h-px bg-slate-100" />
+                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                                Atau
                             </span>
-                            <div className="flex-1 h-px bg-slate-800" />
+                            <div className="flex-1 h-px bg-slate-100" />
                         </div>
 
                         {/* Google */}
                         <button
                             onClick={handleGoogleLogin}
-                            className="w-full flex items-center justify-center gap-3 bg-slate-800 border border-slate-700 text-white rounded-2xl py-4 font-bold hover:bg-slate-700 transition-all active:scale-[0.98]"
+                            className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-700 rounded-xl py-3 text-[13px] font-bold hover:bg-slate-50 transition-all active:scale-[0.98] h-12"
                         >
-                            <FcGoogle size={22} />
-                            <span>Continue Identity</span>
+                            <FcGoogle size={20} />
+                            <span>Lanjutkan dengan Google</span>
                         </button>
+                    </div>
 
-                        {/* Footer */}
-                        {role === "creator" && (
-                            <p className="text-sm mt-10 text-slate-500 text-center font-bold">
-                                New here?{" "}
+                    <div className="mt-8 text-center">
+                        {isCreator && (
+                            <p className="text-[13px] text-slate-500 font-medium">
+                                Belum terdaftar?{" "}
                                 <Link
                                     to="/daftar"
-                                    className="text-cyan-400 hover:text-cyan-300 hover:underline underline-offset-4"
+                                    className="text-blue-600 font-bold hover:underline underline-offset-4"
                                 >
-                                    Join Core Network
+                                    Gabung Mitra Heroestix
                                 </Link>
                             </p>
                         )}
+                        <p className="mt-6 text-[11px] text-slate-400 font-medium">
+                            &copy; 2024 Heroestix. Platform Manajemen Tiket Modern.
+                        </p>
                     </div>
                 </div>
             </div>
         );
     }
+
 
     // ORIGINAL SPLIT LAYOUT (For regular Users)
     return (

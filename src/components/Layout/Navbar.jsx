@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FiUser, FiLogOut } from "react-icons/fi";
 import { supabase } from "../../lib/supabaseClient";
+import { getSubdomainUrl } from "../../lib/navigation";
+
 
 const Navbar = ({ alwaysScrolled = false }) => {
     const [scrolled, setScrolled] = useState(alwaysScrolled);
@@ -68,9 +70,10 @@ const Navbar = ({ alwaysScrolled = false }) => {
         "User";
 
     const navLinks = [
+        { name: "Beranda", path: "/" },
         { name: "Become a Creator", path: "/become-creator" },
         { name: "About Us", path: "/about-us" },
-        { name: "Contact Us", path: "/contact" }
+        { name: "Contact Us", path: "https://wa.me/6282332901726", isExternal: true }
     ];
 
     return (
@@ -105,16 +108,31 @@ const Navbar = ({ alwaysScrolled = false }) => {
                     {/* Navigation Menu - Desktop */}
                     <nav className="hidden md:flex items-center gap-8">
                         {navLinks.map((item) => (
-                            <Link
-                                key={item.name}
-                                to={item.path}
-                                className={`
-                                    text-[13px] font-semibold uppercase tracking-wider transition-all 
-                                    ${scrolled ? "text-slate-600 hover:text-blue-600" : "text-white/90 hover:text-white"}
-                                `}
-                            >
-                                {item.name}
-                            </Link>
+                            item.isExternal ? (
+                                <a
+                                    key={item.name}
+                                    href={item.path}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`
+                                        text-[13px] font-semibold uppercase tracking-wider transition-all 
+                                        ${scrolled ? "text-slate-600 hover:text-blue-600" : "text-white/90 hover:text-white"}
+                                    `}
+                                >
+                                    {item.name}
+                                </a>
+                            ) : (
+                                <Link
+                                    key={item.name}
+                                    to={item.path}
+                                    className={`
+                                        text-[13px] font-semibold uppercase tracking-wider transition-all 
+                                        ${scrolled ? "text-slate-600 hover:text-blue-600" : "text-white/90 hover:text-white"}
+                                    `}
+                                >
+                                    {item.name}
+                                </Link>
+                            )
                         ))}
                     </nav>
 
@@ -153,7 +171,7 @@ const Navbar = ({ alwaysScrolled = false }) => {
 
                                 {user?.role === "creator" && (
                                     <a
-                                        href={`http://creator.${window.location.hostname.includes("localhost") ? "localhost" : "heroestix.com"}${window.location.port ? ":" + window.location.port : ""}`}
+                                        href={getSubdomainUrl("creator")}
                                         className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors border-t border-slate-50"
                                     >
                                         <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white italic">C</div>
@@ -163,7 +181,7 @@ const Navbar = ({ alwaysScrolled = false }) => {
 
                                 {user?.role === "developer" && (
                                     <a
-                                        href={`http://dev.${window.location.hostname.includes("localhost") ? "localhost" : "heroestix.com"}${window.location.port ? ":" + window.location.port : ""}`}
+                                        href={getSubdomainUrl("dev")}
                                         className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors border-t border-slate-50"
                                     >
                                         <div className="w-5 h-5 rounded bg-slate-900 flex items-center justify-center text-[10px] font-bold text-white italic">D</div>
