@@ -3,14 +3,18 @@ import { Search, Ticket } from "lucide-react";
 import { FiSearch } from "react-icons/fi";
 import { supabase } from "../../lib/supabaseClient";
 import EventCard from "./EventCard";
+import useAuthStore from "../../auth/useAuthStore";
 
 export default function EventSection({ searchTerm = "" }) {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { isChecking, isAuthenticated } = useAuthStore();
 
     useEffect(() => {
-        // Always fetch fresh data on mount
+        // Wait for auth check to finish before fetching
+        if (isChecking) return;
+
         fetchEvents(true);
 
         // REAL-TIME SYNC
@@ -28,7 +32,7 @@ export default function EventSection({ searchTerm = "" }) {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, []);
+    }, [isChecking, isAuthenticated]);
 
     const fetchEvents = async (showLoading = false) => {
         if (showLoading) setLoading(true);

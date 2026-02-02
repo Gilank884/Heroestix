@@ -69,28 +69,81 @@ export default function Payment() {
 
             if (orderError) throw orderError;
 
-            // 3. Update Ticket Types "sold" count (increment)
-            const { data: orderTickets } = await supabase
+            // 3. Update Ticket Types "sold" count (increment) and Record Creator Earnings
+            const { data: orderTickets, error: fetchOrderTicketsError } = await supabase
                 .from("tickets")
-                .select("ticket_type_id")
+                .select(`
+                    id,
+                    ticket_type_id,
+                    ticket_types (
+                        name,
+                        price,
+                        price_net,
+                        events (
+                            creator_id
+                        )
+                    )
+                `)
                 .eq("order_id", orderId);
 
-            const typeCounts = {};
-            orderTickets.forEach(t => {
-                typeCounts[t.ticket_type_id] = (typeCounts[t.ticket_type_id] || 0) + 1;
-            });
+            if (fetchOrderTicketsError) {
+                console.error("Error fetching order tickets for updates:", fetchOrderTicketsError);
+            } else if (orderTickets && orderTickets.length > 0) {
+                const typeCounts = {};
+                const creatorEarnings = []; // Array to store balance entries
 
-            for (const [typeId, count] of Object.entries(typeCounts)) {
-                // Using RPC for atomic increment if available, else simple update
-                // For now, let's assume we have a simple update or RPC
-                await supabase.rpc('increment_ticket_sold', {
-                    t_id: typeId,
-                    quantity: count
+                orderTickets.forEach(t => {
+                    const typeId = t.ticket_type_id;
+                    typeCounts[typeId] = (typeCounts[typeId] || 0) + 1;
+
+                    // Prepare earning entry for each ticket
+                    if (t.ticket_types?.events?.creator_id) {
+                        creatorEarnings.push({
+                            creator_id: t.ticket_types.events.creator_id,
+                            order_id: orderId,
+                            ticket_id: t.id,
+                            amount: t.ticket_types.price_net || t.ticket_types.price || 0,
+                            type: 'credit',
+                            description: `Ticket Sale: ${t.ticket_types.name}`
+                        });
+                    }
                 });
+
+                // 3a. Record earnings in creator_balances
+                if (creatorEarnings.length > 0) {
+                    const { error: balanceError } = await supabase
+                        .from('creator_balances')
+                        .insert(creatorEarnings);
+
+                    if (balanceError) console.error("Error recording creator earnings:", balanceError);
+                }
+
+                // 3b. Update sold counts
+                for (const [typeId, count] of Object.entries(typeCounts)) {
+                    const { error: rpcError } = await supabase.rpc('increment_ticket_sold', {
+                        t_id: typeId,
+                        quantity: count
+                    });
+
+                    if (rpcError) {
+                        const { data: currentType } = await supabase
+                            .from('ticket_types')
+                            .select('sold')
+                            .eq('id', typeId)
+                            .single();
+
+                        if (currentType) {
+                            await supabase
+                                .from('ticket_types')
+                                .update({ sold: (currentType.sold || 0) + count })
+                                .eq('id', typeId);
+                        }
+                    }
+                }
             }
 
             alert("Pembayaran Berhasil! Tiket Anda telah diterbitkan.");
-            navigate("/");
+            navigate(`/transaction-detail/${orderId}`);
 
         } catch (error) {
             console.error("Payment error:", error);

@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import {
     MapPin,
     Calendar,
-    ChevronRight
+    ChevronRight,
+    Tag
 } from "lucide-react";
+import { getCategoryName } from "../../constants/categories";
 
 // ✅ SAFE RUPIAH FORMATTER
 const rupiah = (value) => {
@@ -16,7 +18,7 @@ const rupiah = (value) => {
     }).format(value);
 };
 
-const EventCard = ({ id, image, title, date, location, price, status, variant }) => {
+const EventCard = ({ id, image, title, date, location, price, status, variant, category }) => {
     // Render "Load More" card variant
     if (variant === "more") {
         return (
@@ -49,6 +51,16 @@ const EventCard = ({ id, image, title, date, location, price, status, variant })
                 {!isAvailable && (
                     <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
                         <span className="bg-white/90 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-[0.2em] text-slate-900">Sold Out</span>
+                    </div>
+                )}
+
+                {/* Category Badge */}
+                {category && (
+                    <div className="absolute top-3 left-3">
+                        <div className="px-2.5 py-1 bg-white/90 backdrop-blur-md text-[#1a36c7] rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm border border-blue-100/50 flex items-center gap-1">
+                            <Tag size={9} />
+                            {getCategoryName(category)}
+                        </div>
                     </div>
                 )}
             </div>

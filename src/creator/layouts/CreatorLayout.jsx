@@ -43,88 +43,45 @@ const CreatorLayout = ({ children }) => {
 
     const navSections = [
         {
-            title: "JELAJAHI",
+            title: "MAIN MENU",
             items: [
-                { name: "Statistik", path: "/", icon: LayoutDashboard },
-                { name: "Daftar Event", path: "/events", icon: Sparkles },
-            ],
-        },
-        {
-            title: "Admin",
-            items: [
-                { name: "Staff", path: "/staff", icon: Users },
-            ],
-        },
-        {
-            title: "KEUANGAN",
-            items: [
-                { name: "Voucher", path: "/vouchers", icon: Ticket },
+                { name: "Statistik Event", path: "/events", icon: Sparkles },
                 { name: "Cash", path: "/cash", icon: Wallet },
             ],
-        },
-        {
-            title: "LAPORAN",
-            items: [
-                { name: "Rekap Data", path: "/reports", icon: FileSpreadsheet },
-            ],
-        },
-        {
-            title: "KEAMANAN",
-            items: [
-                { name: "Ubah Password", path: "/security/password", icon: Lock },
-                { name: "Token Generator", path: "/security/tokens", icon: ShieldCheck },
-            ],
-        },
-        {
-            title: "LAINNYA",
-            items: [
-                { name: "Cetak Tiket Gelang", path: "/tools/bracelet-printing", icon: Ticket },
-            ],
-        },
+        }
     ];
 
     return (
-        <div className="flex h-screen bg-[#f3f4f6]">
+        <div className="flex h-screen bg-[#F8FAFC] text-slate-800 selection:bg-blue-100 selection:text-blue-700">
             {/* Sidebar */}
             <aside
                 className={`
-                    fixed inset-y-0 left-0 z-50 w-72 bg-[#1a36c7] text-white transition-all duration-300 transform
+                    fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transition-all duration-500 ease-in-out transform
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                    lg:relative lg:translate-x-0 overflow-y-auto
+                    lg:relative lg:translate-x-0 overflow-y-auto no-scrollbar
                 `}
             >
                 {/* Brand Header */}
-                <div className="p-8 pb-4 flex items-center justify-between">
+                <div className="h-24 flex items-center px-8">
                     <div className="flex items-center gap-3">
-                        <div className="bg-white/20 p-2 rounded-lg">
-                            <Layers size={24} className="text-white" />
+                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                            <Layers size={22} className="text-white" />
                         </div>
-                        <h1 className="text-2xl font-bold tracking-tight">Backstage</h1>
+                        <div className="flex flex-col">
+                            <span className="text-lg font-black tracking-tighter text-slate-900 leading-none uppercase">Backstage</span>
+                            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">Creator Portal</span>
+                        </div>
                     </div>
-                    <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-white/70 hover:text-white">
+                    <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden ml-auto text-slate-400 hover:text-slate-600">
                         <X size={24} />
                     </button>
                 </div>
 
-                {/* Creator Profile Card */}
-                <div className="px-6 mb-8 pt-4">
-                    <div className="bg-white rounded-[1.2rem] p-4 flex items-center gap-4 shadow-lg">
-                        <div className="w-12 h-12 bg-[#4a6cf7] rounded-xl flex items-center justify-center flex-shrink-0">
-                            <Layers size={24} className="text-white" />
-                        </div>
-                        <div className="overflow-hidden">
-                            <h2 className="text-[#1a202c] font-bold truncate text-[15px]">
-                                {stats.brand_name}
-                            </h2>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Navigation Sections */}
-                <nav className="px-5 space-y-8 pb-10">
+                <nav className="flex-1 px-6 space-y-8 pb-10 mt-4">
                     {navSections.map((section) => (
                         <div key={section.title}>
-                            <h3 className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] mb-4 ml-4">
+                            <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-4 ml-4">
                                 {section.title}
                             </h3>
                             <div className="space-y-1.5">
@@ -136,15 +93,18 @@ const CreatorLayout = ({ children }) => {
                                             key={item.name}
                                             to={item.path}
                                             className={`
-                                                flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 group
+                                                group flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 relative
                                                 ${isActive
-                                                    ? 'bg-[#4a6cf7] text-white shadow-lg shadow-[#1a36c7]/50'
-                                                    : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                    ? 'bg-blue-50 text-blue-600 font-bold'
+                                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                                                 }
                                             `}
                                         >
-                                            <Icon size={20} className={`${isActive ? 'text-white' : 'text-white/50 group-hover:text-white'} transition-colors`} />
-                                            <span className="font-bold text-[14px]">{item.name}</span>
+                                            <Icon size={20} className={`${isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'} transition-colors`} />
+                                            <span className="text-[14px] tracking-tight">{item.name}</span>
+                                            {isActive && (
+                                                <div className="absolute right-4 w-1.5 h-1.5 bg-blue-600 rounded-full" />
+                                            )}
                                         </Link>
                                     );
                                 })}
@@ -152,33 +112,44 @@ const CreatorLayout = ({ children }) => {
                         </div>
                     ))}
 
-                    {/* Logout Button */}
-                    <div className="pt-4 border-t border-white/10 mt-10">
+                    {/* Profile Section */}
+                    <div className="pt-6 border-t border-slate-100 mt-10">
+                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-blue-600 font-bold shadow-sm">
+                                {user?.email?.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-black text-slate-900 truncate tracking-tight uppercase">
+                                    {stats.brand_name || 'Creator'}
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{user?.email}</span>
+                            </div>
+                        </div>
                         <button
                             onClick={logout}
-                            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-red-300 hover:bg-red-500/10 transition-all font-bold text-[14px]"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 text-slate-500 hover:text-red-600 font-bold text-xs uppercase tracking-widest hover:bg-red-50 rounded-xl transition-all"
                         >
-                            <LogOut size={20} />
-                            <span>Logout System</span>
+                            <LogOut size={16} />
+                            <span>Sign Out</span>
                         </button>
                     </div>
                 </nav>
             </aside>
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
                 {/* Mobile Header */}
-                <header className="lg:hidden flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+                <header className="lg:hidden flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200">
                     <div className="flex items-center gap-3">
-                        <Layers size={24} className="text-[#1a36c7]" />
-                        <span className="font-bold text-xl">Backstage</span>
+                        <Layers size={24} className="text-blue-600" />
+                        <span className="font-black text-xl tracking-tighter text-slate-900 uppercase">Backstage</span>
                     </div>
-                    <button onClick={() => setIsSidebarOpen(true)} className="text-[#1a36c7]">
+                    <button onClick={() => setIsSidebarOpen(true)} className="text-slate-900">
                         <Menu size={24} />
                     </button>
                 </header>
 
-                <main className="flex-1 overflow-y-auto bg-gray-50 relative">
+                <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
                     <div className="p-6 md:p-10 max-w-7xl mx-auto">
                         {children}
                     </div>

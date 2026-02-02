@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../auth/useAuthStore';
 import { supabase } from '../../lib/supabaseClient';
 import {
@@ -17,6 +17,7 @@ import CreateEventModal from '../components/CreateEventModal';
 
 const Events = () => {
     const { user } = useAuthStore();
+    const navigate = useNavigate();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -201,6 +202,7 @@ const Events = () => {
                 onClose={() => setShowCreateModal(false)}
                 creatorId={user?.id}
                 onRefresh={fetchEvents}
+                navigate={navigate}
             />
         </div>
     );

@@ -9,8 +9,10 @@ import {
     Globe,
     Edit,
     Clock,
-    CheckCircle2
+    CheckCircle2,
+    Tag
 } from 'lucide-react';
+import { getCategoryName, getSubCategoryName } from '../../constants/categories';
 
 const EventDetail = () => {
     const { id: eventId } = useParams();
@@ -75,11 +77,23 @@ const EventDetail = () => {
                 {activeTab === 'Informasi Umum' && (
                     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                         <div className="p-8 grid grid-cols-[200px_1fr] gap-x-12 gap-y-12">
-                            <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mt-1">Subkategori</div>
+                            <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mt-1">Kategori</div>
                             <div>
-                                <div className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-[11px] font-bold">
-                                    Running
-                                </div>
+                                {event.category ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-[#1a36c7] rounded-lg text-[11px] font-black uppercase tracking-wider border border-blue-100 shadow-sm">
+                                            <Tag size={12} />
+                                            {getCategoryName(event.category)}
+                                        </div>
+                                        {event.sub_category && (
+                                            <div className="inline-flex items-center px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-bold uppercase tracking-wider border border-slate-200">
+                                                {getSubCategoryName(event.category, event.sub_category)}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="text-[11px] font-bold text-slate-400 italic">Belum ditentukan</div>
+                                )}
                                 <div className="mt-8 space-y-4 text-gray-900">
                                     <h2 className="text-xl font-black">{event.title}</h2>
                                     <p className="text-sm font-bold text-gray-500">
@@ -171,7 +185,7 @@ const EventDetail = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

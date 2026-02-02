@@ -8,6 +8,8 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
     const [ticketData, setTicketData] = useState({
         name: '',
         price: '',
+        price_net: '',
+        price_gross: '',
         quota: '',
         description: '',
         start_date: '',
@@ -24,7 +26,9 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                 .insert({
                     ...ticketData,
                     event_id: eventId,
-                    price: parseInt(ticketData.price),
+                    price: parseInt(ticketData.price_gross || ticketData.price),
+                    price_net: parseInt(ticketData.price_net),
+                    price_gross: parseInt(ticketData.price_gross),
                     quota: parseInt(ticketData.quota),
                     sold: 0,
                     status: 'active'
@@ -37,6 +41,8 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
             setTicketData({
                 name: '',
                 price: '',
+                price_net: '',
+                price_gross: '',
                 quota: '',
                 description: '',
                 start_date: '',
@@ -85,30 +91,44 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
-                                    <CircleDollarSign size={12} /> Harga (IDR)
+                                    <CircleDollarSign size={12} /> Harga Net (Sebelum Pajak)
                                 </label>
                                 <input
                                     required
                                     type="number"
-                                    value={ticketData.price}
-                                    onChange={e => setTicketData({ ...ticketData, price: e.target.value })}
+                                    value={ticketData.price_net}
+                                    onChange={e => setTicketData({ ...ticketData, price_net: e.target.value })}
                                     placeholder="Contoh: 150000"
                                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
-                                    <Info size={12} /> Kuota
+                                    <CircleDollarSign size={12} /> Harga Gross (Setelah Pajak)
                                 </label>
                                 <input
                                     required
                                     type="number"
-                                    value={ticketData.quota}
-                                    onChange={e => setTicketData({ ...ticketData, quota: e.target.value })}
-                                    placeholder="Contoh: 500"
+                                    value={ticketData.price_gross}
+                                    onChange={e => setTicketData({ ...ticketData, price_gross: e.target.value })}
+                                    placeholder="Contoh: 165000"
                                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all"
                                 />
                             </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
+                                <Info size={12} /> Kuota
+                            </label>
+                            <input
+                                required
+                                type="number"
+                                value={ticketData.quota}
+                                onChange={e => setTicketData({ ...ticketData, quota: e.target.value })}
+                                placeholder="Contoh: 500"
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all"
+                            />
                         </div>
                     </div>
 

@@ -57,12 +57,27 @@ export default function Checkout() {
     const [loading, setLoading] = useState(false);
     const [ticketTypes, setTicketTypes] = useState([]);
 
-    // Form states for first visitor (simplified for this task)
+    // Form states for first visitor
     const [visitorData, setVisitorData] = useState({
         full_name: user?.full_name || "",
         email: user?.email || "",
-        phone: ""
+        phone: "",
+        birth_day: "1",
+        birth_month: "Januari",
+        birth_year: "2000",
+        gender: "Laki - Laki",
+        notes: ""
     });
+
+    useEffect(() => {
+        if (sameAsBuyer) {
+            setVisitorData(prev => ({
+                ...prev,
+                full_name: user?.full_name || "",
+                email: user?.email || ""
+            }));
+        }
+    }, [sameAsBuyer, user]);
 
     useEffect(() => {
         if (!event) {
@@ -93,6 +108,13 @@ export default function Checkout() {
     const finalTotal = currentStep === 1 ? totalAmount : totalAmount + internetFee;
 
     const handleCreateOrder = async () => {
+        if (!visitorData.full_name || !visitorData.email || !visitorData.phone) {
+            alert("Harap lengkapi data pengunjung utama.");
+            return;
+        }
+
+        const bookingCode = `HT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
         setLoading(true);
         try {
             // 1. Create Order
@@ -101,7 +123,8 @@ export default function Checkout() {
                 .insert({
                     user_id: user.id,
                     total: totalAmount + internetFee,
-                    status: "pending"
+                    status: "pending",
+                    booking_code: bookingCode
                 })
                 .select()
                 .single();
@@ -116,7 +139,14 @@ export default function Checkout() {
                         order_id: order.id,
                         ticket_type_id: typeId,
                         qr_code: `QR-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-                        status: "unused"
+                        status: "unused",
+                        // Add visitor details (using first visitor data for all tickets in this order for simplicity)
+                        full_name: visitorData.full_name,
+                        email: visitorData.email,
+                        phone: visitorData.phone,
+                        gender: visitorData.gender,
+                        birth_date: `${visitorData.birth_day} ${visitorData.birth_month} ${visitorData.birth_year}`,
+                        notes: visitorData.notes
                     });
                 }
             });
@@ -194,8 +224,8 @@ export default function Checkout() {
 
                                         <div className="bg-slate-50 rounded-xl p-5 border border-blue-50 relative">
                                             <div className="space-y-1">
-                                                <p className="font-bold text-slate-800">Gilang Prasetyo</p>
-                                                <p className="text-sm text-slate-500 font-medium">gilankprasetyo8@gmail.com</p>
+                                                <p className="font-bold text-slate-800">{user?.full_name || "Guest"}</p>
+                                                <p className="text-sm text-slate-500 font-medium">{user?.email || "No Email"}</p>
                                             </div>
                                             <div className="mt-4 flex items-start gap-2 text-blue-700 text-[12px] font-medium bg-blue-50 p-3 rounded-lg border border-blue-100 italic">
                                                 <span className="w-4 h-4 bg-blue-700 text-white rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">i</span>
@@ -235,6 +265,8 @@ export default function Checkout() {
                                                     <label className="text-sm font-bold text-slate-700">Nama Lengkap</label>
                                                     <input
                                                         type="text"
+                                                        value={visitorData.full_name}
+                                                        onChange={e => setVisitorData({ ...visitorData, full_name: e.target.value })}
                                                         placeholder="Masukkan nama lengkap"
                                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                                     />
@@ -244,6 +276,8 @@ export default function Checkout() {
                                                     <label className="text-sm font-bold text-slate-700">Email</label>
                                                     <input
                                                         type="email"
+                                                        value={visitorData.email}
+                                                        onChange={e => setVisitorData({ ...visitorData, email: e.target.value })}
                                                         placeholder="Masukkan email"
                                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                                     />
@@ -253,20 +287,32 @@ export default function Checkout() {
                                                     <label className="text-sm font-bold text-slate-700">Tanggal Lahir</label>
                                                     <div className="grid grid-cols-3 gap-3">
                                                         <div className="relative">
-                                                            <select className="w-full appearance-none px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700">
+                                                            <select
+                                                                value={visitorData.birth_day}
+                                                                onChange={e => setVisitorData({ ...visitorData, birth_day: e.target.value })}
+                                                                className="w-full appearance-none px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700"
+                                                            >
                                                                 {[...Array(31)].map((_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
                                                             </select>
                                                             <HiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
                                                         </div>
                                                         <div className="relative">
-                                                            <select className="w-full appearance-none px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700">
-                                                                {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => <option key={i} value={m}>{m}</option>)}
+                                                            <select
+                                                                value={visitorData.birth_month}
+                                                                onChange={e => setVisitorData({ ...visitorData, birth_month: e.target.value })}
+                                                                className="w-full appearance-none px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700"
+                                                            >
+                                                                {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => <option key={m} value={m}>{m}</option>)}
                                                             </select>
                                                             <HiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
                                                         </div>
                                                         <div className="relative">
-                                                            <select className="w-full appearance-none px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700">
-                                                                {[...Array(50)].map((_, i) => <option key={2023 - i} value={2023 - i}>{2023 - i}</option>)}
+                                                            <select
+                                                                value={visitorData.birth_year}
+                                                                onChange={e => setVisitorData({ ...visitorData, birth_year: e.target.value })}
+                                                                className="w-full appearance-none px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700"
+                                                            >
+                                                                {[...Array(60)].map((_, i) => <option key={2023 - i} value={2023 - i}>{2023 - i}</option>)}
                                                             </select>
                                                             <HiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
                                                         </div>
@@ -276,17 +322,27 @@ export default function Checkout() {
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-bold text-slate-700">Jenis Kelamin</label>
                                                     <div className="grid grid-cols-2 gap-4">
-                                                        <button className="flex items-center justify-between px-6 py-4 rounded-xl border-2 border-slate-100 hover:border-blue-100 hover:bg-blue-50/30 transition-all group font-bold text-slate-700">
+                                                        <button
+                                                            onClick={() => setVisitorData({ ...visitorData, gender: "Laki - Laki" })}
+                                                            className={`flex items-center justify-between px-6 py-4 rounded-xl border-2 transition-all group font-bold ${visitorData.gender === "Laki - Laki" ? 'border-blue-600 bg-blue-50' : 'border-slate-100 hover:border-blue-100 hover:bg-blue-50/30'}`}
+                                                        >
                                                             <div className="flex items-center gap-3">
-                                                                <div className="w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-blue-500" />
-                                                                <span>Laki - Laki</span>
+                                                                <div className={`w-5 h-5 rounded-full border-2 ${visitorData.gender === "Laki - Laki" ? 'border-blue-500 bg-blue-500' : 'border-slate-300 group-hover:border-blue-500'}`}>
+                                                                    {visitorData.gender === "Laki - Laki" && <div className="w-1.5 h-1.5 bg-white rounded-full m-auto mt-1" />}
+                                                                </div>
+                                                                <span className={visitorData.gender === "Laki - Laki" ? 'text-blue-700' : 'text-slate-700'}>Laki - Laki</span>
                                                             </div>
                                                             <FaMale className="text-blue-500" />
                                                         </button>
-                                                        <button className="flex items-center justify-between px-6 py-4 rounded-xl border-2 border-slate-100 hover:border-pink-100 hover:bg-pink-50/30 transition-all group font-bold text-slate-700">
+                                                        <button
+                                                            onClick={() => setVisitorData({ ...visitorData, gender: "Perempuan" })}
+                                                            className={`flex items-center justify-between px-6 py-4 rounded-xl border-2 transition-all group font-bold ${visitorData.gender === "Perempuan" ? 'border-pink-600 bg-pink-50' : 'border-slate-100 hover:border-pink-100 hover:bg-pink-50/30'}`}
+                                                        >
                                                             <div className="flex items-center gap-3">
-                                                                <div className="w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-pink-500" />
-                                                                <span>Perempuan</span>
+                                                                <div className={`w-5 h-5 rounded-full border-2 ${visitorData.gender === "Perempuan" ? 'border-pink-500 bg-pink-500' : 'border-slate-300 group-hover:border-pink-500'}`}>
+                                                                    {visitorData.gender === "Perempuan" && <div className="w-1.5 h-1.5 bg-white rounded-full m-auto mt-1" />}
+                                                                </div>
+                                                                <span className={visitorData.gender === "Perempuan" ? 'text-pink-700' : 'text-slate-700'}>Perempuan</span>
                                                             </div>
                                                             <FaFemale className="text-pink-500" />
                                                         </button>
@@ -297,13 +353,14 @@ export default function Checkout() {
                                                     <label className="text-sm font-bold text-slate-700">Nomor Telepon</label>
                                                     <div className="flex gap-2">
                                                         <div className="relative w-28">
-                                                            <div className="w-full h-full px-4 py-3 rounded-xl border border-slate-200 flex items-center justify-between font-bold text-slate-700">
+                                                            <div className="w-full h-full px-4 py-3 rounded-xl border border-slate-200 flex items-center justify-between font-bold text-slate-700 bg-slate-50">
                                                                 🇮🇩 <span className="ml-1">+62</span>
-                                                                <HiChevronDown className="text-slate-400" />
                                                             </div>
                                                         </div>
                                                         <input
                                                             type="tel"
+                                                            value={visitorData.phone}
+                                                            onChange={e => setVisitorData({ ...visitorData, phone: e.target.value })}
                                                             placeholder="Masukkan nomor telepon"
                                                             className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                                         />
@@ -313,6 +370,8 @@ export default function Checkout() {
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-bold text-slate-700">Keterangan</label>
                                                     <textarea
+                                                        value={visitorData.notes}
+                                                        onChange={e => setVisitorData({ ...visitorData, notes: e.target.value })}
                                                         placeholder="Masukkan keterangan"
                                                         rows={3}
                                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -385,7 +444,7 @@ export default function Checkout() {
                                             return (
                                                 <div key={typeId} className="flex items-center justify-between text-sm font-bold">
                                                     <span className="text-slate-600">{count}x {tt.name}</span>
-                                                    <span className="text-slate-900">{rupiah(count * tt.price)}</span>
+                                                    <span className="text-slate-900">{rupiah(count * (tt.price_gross || tt.price))}</span>
                                                 </div>
                                             );
                                         })}

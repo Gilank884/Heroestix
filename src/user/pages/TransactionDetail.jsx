@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import EventNavbar from "../../components/Layout/EventNavbar";
+import Navbar from "../../components/Layout/Navbar";
 import Footer from "../../components/Layout/Footer";
 import { HiOutlineDuplicate, HiChevronDown } from "react-icons/hi";
+import { supabase } from "../../lib/supabaseClient";
 
 import topEvents from "../../data/TopEvent";
 import newEvents from "../../data/NewEvent";
@@ -71,30 +72,10 @@ export default function TransactionDetail() {
 
     return (
         <div className="bg-[#fbffff] min-h-screen font-sans text-slate-900">
-            <EventNavbar />
+            <Navbar showSearch={false} />
 
             <div className="pt-32 pb-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-                    {/* HEADER SECTION */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 text-left">
-                        <h1 className="text-2xl font-black text-slate-800 tracking-tight">Detail Transaksi</h1>
-                        <div className="flex items-center gap-3">
-                            {order.status !== 'paid' && (
-                                <button className="px-6 py-2.5 rounded-lg bg-pink-50 text-red-600 font-bold text-sm hover:bg-pink-100 transition-all">
-                                    Batalkan Transaksi
-                                </button>
-                            )}
-                            {order.status !== 'paid' && (
-                                <button
-                                    onClick={() => navigate(`/checkout/${firstEvent?.id}`, { state: { orderId: order.id } })}
-                                    className="px-6 py-2.5 rounded-lg bg-[#b1451a] text-white font-bold text-sm hover:bg-[#8e3715] transition-all shadow-lg shadow-orange-100"
-                                >
-                                    Bayar Sekarang
-                                </button>
-                            )}
-                        </div>
-                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                         {/* LEFT COLUMN: EVENT CARD */}
@@ -135,6 +116,10 @@ export default function TransactionDetail() {
                                     <div className="p-5 space-y-1">
                                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nomor Faktur</p>
                                         <p className="font-bold text-slate-700 text-sm">{order.id.toUpperCase()}</p>
+                                    </div>
+                                    <div className="p-5 space-y-1 bg-blue-50/50">
+                                        <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Kode Booking</p>
+                                        <p className="font-black text-blue-700 text-lg tracking-widest">{order.booking_code || "-"}</p>
                                     </div>
                                     <div className="p-5 space-y-1">
                                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</p>

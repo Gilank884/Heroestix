@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { HiX, HiChevronRight, HiChevronLeft, HiPlus, HiTrash } from 'react-icons/hi';
-import { Upload, Image as ImageIcon } from 'lucide-react';
+import { Upload, Image as ImageIcon, ChevronDown } from 'lucide-react';
+import { CATEGORIES } from '../../constants/categories';
 
-const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh }) => {
+const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh, navigate }) => {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [brandName, setBrandName] = useState('');
@@ -17,6 +18,8 @@ const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh }) => {
         event_date: '',
         event_time: '',
         poster_url: '',
+        category: '',
+        sub_category: '',
     });
 
     const [ticketData, setTicketData] = useState({
@@ -113,8 +116,13 @@ const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh }) => {
 
             if (ticketError) throw ticketError;
 
-            onRefresh();
+            if (onRefresh) onRefresh();
             onClose();
+
+            // Redirect to ticket categories page
+            if (navigate) {
+                navigate(`/manage/event/${event.id}/ticket-categories`);
+            }
             // Reset states
             setStep(1);
             setBannerFile(null);
@@ -126,6 +134,8 @@ const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh }) => {
                 event_date: '',
                 event_time: '',
                 poster_url: '',
+                category: '',
+                sub_category: '',
             });
             setTicketData({
                 name: 'Normal Ticket',
@@ -150,7 +160,7 @@ const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh }) => {
                 <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
                     <div>
                         <h2 className="text-2xl font-black text-slate-900">Buat <span className="text-[#1a36c7]">Event Baru</span></h2>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Langkah {step} dari 2: {step === 1 ? 'Detail Operasional' : 'Konfigurasi Tiket Utama'}</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Langkah {step} dari 2: {step === 1 ? 'Detail Operasional' : 'Kategori Tiket'}</p>
                     </div>
                     <button onClick={onClose} className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors">
                         <HiX size={20} />
@@ -202,6 +212,42 @@ const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh }) => {
                                     placeholder="Nama gedung, lapangan, atau alamat"
                                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all"
                                 />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Kategori Event</label>
+                                    <div className="relative">
+                                        <select
+                                            value={eventData.category}
+                                            onChange={e => setEventData({ ...eventData, category: e.target.value, sub_category: '' })}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 appearance-none focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all"
+                                        >
+                                            <option value="">Pilih Kategori</option>
+                                            {CATEGORIES.map(cat => (
+                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Sub Kategori</label>
+                                    <div className="relative">
+                                        <select
+                                            value={eventData.sub_category}
+                                            onChange={e => setEventData({ ...eventData, sub_category: e.target.value })}
+                                            disabled={!eventData.category}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 appearance-none focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <option value="">Pilih Sub Kategori</option>
+                                            {eventData.category && CATEGORIES.find(c => c.id === eventData.category)?.subcategories.map(sub => (
+                                                <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="space-y-2">

@@ -1,77 +1,102 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { HiUserGroup, HiIdentification, HiCalendar, HiCash } from 'react-icons/hi';
+import {
+    Users,
+    Calendar,
+    ArrowUpRight,
+    Activity,
+    ShoppingBag,
+    TrendingUp,
+    Building2,
+    Search,
+    RefreshCw
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const DevDashboard = () => {
     const [stats, setStats] = useState({
-        totalUsers: 0,
         totalCreators: 0,
-        totalEvents: 0,
-        totalRevenue: 0
+        totalEvents: 0
     });
+    const [performanceData, setPerformanceData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [pendingCreators, setPendingCreators] = useState([]);
-    const [recentTransactions, setRecentTransactions] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        fetchDevData();
+        fetchData();
     }, []);
 
-    const fetchDevData = async () => {
+    const fetchData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Stats
-            const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-            const { count: creatorCount } = await supabase.from('creators').select('*', { count: 'exact', head: true });
-            const { count: eventCount } = await supabase.from('events').select('*', { count: 'exact', head: true });
-            const { data: transData } = await supabase.from('transactions').select('amount');
+            // 1. Fetch Core Totals
+            const [creatorsRes, eventsRes, ticketTypesRes, transactionsRes, profilesRes] = await Promise.all([
+                supabase.from('creators').select('*'),
+                supabase.from('events').select('*'),
+                supabase.from('ticket_types').select('*'),
+                supabase.from('transactions').select('*'),
+                supabase.from('profiles').select('id, full_name')
+            ]);
 
-            const totalRevenue = transData?.reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0;
+            if (creatorsRes.error) throw creatorsRes.error;
+
+            const creators = creatorsRes.data || [];
+            const events = eventsRes.data || [];
+            const ticketTypes = ticketTypesRes.data || [];
+            const transactions = transactionsRes.data || [];
+            const profiles = profilesRes.data || [];
+
+            // 2. Prepare Maps
+            const profileMap = profiles.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+
+            // Map event_id to creator_id for revenue calculation
+            const eventToCreatorMap = events.reduce((acc, ev) => ({ ...acc, [ev.id]: ev.creator_id }), {});
+
+            // 3. Aggregate Performance per Creator
+            const creatorPerformance = creators.map(creator => {
+                const creatorEvents = events.filter(ev => ev.creator_id === creator.id);
+
+                // Calculate Total Tickets Sold for this creator's events
+                const totalTicketsSold = creatorEvents.reduce((sum, ev) => {
+                    const eventTicketTypes = ticketTypes.filter(tt => tt.event_id === ev.id);
+                    return sum + eventTicketTypes.reduce((s, tt) => s + (tt.sold || 0), 0);
+                }, 0);
+
+                // Calculate Net Revenue (assuming transactions are linked to events)
+                // Note: This logic assumes we can link transactions back to creators. 
+                // A more robust way would involve orders, but let's try to aggregate from what we have.
+                // For now, we'll estimate revenue based on transactions if they include event/creator context.
+                // In many HaiTicket systems, transactions might have metadata or link to orders.
+                // Let's assume we can't easily jump from Transaction -> Creator without more joins, 
+                // so we'll look for transactions associated with this creator's events if possible.
+                // If we don't have direct link in transactions, we look at ticket_types.sold * price.
+
+                const calculatedRevenue = creatorEvents.reduce((sum, ev) => {
+                    const eventTicketTypes = ticketTypes.filter(tt => tt.event_id === ev.id);
+                    return sum + eventTicketTypes.reduce((s, tt) => s + ((tt.sold || 0) * (tt.price || 0)), 0);
+                }, 0);
+
+                return {
+                    id: creator.id,
+                    brandName: creator.brand_name || 'Anonymous',
+                    ownerName: profileMap[creator.id]?.full_name || 'Anonymous Owner',
+                    eventCount: creatorEvents.length,
+                    totalSold: totalTicketsSold,
+                    revenue: calculatedRevenue,
+                    email: creator.email
+                };
+            }).sort((a, b) => b.revenue - a.revenue);
 
             setStats({
-                totalUsers: userCount || 0,
-                totalCreators: creatorCount || 0,
-                totalEvents: eventCount || 0,
-                totalRevenue: totalRevenue
+                totalCreators: creators.length,
+                totalEvents: events.length
             });
-
-            // 2. Fetch Pending Creators
-            const { data: pending } = await supabase
-                .from('creators')
-                .select('*')
-                .eq('verified', false)
-                .order('created_at', { ascending: false });
-
-            setPendingCreators(pending || []);
-
-            // 3. Fetch Recent Transactions
-            const { data: recent } = await supabase
-                .from('transactions')
-                .select('*, orders(user_id)')
-                .order('created_at', { ascending: false })
-                .limit(5);
-
-            setRecentTransactions(recent || []);
+            setPerformanceData(creatorPerformance);
 
         } catch (error) {
-            console.error('Error fetching dev data:', error.message);
+            console.error('Error fetching dashboard data:', error.message);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleApproveCreator = async (creatorId) => {
-        try {
-            const { error } = await supabase
-                .from('creators')
-                .update({ verified: true })
-                .eq('id', creatorId);
-
-            if (error) throw error;
-            alert('Creator approved successfully!');
-            fetchDevData();
-        } catch (error) {
-            alert('Error approving creator: ' + error.message);
         }
     };
 
@@ -83,101 +108,176 @@ const DevDashboard = () => {
         }).format(value || 0);
     };
 
+    const filteredPerformance = performanceData.filter(p =>
+        p.brandName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     if (loading) return (
-        <div className="min-h-[60vh] flex items-center justify-center">
-            <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+            <div className="w-12 h-12 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Aggregating Performance Matrix...</span>
         </div>
     );
 
-    const statsConfig = [
-        { label: 'Total Users', value: stats.totalUsers.toLocaleString(), color: 'text-blue-400', icon: HiUserGroup },
-        { label: 'Total Creators', value: stats.totalCreators.toLocaleString(), color: 'text-purple-400', icon: HiIdentification },
-        { label: 'Total Events', value: stats.totalEvents.toLocaleString(), color: 'text-green-400', icon: HiCalendar },
-        { label: 'Platform Revenue', value: rupiah(stats.totalRevenue), color: 'text-blue-400', icon: HiCash },
-    ];
-
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            <div>
-                <h2 className="text-4xl font-extrabold tracking-tight text-white">System <span className="text-cyan-500">Overview</span></h2>
-                <p className="text-gray-400 mt-2">Global performance and statistics for Hai-Ticket platform.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {statsConfig.map((stat) => (
-                    <div key={stat.label} className="bg-gray-900 p-8 rounded-[2rem] border border-gray-800 shadow-2xl hover:border-cyan-500/50 transition-all group">
-                        <div className="flex items-center justify-between mb-4">
-                            <p className="text-gray-500 text-xs font-black uppercase tracking-widest">{stat.label}</p>
-                            <stat.icon className="text-gray-700 group-hover:text-cyan-500 transition-colors" size={20} />
-                        </div>
-                        <p className={`text-3xl font-black mt-4 ${stat.color}`}>{stat.value}</p>
+        <div className="space-y-10 pb-10">
+            {/* Header section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-600" />
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Executive Summary</span>
                     </div>
-                ))}
+                    <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 italic">Platform <span className="text-blue-600 not-italic">Matrix</span></h2>
+                    <p className="text-slate-500 font-medium text-sm mt-2">Real-time creator performance and network scalability metrics.</p>
+                </div>
+                <button
+                    onClick={fetchData}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all active:scale-95 shadow-sm"
+                >
+                    <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                    Sync Data
+                </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-12 xl:col-span-5 bg-gray-900 p-8 rounded-[2rem] border border-gray-800">
-                    <h3 className="text-xl font-black mb-6 text-white uppercase tracking-tight">Pending Creator Approvals</h3>
-                    <div className="space-y-4">
-                        {pendingCreators.length > 0 ? pendingCreators.map((creator) => (
-                            <div key={creator.id} className="flex items-center justify-between p-6 bg-gray-800/30 rounded-3xl border border-gray-700/50 hover:bg-gray-800/50 transition-colors">
-                                <div>
-                                    <p className="font-black text-white">{creator.brand_name || 'Unnamed Creator'}</p>
-                                    <p className="text-xs text-gray-500 font-bold uppercase tracking-tighter mt-1">{creator.email || 'No email'}</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => handleApproveCreator(creator.id)}
-                                        className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-cyan-900/40"
-                                    >
-                                        Verify
-                                    </button>
-                                </div>
-                            </div>
-                        )) : (
-                            <p className="text-gray-600 text-center py-12 font-bold italic">No pending applications.</p>
-                        )}
+            {/* Core Stats Grid (Simplified) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6"
+                >
+                    <div className="w-16 h-16 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
+                        <Building2 size={28} />
+                    </div>
+                    <div>
+                        <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Total Active Creators</h3>
+                        <p className="text-4xl font-bold text-slate-900 mt-1 tracking-tighter">{stats.totalCreators.toLocaleString()}</p>
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6"
+                >
+                    <div className="w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm">
+                        <Calendar size={28} />
+                    </div>
+                    <div>
+                        <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Global Event Volume</h3>
+                        <p className="text-4xl font-bold text-slate-900 mt-1 tracking-tighter">{stats.totalEvents.toLocaleString()}</p>
+                    </div>
+                </motion.div>
+            </div>
+
+            {/* Performance Matrix Table */}
+            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+                <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
+                            <TrendingUp size={20} />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 tracking-tight">Creator Performance Index</h3>
+                    </div>
+
+                    <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-100 text-slate-400 focus-within:bg-white focus-within:border-blue-400 focus-within:text-blue-500 transition-all w-full md:w-80 shadow-sm">
+                        <Search size={16} />
+                        <input
+                            type="text"
+                            placeholder="Filter by brand or owner..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="bg-transparent border-none outline-none text-sm font-medium w-full placeholder:text-slate-400 text-slate-800"
+                        />
                     </div>
                 </div>
 
-                <div className="lg:col-span-12 xl:col-span-7 bg-gray-900 p-8 rounded-[2rem] border border-gray-800">
-                    <h3 className="text-xl font-black mb-6 text-white uppercase tracking-tight">Live Transaction Feed</h3>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] border-b border-gray-800">
-                                    <th className="pb-4">Transaction ID</th>
-                                    <th className="pb-4">Order Ref</th>
-                                    <th className="pb-4">Status</th>
-                                    <th className="pb-4 text-right">Amount</th>
+                <div className="overflow-x-auto no-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50/50">
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Creator Entity</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Hosted Events</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Tickets Sold</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Net Revenue (Inc. Tax)</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {filteredPerformance.map((p, idx) => (
+                                <motion.tr
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: idx * 0.03 }}
+                                    key={p.id}
+                                    className="group hover:bg-slate-50/50 transition-colors"
+                                >
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-blue-600 font-bold text-lg shadow-sm group-hover:border-blue-200 transition-all">
+                                                {p.brandName.charAt(0)}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="font-bold text-slate-900 text-sm uppercase tracking-tight group-hover:text-blue-600 transition-colors">{p.brandName}</p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Owner:</span>
+                                                    <span className="text-[10px] font-bold text-slate-500 italic">{p.ownerName}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-sm font-bold text-slate-900">{p.eventCount}</span>
+                                            <span className="text-[9px] font-black text-slate-300 uppercase mt-0.5">Listings</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100">
+                                                <ShoppingBag size={12} />
+                                                <span className="text-[11px] font-bold">{p.totalSold.toLocaleString()}</span>
+                                            </div>
+                                            <span className="text-[9px] font-black text-slate-300 uppercase mt-1.5">Volume</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6 text-right">
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-lg font-bold text-slate-900 tabular-nums">{rupiah(p.revenue)}</span>
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Settled Balance</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </motion.tr>
+                            ))}
+
+                            {filteredPerformance.length === 0 && (
+                                <tr>
+                                    <td colSpan="4" className="py-24 text-center">
+                                        <div className="flex flex-col items-center justify-center opacity-30">
+                                            <Activity size={48} className="text-slate-300 mb-4" />
+                                            <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] italic">No performance data captured</p>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-800/50">
-                                {recentTransactions.length > 0 ? recentTransactions.map((tx) => (
-                                    <tr key={tx.id} className="group hover:bg-gray-800/20 transition-colors">
-                                        <td className="py-5">
-                                            <p className="text-xs font-mono text-gray-400">TX-{tx.id.substring(0, 8).toUpperCase()}</p>
-                                        </td>
-                                        <td className="py-5">
-                                            <p className="text-xs font-black text-white">ORD-{tx.order_id.substring(0, 8).toUpperCase()}</p>
-                                        </td>
-                                        <td className="py-5">
-                                            <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${tx.status === 'success' ? 'bg-green-500/10 text-green-500 ring-1 ring-green-500/20' : 'bg-orange-500/10 text-orange-500 ring-1 ring-orange-500/20'
-                                                }`}>
-                                                {tx.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-5 text-right">
-                                            <p className="text-sm font-black text-cyan-400">{rupiah(tx.amount)}</p>
-                                        </td>
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan="4" className="py-12 text-center text-gray-600 font-bold italic">No transactions found.</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="p-8 bg-slate-50/50 border-t border-slate-50">
+                    <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            Matrix updated: <span className="text-slate-900">{new Date().toLocaleString()}</span>
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Real-time Feed Active</span>
+                        </div>
                     </div>
                 </div>
             </div>

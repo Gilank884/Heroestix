@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import { FiUser, FiLogOut } from "react-icons/fi";
 import { supabase } from "../../lib/supabaseClient";
 import { getSubdomainUrl } from "../../lib/navigation";
+import useAuthStore from "../../auth/useAuthStore";
 
 
 const Navbar = ({ alwaysScrolled = false }) => {
     const [scrolled, setScrolled] = useState(alwaysScrolled);
-    const [user, setUser] = useState(null);
+    const { user, role, isAuthenticated, logout } = useAuthStore();
 
     // Scroll effect
     useEffect(() => {
@@ -22,46 +23,10 @@ const Navbar = ({ alwaysScrolled = false }) => {
         return () => window.removeEventListener("scroll", handleScroll);
     }, [alwaysScrolled]);
 
-    // Auth state
-    useEffect(() => {
-        const getUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data: profile } = await supabase
-                    .from("profiles")
-                    .select("role")
-                    .eq("id", user.id)
-                    .single();
-                setUser({ ...user, role: profile?.role });
-            }
-        };
-
-        getUser();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-            async (_event, session) => {
-                if (session?.user) {
-                    const { data: profile } = await supabase
-                        .from("profiles")
-                        .select("role")
-                        .eq("id", session.user.id)
-                        .single();
-                    setUser({ ...session.user, role: profile?.role });
-                } else {
-                    setUser(null);
-                }
-            }
-        );
-
-        return () => {
-            authListener.subscription.unsubscribe();
-        };
-    }, []);
-
     // Logout
     const handleLogout = async () => {
         await supabase.auth.signOut();
-        setUser(null);
+        logout();
     };
 
     const displayName =
@@ -184,7 +149,7 @@ const Navbar = ({ alwaysScrolled = false }) => {
                                     <span>My Profile</span>
                                 </Link>
 
-                                {user?.role === "creator" && (
+                                {role === "creator" && (
                                     <a
                                         href={getSubdomainUrl("creator")}
                                         className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors border-t border-slate-50"
@@ -194,7 +159,7 @@ const Navbar = ({ alwaysScrolled = false }) => {
                                     </a>
                                 )}
 
-                                {user?.role === "developer" && (
+                                {role === "developer" && (
                                     <a
                                         href={getSubdomainUrl("dev")}
                                         className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors border-t border-slate-50"

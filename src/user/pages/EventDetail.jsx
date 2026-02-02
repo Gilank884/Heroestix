@@ -19,8 +19,10 @@ import {
     ChevronDown,
     Flag,
     Navigation,
-    MessageCircle
+    MessageCircle,
+    Tag
 } from "lucide-react";
+import { getCategoryName, getSubCategoryName } from "../../constants/categories";
 import { supabase } from "../../lib/supabaseClient";
 import EventCard from "../../components/home/EventCard";
 
@@ -64,7 +66,8 @@ export default function EventDetail() {
 
             if (tickets.length > 0) {
                 const activeTickets = tickets.filter(t => t.status === 'active');
-                displayPrice = activeTickets.length > 0 ? activeTickets[0].price : tickets[0].price;
+                const target = activeTickets.length > 0 ? activeTickets[0] : tickets[0];
+                displayPrice = target.price_gross || target.price;
                 inactive = tickets.some(t => t.status === 'inactive');
             }
 
@@ -115,8 +118,9 @@ export default function EventDetail() {
             location: ev.location,
             date: ev.event_date,
             image: ev.poster_url,
-            price: ev.ticket_types?.length > 0 ? Math.min(...ev.ticket_types.map(t => t.price)) : 0,
-            status: ev.status
+            price: ev.ticket_types?.length > 0 ? Math.min(...ev.ticket_types.map(t => t.price_gross || t.price)) : 0,
+            status: ev.status,
+            category: ev.category
         }));
         setRecommendations(formatted);
     };
@@ -169,6 +173,20 @@ export default function EventDetail() {
                                 <h1 className="text-lg md:text-xl font-extrabold text-[#111827] leading-tight">
                                     {event.title}
                                 </h1>
+
+                                {event.category && (
+                                    <div className="flex flex-wrap gap-2">
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-wider border border-blue-100 shadow-sm">
+                                            <Tag size={10} />
+                                            {getCategoryName(event.category)}
+                                        </div>
+                                        {event.sub_category && (
+                                            <div className="inline-flex items-center px-2.5 py-1 bg-slate-50 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-slate-100">
+                                                {getSubCategoryName(event.category, event.sub_category)}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div className="space-y-4">
                                     <div className="flex items-start gap-3">
@@ -237,13 +255,6 @@ export default function EventDetail() {
                             </div>
                         </div>
                     </div>
-
-                    {/* RECOMMENDATIONS SECTION (Hidden as user wants simple, but keep code for future) */}
-                    {/* {recommendations.length > 0 && (
-                        <div className="mt-24 space-y-10 border-t border-slate-100 pt-16">
-                            ...
-                        </div>
-                    )} */}
                 </div>
             </main>
 

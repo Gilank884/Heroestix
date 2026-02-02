@@ -29,9 +29,17 @@ import CreatorEventDetail from "./creator/pages/EventDetail"; // Renamed to avoi
 import Tickets from "./creator/pages/Tickets";
 import Scan from "./creator/pages/Scan";
 import TicketCategories from "./creator/pages/TicketCategories";
+import Visitors from "./creator/pages/Visitors";
+import CreatorCash from "./creator/pages/Cash";
+import EventCash from "./creator/pages/EventCash";
 
 // Dev Pages
 import DevDashboard from "./dev/pages/Dashboard";
+import DevCash from "./dev/pages/Cash";
+import DevCreators from "./dev/pages/Creators";
+import DevEvents from "./dev/pages/Events";
+
+
 
 // Guards
 import CreatorGuard from "./guards/CreatorGuard";
@@ -69,6 +77,7 @@ export default function App() {
     const restoreSession = async () => {
       const hash = window.location.hash;
       if (hash && hash.includes("access_token=") && hash.includes("refresh_token=")) {
+        console.log("Found session tokens in URL hash, attempting to restore session...");
         setChecking(true);
         const params = new URLSearchParams(hash.substring(1));
         const access_token = params.get("access_token");
@@ -77,9 +86,11 @@ export default function App() {
         if (access_token && refresh_token) {
           const { error } = await supabase.auth.setSession({ access_token, refresh_token });
           if (!error) {
+            console.log("Session restored successfully from hash.");
             // Clean hash without leaving a '#'
             window.history.replaceState(null, null, window.location.pathname + window.location.search);
           } else {
+            console.error("Error restoring session from hash:", error.message);
             setChecking(false);
           }
         } else {
@@ -93,6 +104,7 @@ export default function App() {
 
     const checkRedirect = async (session) => {
       if (session?.user) {
+        console.log("Active session found for user:", session.user.id, "email:", session.user.email);
         setChecking(true);
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
@@ -101,11 +113,16 @@ export default function App() {
           .single();
 
         const authMode = localStorage.getItem("auth_mode");
+        console.log("Current auth_mode from localStorage:", authMode);
 
         if (!profile) {
-          // If profile doesn't exist and they are registering
-          if (authMode === "register") {
+          console.log("Profile not found in database for user:", session.user.id);
+          // If profile doesn't exist and they are registering OR logging in with Google
+          const isGoogleProvider = session.user.app_metadata?.provider === "google";
+
+          if (authMode === "register" || isGoogleProvider) {
             const role = localStorage.getItem("auth_role") || "user";
+            console.log(`Auto-creating profile for ${isGoogleProvider ? "Google user" : "registering user"}. Role: ${role}`);
 
             // Create profile
             const { error: createError } = await supabase.from("profiles").upsert({
@@ -115,21 +132,44 @@ export default function App() {
               role: role,
             });
 
+            if (!createError) {
+              console.log("Profile created/updated successfully.");
+              // Call login even if we reload, to ensure store is populated
+              login(session.user, session.access_token, role);
+            } else {
+              console.error("CRITICAL: Error creating profile in database:", createError.message);
+              console.error("This usually happens due to RLS policies or missing table. Error code:", createError.code);
+            }
+
             if (!createError && role === "creator") {
-              // Also create creator record
-              await supabase.from("creators").insert({
+              console.log("Creating/Updating creator record with metadata:", {
+                brand_name: session.user.user_metadata?.brand_name,
+                bank_name: session.user.user_metadata?.bank_name
+              });
+              // Also create creator record with metadata from user_metadata
+              const { error: creatorError } = await supabase.from("creators").upsert({
                 id: session.user.id,
                 brand_name: session.user.user_metadata?.brand_name || "My Brand",
+                bank_name: session.user.user_metadata?.bank_name || "",
+                bank_account: session.user.user_metadata?.bank_account || "",
                 verified: false
               });
+
+              if (!creatorError) {
+                console.log("Creator record created/updated successfully.");
+              } else {
+                console.error("CRITICAL: Error creating creator record in database:", creatorError.message);
+              }
             }
 
             localStorage.removeItem("auth_mode");
             localStorage.removeItem("auth_role");
-            window.location.reload(); // Refresh to trigger redirect with profile
+            console.log("Auth sequence complete. Reloading page to finalize...");
+            window.location.reload(); // Still helpful to clear hash/params cleanly
             return;
           } else {
-            // Unregistered user trying to login
+            // Unregistered user trying to login (manual email)
+            console.warn("Unregistered user (manual login) attempted. Redirecting to error.");
             logout();
             await supabase.auth.signOut();
             localStorage.removeItem("auth_mode");
@@ -160,12 +200,12 @@ export default function App() {
           const shouldForceRedirect = authMode === "login" || authMode === "register";
 
           if (role === "creator") {
-            if (isDevSub || (shouldForceRedirect && !isCreatorSub && !isBaseDomain)) {
+            if (isDevSub || (shouldForceRedirect && !isCreatorSub)) {
               window.location.href = getSubdomainUrl("creator", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
               return;
             }
           } else if (role === "developer") {
-            if (isCreatorSub || (shouldForceRedirect && !isDevSub && !isBaseDomain)) {
+            if (isCreatorSub || (shouldForceRedirect && !isDevSub)) {
               window.location.href = getSubdomainUrl("dev", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
               return;
             }
@@ -220,22 +260,13 @@ export default function App() {
                   <EventManagementLayout>
                     <Routes>
                       <Route path="/" element={<CreatorEventDetail />} />
-                      <Route path="/stats" element={<div className="p-10 font-bold text-2xl text-gray-800">Event Statistics (Work in Progress)</div>} />
-                      <Route path="/additional-form" element={<div className="p-10 font-bold text-2xl text-gray-800">Additional Forms (Work in Progress)</div>} />
                       <Route path="/ticket-categories" element={<TicketCategories />} />
-                      <Route path="/facilities" element={<div className="p-10 font-bold text-2xl text-gray-800">Event Facilities (Work in Progress)</div>} />
-                      <Route path="/staff" element={<div className="p-10 font-bold text-2xl text-gray-800">Event Staff (Work in Progress)</div>} />
-                      <Route path="/lineup" element={<div className="p-10 font-bold text-2xl text-gray-800">Lineup Management (Work in Progress)</div>} />
+                      <Route path="/visitors" element={<Visitors />} />
                       <Route path="/vouchers" element={<div className="p-10 font-bold text-2xl text-gray-800">Event Vouchers (Work in Progress)</div>} />
-                      <Route path="/cash" element={<div className="p-10 font-bold text-2xl text-gray-800">Event Cash (Work in Progress)</div>} />
-                      <Route path="/visitor-stats" element={<div className="p-10 font-bold text-2xl text-gray-800">Visitor Statistics (Work in Progress)</div>} />
-                      <Route path="/visitors" element={<div className="p-10 font-bold text-2xl text-gray-800">Visitor List (Work in Progress)</div>} />
-                      <Route path="/inactive-visitors" element={<div className="p-10 font-bold text-2xl text-gray-800">Inactive Visitors (Work in Progress)</div>} />
-                      <Route path="/pos" element={<div className="p-10 font-bold text-2xl text-gray-800">Point Of Sales (Work in Progress)</div>} />
-                      <Route path="/checkin-stats" element={<div className="p-10 font-bold text-2xl text-gray-800">Checkin Stats (Work in Progress)</div>} />
-                      <Route path="/check-in" element={<div className="p-10 font-bold text-2xl text-gray-800">Check-In Management (Work in Progress)</div>} />
-                      <Route path="/broadcast" element={<div className="p-10 font-bold text-2xl text-gray-800">Broadcast Email (Work in Progress)</div>} />
+                      <Route path="/staff" element={<div className="p-10 font-bold text-2xl text-gray-800">Event Staff (Work in Progress)</div>} />
+                      <Route path="/cash" element={<EventCash />} />
                     </Routes>
+
                   </EventManagementLayout>
                 } />
 
@@ -249,7 +280,7 @@ export default function App() {
                       <Route path="/scan" element={<Scan />} />
                       <Route path="/staff" element={<div className="p-10 font-bold text-2xl text-gray-800">Staff Management (Work in Progress)</div>} />
                       <Route path="/vouchers" element={<div className="p-10 font-bold text-2xl text-gray-800">Voucher & Promotions (Work in Progress)</div>} />
-                      <Route path="/cash" element={<div className="p-10 font-bold text-2xl text-gray-800">Cash & Financials (Work in Progress)</div>} />
+                      <Route path="/cash" element={<CreatorCash />} />
                       <Route path="/reports" element={<div className="p-10 font-bold text-2xl text-gray-800">Data Recap & Reports (Work in Progress)</div>} />
                       <Route path="/security/password" element={<div className="p-10 font-bold text-2xl text-gray-800">Change Password (Work in Progress)</div>} />
                       <Route path="/security/tokens" element={<div className="p-10 font-bold text-2xl text-gray-800">Token Generator (Work in Progress)</div>} />
@@ -278,12 +309,9 @@ export default function App() {
               <DevLayout>
                 <Routes>
                   <Route path="/" element={<DevDashboard />} />
-                  <Route path="/creators" element={<div>Creator Management (Work in Progress)</div>} />
-                  <Route path="/events" element={<div>Event Manager (Work in Progress)</div>} />
-                  <Route path="/transactions" element={<div>Transactions (Work in Progress)</div>} />
-                  <Route path="/fee" element={<div>Platform Fee (Work in Progress)</div>} />
-                  <Route path="/withdrawals" element={<div>Withdrawals (Work in Progress)</div>} />
-                  <Route path="/logs" element={<div>Audit Log (Work in Progress)</div>} />
+                  <Route path="/creators" element={<DevCreators />} />
+                  <Route path="/events" element={<DevEvents />} />
+                  <Route path="/cash" element={<DevCash />} />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </DevLayout>

@@ -87,7 +87,7 @@ export default function SelectTicket() {
     }
 
     const totalItems = Object.values(selectedTickets).reduce((acc, curr) => acc + curr, 0);
-    const totalAmount = ticketTypes.reduce((acc, tt) => acc + (selectedTickets[tt.id] || 0) * tt.price, 0);
+    const totalAmount = ticketTypes.reduce((acc, tt) => acc + (selectedTickets[tt.id] || 0) * (tt.price_gross || tt.price), 0);
 
     return (
         <div className="bg-slate-50/30 min-h-screen font-sans text-slate-900">
@@ -162,7 +162,14 @@ export default function SelectTicket() {
                                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                                     <div className="text-left space-y-2">
                                                         <h3 className="text-xl font-bold text-slate-900">{tt.name}</h3>
-                                                        <p className="text-blue-600 font-extrabold text-2xl">{rupiah(tt.price)}</p>
+                                                        <div className="space-y-1">
+                                                            <p className="text-blue-600 font-extrabold text-2xl">{rupiah(tt.price_gross || tt.price)}</p>
+                                                            {tt.price_net && (
+                                                                <p className="text-slate-400 font-bold text-xs italic">
+                                                                    {rupiah(tt.price_net)} <span className="text-[10px] uppercase">(Sebelum Pajak)</span>
+                                                                </p>
+                                                            )}
+                                                        </div>
 
                                                         <div className="flex flex-wrap gap-2 mt-4">
                                                             <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
@@ -245,7 +252,7 @@ export default function SelectTicket() {
                                                 <span className="text-slate-900 font-bold">{tt.name}</span>
                                                 <span className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">{selectedTickets[tt.id]} Ticket</span>
                                             </div>
-                                            <span className="text-slate-900 font-bold">{rupiah(selectedTickets[tt.id] * tt.price)}</span>
+                                            <span className="text-slate-900 font-bold">{rupiah(selectedTickets[tt.id] * (tt.price_gross || tt.price))}</span>
                                         </div>
                                     ))}
                                     {totalItems === 0 && (

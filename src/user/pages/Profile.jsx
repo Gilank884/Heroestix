@@ -10,7 +10,9 @@ import {
     HiChevronRight,
     HiOutlineMail,
     HiOutlineCalendar,
-    HiOutlineShieldCheck
+    HiOutlineShieldCheck,
+    HiTrash,
+    HiExclamation
 } from "react-icons/hi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -25,6 +27,8 @@ const Profile = () => {
     const [tickets, setTickets] = useState([]);
     const [transactions, setTransactions] = useState([]);
     const [loadingData, setLoadingData] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         const getUser = async () => {
@@ -115,6 +119,36 @@ const Profile = () => {
     const handleLogout = async () => {
         const { error } = await supabase.auth.signOut();
         if (!error) navigate("/");
+    };
+
+    const handleDeleteAccount = async () => {
+        setDeleting(true);
+        try {
+            // 1. Delete user from auth.users via RPC
+            const { error: rpcError } = await supabase.rpc('delete_user_auth');
+
+            if (rpcError) {
+                console.error("RPC deletion failed:", rpcError);
+                alert("Gagal menghapus data otentikasi (RPC Error). Silakan pastikan Anda telah menjalankan kode SQL di Dashboard Supabase untuk mengaktifkan fitur ini.");
+
+                // Fallback: just delete the profile record
+                await supabase
+                    .from("profiles")
+                    .delete()
+                    .eq("id", user.id);
+            }
+
+            // 2. Log out
+            await supabase.auth.signOut();
+            alert("Proses penghapusan akun selesai. Jika RPC berhasil, Anda dapat mendaftar ulang.");
+            navigate("/");
+        } catch (error) {
+            console.error("Error deleting account:", error);
+            alert("Gagal menghapus akun. Silakan coba lagi nanti.");
+        } finally {
+            setDeleting(false);
+            setShowDeleteModal(false);
+        }
     };
 
     const rupiah = (value) => {
@@ -278,6 +312,28 @@ const Profile = () => {
                                                 </button>
                                             </div>
                                         </div>
+
+                                        {/* DANGER ZONE */}
+                                        <div className="mt-12 border-t border-slate-100 pt-10">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
+                                                    <HiExclamation size={20} />
+                                                </div>
+                                                <h3 className="text-lg font-bold text-slate-900">Zona Bahaya</h3>
+                                            </div>
+                                            <div className="bg-red-50 border border-red-100 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                                                <div>
+                                                    <p className="text-sm font-bold text-red-900">Hapus Akun Permanen</p>
+                                                    <p className="text-xs text-red-600/70 mt-1 font-medium">Seluruh data tiket, transaksi, dan akun Anda akan dihapus permanen.</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => setShowDeleteModal(true)}
+                                                    className="px-6 py-2.5 bg-red-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-red-200 hover:bg-red-700 transition-all whitespace-nowrap"
+                                                >
+                                                    Hapus Akun
+                                                </button>
+                                            </div>
+                                        </div>
                                     </motion.div>
                                 )}
 
@@ -392,6 +448,60 @@ const Profile = () => {
                     </div>
                 </div>
             </div>
+
+            {/* DELETE ACCOUNT MODAL */}
+            <AnimatePresence>
+                {showDeleteModal && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => !deleting && setShowDeleteModal(false)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="w-full max-w-[400px] bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10"
+                        >
+                            <div className="p-8 text-center text-slate-900">
+                                <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-6">
+                                    <HiTrash size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold tracking-tight mb-2">Hapus Akun Permanen?</h3>
+                                <p className="text-sm text-slate-500 font-medium mb-8 leading-relaxed">
+                                    Tindakan ini tidak dapat dibatalkan. Seluruh riwayat tiket dan transaksi Anda akan hilang selamanya.
+                                </p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        disabled={deleting}
+                                        onClick={() => setShowDeleteModal(false)}
+                                        className="py-3.5 px-4 bg-slate-100 text-slate-900 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-all disabled:opacity-50"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        disabled={deleting}
+                                        onClick={handleDeleteAccount}
+                                        className="py-3.5 px-4 bg-red-600 text-white rounded-2xl font-bold text-sm hover:bg-red-700 transition-all shadow-lg shadow-red-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {deleting ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                                <span>Menghapus...</span>
+                                            </>
+                                        ) : (
+                                            "Ya, Hapus"
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

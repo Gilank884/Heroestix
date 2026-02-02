@@ -90,7 +90,7 @@ const Tickets = () => {
                                                     <HiTicket size={24} />
                                                 </div>
                                                 <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${utilization >= 100 ? 'bg-red-50 text-red-600' :
-                                                        utilization >= 75 ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'
+                                                    utilization >= 75 ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'
                                                     }`}>
                                                     {utilization >= 100 ? <HiExclamation /> : <HiTrendingUp />}
                                                     {utilization}% Distributed
@@ -99,7 +99,10 @@ const Tickets = () => {
 
                                             <div>
                                                 <h4 className="text-xl font-black text-slate-900">{tt.name}</h4>
-                                                <p className="text-[#1b3bb6] font-black text-lg mt-1">{rupiah(tt.price)}</p>
+                                                <div className="mt-1 space-y-0.5">
+                                                    <p className="text-[#1b3bb6] font-black text-lg">{rupiah(tt.price_gross || tt.price)} <span className="text-[10px] text-slate-400 uppercase">(Gross)</span></p>
+                                                    <p className="text-slate-400 font-bold text-xs">{rupiah(tt.price_net)} <span className="text-[9px] uppercase">(Net)</span></p>
+                                                </div>
                                             </div>
 
                                             <div className="space-y-3">
@@ -110,7 +113,7 @@ const Tickets = () => {
                                                 <div className="h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
                                                     <div
                                                         className={`h-full rounded-full transition-all duration-1000 ${utilization >= 90 ? 'bg-red-500' :
-                                                                utilization >= 50 ? 'bg-[#1b3bb6]' : 'bg-cyan-500'
+                                                            utilization >= 50 ? 'bg-[#1b3bb6]' : 'bg-cyan-500'
                                                             }`}
                                                         style={{ width: `${utilization}%` }}
                                                     />
