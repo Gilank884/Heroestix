@@ -4,6 +4,8 @@ import { FcGoogle } from "react-icons/fc";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { getSubdomainUrl } from "../../lib/navigation";
+import { HiCamera, HiDocumentText } from "react-icons/hi";
+import { Upload } from "lucide-react";
 
 
 const Daftar = ({ role = "user" }) => {
@@ -16,7 +18,12 @@ const Daftar = ({ role = "user" }) => {
         brand_name: "",
         bank_name: "",
         bank_account: "",
+        description: "",
+        address: "",
     });
+
+    const [photoFile, setPhotoFile] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState(null);
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -30,6 +37,14 @@ const Daftar = ({ role = "user" }) => {
             ...form,
             [e.target.name]: e.target.value,
         });
+    };
+
+    const handlePhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setPhotoFile(file);
+            setPhotoPreview(URL.createObjectURL(file));
+        }
     };
 
     const handleEmailRegister = async (e) => {
@@ -57,6 +72,32 @@ const Daftar = ({ role = "user" }) => {
             }
         }
 
+        let photoUrl = "";
+        if (role === 'creator' && photoFile) {
+            try {
+                const fileExt = photoFile.name.split('.').pop();
+                const fileName = `${Date.now()}.${fileExt}`;
+                const filePath = `avatars/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('creator-assets')
+                    .upload(filePath, photoFile);
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('creator-assets')
+                    .getPublicUrl(filePath);
+
+                photoUrl = publicUrl;
+            } catch (err) {
+                console.error("Error uploading photo:", err);
+                setErrorMsg("Gagal mengunggah foto profil.");
+                setLoading(false);
+                return;
+            }
+        }
+
         const { data: authData, error } = await supabase.auth.signUp({
             email: form.email,
             password: form.password,
@@ -69,6 +110,9 @@ const Daftar = ({ role = "user" }) => {
                     brand_name: form.brand_name,
                     bank_name: form.bank_name,
                     bank_account: form.bank_account,
+                    description: form.description,
+                    address: form.address,
+                    photo_url: photoUrl
                 },
             },
         });
@@ -118,6 +162,9 @@ const Daftar = ({ role = "user" }) => {
                     brand_name: form.brand_name,
                     bank_name: form.bank_name,
                     bank_account: form.bank_account,
+                    description: form.description,
+                    address: form.address,
+                    image_url: data.user.user_metadata.photo_url,
                     verified: false
                 });
             }
@@ -364,6 +411,69 @@ const Daftar = ({ role = "user" }) => {
                                                     />
                                                 </div>
                                             </div>
+
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Deskripsi Kreator</label>
+                                                <textarea
+                                                    name="description"
+                                                    placeholder="Ceritakan tentang brand atau EO Anda..."
+                                                    value={form.description}
+                                                    onChange={handleChange}
+                                                    required
+                                                    rows={3}
+                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Alamat</label>
+                                                <textarea
+                                                    name="address"
+                                                    placeholder="Alamat lengkap brand atau EO Anda..."
+                                                    value={form.address}
+                                                    onChange={handleChange}
+                                                    required
+                                                    rows={3}
+                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Foto Profil / Logo (4x4)</label>
+                                                <div className="relative group/photo">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handlePhotoChange}
+                                                        className="hidden"
+                                                        id="photo-upload"
+                                                        required
+                                                    />
+                                                    <label
+                                                        htmlFor="photo-upload"
+                                                        className={`
+                                                            relative aspect-square w-32 rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center gap-2
+                                                            ${photoPreview ? 'border-transparent' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-blue-600'}
+                                                        `}
+                                                    >
+                                                        {photoPreview ? (
+                                                            <>
+                                                                <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-all flex items-center justify-center text-white">
+                                                                    <HiCamera size={20} />
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-300 shadow-sm">
+                                                                    <Upload size={18} />
+                                                                </div>
+                                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Upload</span>
+                                                            </>
+                                                        )}
+                                                    </label>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -379,6 +489,11 @@ const Daftar = ({ role = "user" }) => {
 
                                     {!isCreator && (
                                         <>
+                                            <div className="flex items-center gap-4 w-full">
+                                                <div className="flex-1 h-px bg-slate-100" />
+                                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">atau</span>
+                                                <div className="flex-1 h-px bg-slate-100" />
+                                            </div>
                                             <button
                                                 type="button"
                                                 onClick={handleGoogleLogin}

@@ -12,7 +12,9 @@ import {
     LogOut,
     Menu,
     X,
-    Layers
+    Layers,
+    BarChart3,
+    User
 } from 'lucide-react';
 import useAuthStore from '../../auth/useAuthStore';
 import { supabase } from '../../lib/supabaseClient';
@@ -45,8 +47,10 @@ const CreatorLayout = ({ children }) => {
         {
             title: "MAIN MENU",
             items: [
+                { name: "Profil Creator", path: "/profile", icon: User },
                 { name: "Statistik Event", path: "/events", icon: Sparkles },
-                { name: "Cash", path: "/cash", icon: Wallet },
+                { name: "Laporan Penjualan", path: "/sales-report", icon: BarChart3 },
+                { name: "Penarikan Saldo", path: "/withdrawals", icon: Wallet },
             ],
         }
     ];

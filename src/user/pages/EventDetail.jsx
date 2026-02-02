@@ -9,6 +9,8 @@ import {
     Clock,
     ChevronLeft,
     Share2,
+    Facebook,
+    Twitter,
     Instagram,
     ExternalLink,
     AlertCircle,
@@ -25,6 +27,19 @@ import {
 import { getCategoryName, getSubCategoryName } from "../../constants/categories";
 import { supabase } from "../../lib/supabaseClient";
 import EventCard from "../../components/home/EventCard";
+
+const XIcon = ({ size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4l11.733 16h4.267l-11.733 -16z" />
+        <path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" />
+    </svg>
+);
+
+const TikTokIcon = ({ size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+    </svg>
+);
 
 const rupiah = (value) => {
     if (typeof value !== "number" || isNaN(value)) return "-";
@@ -140,6 +155,127 @@ export default function EventDetail() {
 
     if (!event) return null;
 
+    const CreatorProfileSection = () => {
+        const creator = event.creators;
+        if (!creator) return null;
+
+        const socials = [
+            {
+                id: 'instagram',
+                label: 'Instagram',
+                icon: <Instagram size={16} />,
+                url: creator.instagram_url,
+                color: 'text-[#E4405F]',
+                bg: 'bg-[#E4405F]/5',
+                border: 'border-[#E4405F]/20',
+                hover: 'hover:bg-[#E4405F] hover:text-white hover:border-[#E4405F]'
+            },
+            {
+                id: 'x',
+                label: 'X (Twitter)',
+                icon: <XIcon size={16} />,
+                url: creator.x_url,
+                color: 'text-slate-900',
+                bg: 'bg-slate-900/5',
+                border: 'border-slate-900/20',
+                hover: 'hover:bg-slate-900 hover:text-white hover:border-slate-900'
+            },
+            {
+                id: 'tiktok',
+                label: 'TikTok',
+                icon: <TikTokIcon size={16} />,
+                url: creator.tiktok_url,
+                color: 'text-black',
+                bg: 'bg-black/5',
+                border: 'border-black/20',
+                hover: 'hover:bg-black hover:text-white hover:border-black'
+            },
+            {
+                id: 'facebook',
+                label: 'Facebook',
+                icon: <Facebook size={16} />,
+                url: creator.facebook_url,
+                color: 'text-[#1877F2]',
+                bg: 'bg-[#1877F2]/5',
+                border: 'border-[#1877F2]/20',
+                hover: 'hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2]'
+            }
+        ].filter(s => s.url);
+
+        return (
+            <div className="bg-white rounded-xl p-8 border border-slate-100 shadow-sm">
+                <div className="flex flex-col md:flex-row gap-8 items-start">
+                    <Link
+                        to={`/creator/${creator.id}`}
+                        className="flex items-center gap-4 flex-shrink-0 group/creator hover:opacity-80 transition-all"
+                    >
+                        {creator.image_url ? (
+                            <div className="w-16 h-16 rounded-full border-2 border-blue-100 shadow-sm overflow-hidden flex-shrink-0 group-hover/creator:border-blue-600 transition-colors">
+                                <img
+                                    src={creator.image_url}
+                                    alt={creator.brand_name}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        ) : (
+                            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center border border-blue-100 shadow-sm flex-shrink-0 group-hover/creator:border-blue-600 transition-colors">
+                                <Building2 size={28} />
+                            </div>
+                        )}
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Profil Kreator</p>
+                            <h3 className="text-lg font-extrabold text-[#111827] leading-tight group-hover/creator:text-blue-600 transition-colors">
+                                {creator.brand_name || "Official Organizer"}
+                            </h3>
+                        </div>
+                    </Link>
+
+                    {/* Middle: Description & Address */}
+                    <div className="flex-1 space-y-3">
+                        {creator.description && (
+                            <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                                {creator.description}
+                            </p>
+                        )}
+                        {creator.address && (
+                            <div className="flex items-start gap-2">
+                                <MapPin size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />
+                                <p className="text-[12px] text-slate-500 font-medium leading-relaxed italic">
+                                    {creator.address}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right: Social Media */}
+                    {socials.length > 0 && (
+                        <div className="flex-shrink-0 self-center md:self-start">
+                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3 text-center md:text-left">Social Media</p>
+                            <div className="flex flex-wrap items-center gap-3">
+                                {socials.map(social => (
+                                    <a
+                                        key={social.id}
+                                        href={social.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`
+                                            flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border
+                                            ${social.bg} ${social.color} ${social.border} ${social.hover}
+                                            active:scale-95 shadow-sm hover:shadow-md
+                                        `}
+                                    >
+                                        {social.icon}
+                                        <span>{social.label}</span>
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="bg-slate-50/30 min-h-screen font-sans text-slate-900 pb-10">
             <Navbar alwaysScrolled={true} />
@@ -164,6 +300,7 @@ export default function EventDetail() {
                                     {event.description || "Tidak ada deskripsi tersedia untuk event ini."}
                                 </p>
                             </div>
+
                         </div>
 
                         {/* RIGHT COLUMN: INFO CARDS */}
@@ -228,32 +365,13 @@ export default function EventDetail() {
                                 </button>
                             </div>
 
-                            {/* SOCIAL MEDIA CARD */}
-                            <div className="space-y-4">
-                                <p className="text-sm font-bold text-slate-700">Media Sosial</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors text-sm font-bold text-slate-700">
-                                        <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center">
-                                            <Instagram size={18} className="text-pink-600" />
-                                        </div>
-                                        Instagram
-                                    </button>
-                                    <button className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors text-sm font-bold text-slate-700">
-                                        <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-                                            <MessageCircle size={18} className="text-green-600" />
-                                        </div>
-                                        WhatsApp
-                                    </button>
-                                </div>
-                            </div>
 
-                            {/* AUTHENTICITY NOTICE */}
-                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                                <p className="text-[11px] font-medium text-slate-500 italic">
-                                    Beli tiket dari orang lain? Cek keaslian tiketmu <Link to="/" className="text-blue-600 font-bold hover:underline">disini</Link>
-                                </p>
-                            </div>
                         </div>
+                    </div>
+
+                    {/* FULL WIDTH CREATOR PROFILE */}
+                    <div className="mt-12">
+                        <CreatorProfileSection />
                     </div>
                 </div>
             </main>

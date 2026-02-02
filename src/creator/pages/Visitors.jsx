@@ -20,6 +20,7 @@ const Visitors = () => {
     const [visitors, setVisitors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [customColumns, setCustomColumns] = useState([]);
 
     const fetchVisitors = async () => {
         setLoading(true);
@@ -53,8 +54,49 @@ const Visitors = () => {
     };
 
     useEffect(() => {
+        const fetchEventSettings = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('events')
+                    .select('custom_form')
+                    .eq('id', eventId)
+                    .single();
+
+                if (error) throw error;
+
+                if (data?.custom_form) {
+                    let rawData = data.custom_form;
+                    if (typeof rawData === 'string') {
+                        try {
+                            rawData = JSON.parse(rawData);
+                        } catch (e) {
+                            console.error('Error parsing custom_form:', e);
+                            rawData = [];
+                        }
+                    }
+
+                    if (Array.isArray(rawData)) {
+                        setCustomColumns(rawData.filter(field => field.active && field.label));
+                    } else if (typeof rawData === 'object' && rawData !== null) {
+                        const fields = Object.entries(rawData)
+                            .filter(([_, val]) => val && (val.active || val.label))
+                            .map(([key, val]) => ({
+                                id: key,
+                                active: !!val.active,
+                                label: val.label || ''
+                            }))
+                            .filter(f => f.active && f.label);
+                        setCustomColumns(fields);
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching event settings for columns:', err);
+            }
+        };
+
         if (eventId) {
             fetchVisitors();
+            fetchEventSettings();
         }
     }, [eventId]);
 
@@ -140,7 +182,11 @@ const Visitors = () => {
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pengunjung</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori Tiket</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Info Kontak</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Detail Fisik</th>
+                                {customColumns.map(col => (
+                                    <th key={col.id || col.label} className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        {col.label}
+                                    </th>
+                                ))}
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status Bayar</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status Masuk</th>
                             </tr>
@@ -196,16 +242,13 @@ const Visitors = () => {
                                             {visitor.phone || '-'}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-5 space-y-1">
-                                        <div className="flex items-center gap-2 text-xs text-slate-600 font-bold">
-                                            <UserCircle size={12} className="text-slate-400" />
-                                            {visitor.gender || '-'}
-                                        </div>
-                                        <div className="flex items-center gap-2 text-xs text-slate-600 font-bold">
-                                            <Calendar size={12} className="text-slate-400" />
-                                            {visitor.birth_date || '-'}
-                                        </div>
-                                    </td>
+                                    {customColumns.map(col => (
+                                        <td key={col.id || col.label} className="px-6 py-5">
+                                            <p className="text-xs font-bold text-slate-700">
+                                                {visitor.custom_responses?.[col.label] || '-'}
+                                            </p>
+                                        </td>
+                                    ))}
                                     <td className="px-6 py-5 text-center">
                                         <div className={`
                                             inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest

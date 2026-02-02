@@ -41,8 +41,8 @@ const EventNavbar = ({ searchTerm, setSearchTerm }) => {
         "User";
 
     return (
-        <header className="fixed z-50 transition-all duration-300 top-0 left-0 w-full">
-            <div className="flex items-center gap-6 transition-all duration-300 rounded-none px-10 py-4 bg-gradient-to-r from-[#b1451a] to-[#d66a4a] shadow-md">
+        <header className="fixed z-50 transition-all duration-300 top-0 left-0 w-full py-3 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
+            <div className="flex items-center gap-10 max-w-7xl mx-auto px-6 md:px-10">
                 {/* Logo + Search */}
                 <div className="flex items-center gap-4 w-full sm:w-auto">
                     <Link to="/">
@@ -54,27 +54,27 @@ const EventNavbar = ({ searchTerm, setSearchTerm }) => {
                     </Link>
 
                     <div className="relative w-full sm:w-64">
-                        <h2 className="text-2xl font-black text-white tracking-tight">Heroestix Official</h2>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Heroestix <span className="text-blue-600">Official</span></h2>
                     </div>
                 </div>
 
                 {/* Menu Kanan */}
-                <div className="ml-auto flex items-center gap-6 text-sm font-medium text-white">
-                    <Link to="/about-us" className="flex items-center gap-2 hover:opacity-80">
-                        <HiOutlineInformationCircle size={18} />
+                <div className="ml-auto flex items-center gap-8 text-[13px] font-semibold uppercase tracking-wider text-slate-600">
+                    <Link to="/about-us" className="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                        <HiOutlineInformationCircle size={18} className="text-blue-500" />
                         Tentang Kami
                     </Link>
 
-                    <Link to="/error" className="flex items-center gap-2 hover:opacity-80">
-                        <MdOutlineContactSupport size={18} />
+                    <Link to="/error" className="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                        <MdOutlineContactSupport size={18} className="text-blue-500" />
                         Konsultasi
                     </Link>
 
                     {/* Auth */}
                     {user ? (
                         <div className="relative group">
-                            <div className="flex items-center gap-2 cursor-pointer font-semibold hover:text-white/80">
-                                <FiUser size={18} />
+                            <div className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 hover:text-blue-600">
+                                <FiUser size={18} className="text-blue-600" />
                                 {displayName}
                             </div>
 
@@ -104,13 +104,13 @@ const EventNavbar = ({ searchTerm, setSearchTerm }) => {
                         </div>
                     ) : (
                         <div className="flex items-center gap-4">
-                            <Link to="/masuk" className="hover:text-white/80">
+                            <Link to="/masuk" className="text-slate-600 hover:text-blue-600">
                                 Masuk
                             </Link>
 
                             <Link
                                 to="/daftar"
-                                className="px-4 py-2 rounded-xl font-semibold bg-white text-[#b1451a] hover:bg-[#f9e2d2]"
+                                className="px-5 py-2 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20"
                             >
                                 Daftar
                             </Link>

@@ -23,9 +23,7 @@ const EventDetail = () => {
     const tabs = [
         "Informasi Umum",
         "Tanggal Dan Lokasi",
-        "Pajak Hiburan",
-        "Sosial Media",
-        "SEO"
+        "Pajak Hiburan"
     ];
 
     useEffect(() => {
@@ -95,25 +93,17 @@ const EventDetail = () => {
                                     <div className="text-[11px] font-bold text-slate-400 italic">Belum ditentukan</div>
                                 )}
                                 <div className="mt-8 space-y-4 text-gray-900">
-                                    <h2 className="text-xl font-black">{event.title}</h2>
-                                    <p className="text-sm font-bold text-gray-500">
-                                        5K Fun Run - {event.location}, {new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    <h2 className="text-xl font-bold">{event.title}</h2>
+                                    <p className="text-sm font-medium text-gray-500">
+                                        {event.location}, {new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">Deskripsi</div>
+                            <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mt-1">Deskripsi</div>
                             <div className="space-y-6">
-                                <div>
-                                    <p className="text-sm font-black mb-4">Benefit</p>
-                                    <ul className="space-y-3">
-                                        {['Jersey', 'BIB', 'Medali', 'Totebag'].map(item => (
-                                            <li key={item} className="flex items-center gap-3 text-sm font-bold text-gray-700">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
-                                                {item}
-                                            </li>
-                                        ))}
-                                    </ul>
+                                <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                                    {event.description || "Tidak ada deskripsi tersedia untuk event ini."}
                                 </div>
                             </div>
                         </div>
@@ -140,28 +130,16 @@ const EventDetail = () => {
                                 <table className="w-full text-sm border-collapse border border-gray-100 rounded-xl overflow-hidden">
                                     <tbody className="divide-y divide-gray-100">
                                         <tr className="bg-gray-50/30">
-                                            <td className="p-4 font-bold text-gray-500 w-1/3 border-r border-gray-100">Tanggal Mulai</td>
-                                            <td className="p-4 font-bold text-gray-900">{new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} {event.event_time} WIB</td>
+                                            <td className="p-4 font-bold text-gray-500 w-1/3 border-r border-gray-100">Tanggal & Waktu</td>
+                                            <td className="p-4 font-bold text-gray-900">{new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} @ {event.event_time} WIB</td>
                                         </tr>
                                         <tr>
-                                            <td className="p-4 font-bold text-gray-500 border-r border-gray-100">Tanggal Berakhir</td>
-                                            <td className="p-4 font-bold text-gray-900">{new Date(event.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} 10:00 WIB</td>
-                                        </tr>
-                                        <tr className="bg-gray-50/30">
-                                            <td className="p-4 font-bold text-gray-500 border-r border-gray-100">Provinsi</td>
-                                            <td className="p-4 font-bold text-gray-900 uppercase">Jawa Barat</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="p-4 font-bold text-gray-500 border-r border-gray-100">Kabupaten</td>
-                                            <td className="p-4 font-bold text-gray-900 uppercase">Kota Bandung</td>
-                                        </tr>
-                                        <tr className="bg-gray-50/30">
                                             <td className="p-4 font-bold text-gray-500 border-r border-gray-100">Nama Venue</td>
                                             <td className="p-4 font-bold text-gray-900">{event.location}</td>
                                         </tr>
-                                        <tr>
-                                            <td className="p-4 font-bold text-gray-500 border-r border-gray-100">Alamat</td>
-                                            <td className="p-4 font-bold text-gray-900 leading-relaxed">{event.location}, Kota Bandung, Jawa Barat, Indonesia</td>
+                                        <tr className="bg-gray-50/30">
+                                            <td className="p-4 font-bold text-gray-500 border-r border-gray-100">Alamat Lengkap</td>
+                                            <td className="p-4 font-bold text-gray-900 leading-relaxed">{event.location}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -171,7 +149,7 @@ const EventDetail = () => {
                 )}
 
                 {/* Placeholders for other tabs */}
-                {(activeTab === 'Pajak Hiburan' || activeTab === 'Sosial Media' || activeTab === 'SEO') && (
+                {activeTab === 'Pajak Hiburan' && (
                     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center space-y-4">
                         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-300">
                             <Info size={32} />

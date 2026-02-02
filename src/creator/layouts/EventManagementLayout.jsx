@@ -23,10 +23,11 @@ import {
     CreditCard,
     Tag,
     Star,
-    ChevronDown,
-    Home,
     Settings,
-    Shield
+    Shield,
+    BarChart3,
+    PieChart,
+    QrCode
 } from 'lucide-react';
 import useAuthStore from '../../auth/useAuthStore';
 import { supabase } from '../../lib/supabaseClient';
@@ -65,13 +66,22 @@ const EventManagementLayout = ({ children }) => {
                 { name: "Kategori Tiket", path: `/manage/event/${eventId}/ticket-categories`, icon: Ticket },
                 { name: "Voucher", path: `/manage/event/${eventId}/vouchers`, icon: Tag },
                 { name: "Staff", path: `/manage/event/${eventId}/staff`, icon: Users },
-                { name: "Cash", path: `/manage/event/${eventId}/cash`, icon: Wallet },
+                { name: "Formulir Tambahan", path: `/manage/event/${eventId}/additional-form`, icon: ClipboardList },
+                { name: "Laporan Penjualan", path: `/manage/event/${eventId}/sales-report`, icon: BarChart3 },
+                { name: "Penarikan Saldo", path: `/manage/event/${eventId}/withdrawals`, icon: Wallet },
             ],
         },
         {
             title: "PENGUNJUNG",
             items: [
                 { name: "Daftar Pengunjung", path: `/manage/event/${eventId}/visitors`, icon: Users },
+            ],
+        },
+        {
+            title: "VALIDASI",
+            items: [
+                { name: "Statistik Check-in", path: `/manage/event/${eventId}/check-in-stats`, icon: PieChart },
+                { name: "Proses Check-in", path: `/manage/event/${eventId}/check-in`, icon: QrCode },
             ],
         },
     ];

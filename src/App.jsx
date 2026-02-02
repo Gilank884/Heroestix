@@ -15,6 +15,9 @@ import SelectTicket from "./user/pages/SelectTicket";
 import Checkout from "./user/pages/Checkout";
 import Payment from "./user/pages/Payment";
 import TransactionDetail from "./user/pages/TransactionDetail";
+import CreatorPage from "./user/pages/CreatorPage";
+import PrivacyPolicy from "./user/pages/PrivacyPolicy";
+import TermsOfService from "./user/pages/TermsOfService";
 
 // Layouts
 import CreatorLayout from "./creator/layouts/CreatorLayout";
@@ -30,8 +33,15 @@ import Tickets from "./creator/pages/Tickets";
 import Scan from "./creator/pages/Scan";
 import TicketCategories from "./creator/pages/TicketCategories";
 import Visitors from "./creator/pages/Visitors";
-import CreatorCash from "./creator/pages/Cash";
+import SalesReport from "./creator/pages/SalesReport";
+import Withdrawals from "./creator/pages/Withdrawals";
+import EventSalesReport from "./creator/pages/EventSalesReport";
+import EventWithdrawals from "./creator/pages/EventWithdrawals";
+import EventValidationStats from "./creator/pages/EventValidationStats";
+import EventCheckIn from "./creator/pages/EventCheckIn";
 import EventCash from "./creator/pages/EventCash";
+import AdditionalForm from "./creator/pages/AdditionalForm";
+import CreatorProfile from "./creator/pages/Profile";
 
 // Dev Pages
 import DevDashboard from "./dev/pages/Dashboard";
@@ -262,9 +272,13 @@ export default function App() {
                       <Route path="/" element={<CreatorEventDetail />} />
                       <Route path="/ticket-categories" element={<TicketCategories />} />
                       <Route path="/visitors" element={<Visitors />} />
+                      <Route path="/check-in-stats" element={<EventValidationStats />} />
+                      <Route path="/check-in" element={<EventCheckIn />} />
                       <Route path="/vouchers" element={<div className="p-10 font-bold text-2xl text-gray-800">Event Vouchers (Work in Progress)</div>} />
                       <Route path="/staff" element={<div className="p-10 font-bold text-2xl text-gray-800">Event Staff (Work in Progress)</div>} />
-                      <Route path="/cash" element={<EventCash />} />
+                      <Route path="/sales-report" element={<EventSalesReport />} />
+                      <Route path="/withdrawals" element={<EventWithdrawals />} />
+                      <Route path="/additional-form" element={<AdditionalForm />} />
                     </Routes>
 
                   </EventManagementLayout>
@@ -280,11 +294,13 @@ export default function App() {
                       <Route path="/scan" element={<Scan />} />
                       <Route path="/staff" element={<div className="p-10 font-bold text-2xl text-gray-800">Staff Management (Work in Progress)</div>} />
                       <Route path="/vouchers" element={<div className="p-10 font-bold text-2xl text-gray-800">Voucher & Promotions (Work in Progress)</div>} />
-                      <Route path="/cash" element={<CreatorCash />} />
+                      <Route path="/sales-report" element={<SalesReport />} />
+                      <Route path="/withdrawals" element={<Withdrawals />} />
                       <Route path="/reports" element={<div className="p-10 font-bold text-2xl text-gray-800">Data Recap & Reports (Work in Progress)</div>} />
                       <Route path="/security/password" element={<div className="p-10 font-bold text-2xl text-gray-800">Change Password (Work in Progress)</div>} />
                       <Route path="/security/tokens" element={<div className="p-10 font-bold text-2xl text-gray-800">Token Generator (Work in Progress)</div>} />
                       <Route path="/tools/bracelet-printing" element={<div className="p-10 font-bold text-2xl text-gray-800">Cetak Tiket Gelang (Work in Progress)</div>} />
+                      <Route path="/profile" element={<CreatorProfile />} />
                       <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
                   </CreatorLayout>
@@ -332,7 +348,10 @@ export default function App() {
         <Route path="/about-us" element={<AboutUsPage />} />
         <Route path="/daftar" element={<Daftar />} />
         <Route path="/masuk" element={<Masuk />} />
+        <Route path="/masuk" element={<Masuk />} />
         <Route path="/error" element={<Error />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/event/:id" element={<EventDetail />} />
         <Route path="/select-ticket/:id" element={<SelectTicket />} />
@@ -340,6 +359,7 @@ export default function App() {
         <Route path="/payment/:id" element={<Payment />} />
         <Route path="/transaction-detail/:id" element={<TransactionDetail />} />
         <Route path="/become-creator" element={<BecomeCreator />} />
+        <Route path="/creator/:id" element={<CreatorPage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>
