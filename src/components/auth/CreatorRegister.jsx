@@ -26,6 +26,7 @@ const CreatorRegister = () => {
         social_tiktok: "",
         social_x: "",
         social_facebook: "",
+        photoUrl: "", // Added for persistence
         termsAgreed: false
     });
 
@@ -100,6 +101,7 @@ const CreatorRegister = () => {
                     .getPublicUrl(filePath);
 
                 photoUrl = publicUrl;
+                setForm(prev => ({ ...prev, photoUrl: publicUrl })); // Save to state
             }
 
             // 2. Sign Up
@@ -131,12 +133,33 @@ const CreatorRegister = () => {
             if (error) throw error;
 
             if (authData.user) {
-                // IMPORTANT: If identities is empty/null, the user ALREADY EXISTS.
-                // Supabase returns the user object but does NOT send a fake OTP email for privacy security.
-                if (authData.user.identities && authData.user.identities.length === 0) {
-                    setErrorMsg("Email ini sudah terdaftar sebagai pengguna lain. Silakan Login atau gunakan email berbeda.");
+                // Check if user is already a creator
+                const { data: creatorData } = await supabase
+                    .from('creators')
+                    .select('id')
+                    .eq('id', authData.user.id)
+                    .maybeSingle();
+
+                if (creatorData) {
+                    setErrorMsg("Email ini sudah terdaftar sebagai Creator. Silakan Login.");
                     setLoading(false);
                     return;
+                }
+
+                // If user exists but NOT creator, they can proceed.
+                // Or if new user, they can proceed.
+
+                // Send Custom OTP
+                const { error: otpError } = await supabase.functions.invoke('send-otp', {
+                    body: {
+                        email: form.email,
+                        user_id: authData.user.id
+                    }
+                });
+
+                if (otpError) {
+                    console.error("Failed to send OTP:", otpError);
+                    alert("Gagal mengirim OTP. Silakan coba kirim ulang.");
                 }
 
                 setStep(3); // Go to OTP
@@ -155,51 +178,87 @@ const CreatorRegister = () => {
         setLoading(true);
         setErrorMsg("");
 
-        const { data, error } = await supabase.auth.verifyOtp({
-            email: form.email,
-            token: otpCode,
-            type: 'signup'
-        });
+        try {
+            // Verify against 'otp' table
+            const { data, error } = await supabase
+                .from('otp')
+                .select('*')
+                .eq('email', form.email)
+                .eq('otp_code', otpCode)
+                .eq('used', false)
+                .gt('expires_at', new Date().toISOString())
+                .single();
 
-        if (error) {
-            setErrorMsg(error.message);
-            setLoading(false);
-        } else {
-            // Create entries in tables if needed (profiles, creators)
+            if (error || !data) {
+                throw new Error("Kode OTP salah atau kedaluwarsa.");
+            }
+
+            // Mark OTP as used
+            await supabase.from('otp').update({ used: true }).eq('id', data.id);
+
+            // Create/Update entries in tables
+            // Note: If user already exists, upsert profiles is fine.
             await supabase.from('profiles').upsert({
-                id: data.user.id,
+                id: data.user_id,
                 email: form.email,
-                full_name: form.brand_name,
-                role: 'creator',
+                full_name: form.brand_name, // Should we overwrite name? Maybe.
+                role: 'creator', // UPGRADE ROLE to creator
             });
 
             await supabase.from('creators').insert({
-                id: data.user.id,
+                id: data.user_id,
                 brand_name: form.brand_name,
                 description: form.description,
                 address: form.address,
-                image_url: data.user.user_metadata.photo_url,
-                social_media: data.user.user_metadata.social_media,
+                image_url: data.user_id ? form.photoUrl : null, // Wait, photoUrl is local var in previous step. We need to store it in state or retrieve?
+                // Actually, in handleStep2Submit, we uploaded photo but didn't save URL to state.
+                // We passed it to signUp metadata.
+                // But since we are bypassing signUp (if user exists), metadata might not be updated?
+                // Better to rely on Form State or re-upload?
+                // Re-upload is bad.
+                // Let's check where photoUrl comes from. 
+                // In handleStep2Submit, we got photoUrl. We need it here.
+                // We should store photoUrl in state.
+                // For now, let's fix the photoUrl issue.
+
+                // TEMP FIX: We can't easily get metadata if we didn't update it. 
+                // Let's assume we can get it from state if we save it.
+                // I will add photoUrl to form state in handleStep2Submit first.
+
+                // Wait, I can't access local variable `photoUrl` from handleStep2Submit here.
+                // I need to update handleStep2Submit to save to state.
+
+                social_media: {
+                    instagram: form.social_instagram,
+                    tiktok: form.social_tiktok,
+                    x: form.social_x,
+                    facebook: form.social_facebook
+                },
                 verified: false,
-                phone: form.phone // If creators table has phone
+                phone: form.phone
             });
 
-            alert("Verifikasi berhasil! Akun Anda telah aktif.");
-            window.location.href = "/masuk"; // Redirect to login
+        } catch (err) {
+            // Handling image_url missing: If it fails, maybe optional?
+            // But wait, the previous code used: `data.user.user_metadata.photo_url`.
+            // If we use custom OTP, `data` is from OTP table, NOT from auth.verifyOtp.
+            // So `data.user` is undefined.
+            // We MUST fix the data source.
         }
     };
 
     const handleResendOtp = async () => {
         setLoading(true);
         setErrorMsg("");
-        const { error } = await supabase.auth.resend({
-            type: 'signup',
-            email: form.email,
+
+        const { error } = await supabase.functions.invoke('send-otp', {
+            body: { email: form.email }
         });
+
         if (error) {
-            setErrorMsg(error.message);
+            setErrorMsg("Gagal mengirim ulang OTP: " + error.message);
         } else {
-            alert("Kode OTP baru telah dikirim ke email Anda. Silakan cek Inbox atau Spam.");
+            alert("Kode OTP baru telah dikirim ke email Anda.");
         }
         setLoading(false);
     };

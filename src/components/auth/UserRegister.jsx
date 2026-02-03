@@ -96,6 +96,20 @@ const UserRegister = () => {
                     return;
                 }
 
+                // Send Custom OTP via Edge Function
+                const { error: otpError } = await supabase.functions.invoke('send-otp', {
+                    body: {
+                        email: form.email,
+                        user_id: authData.user.id
+                    }
+                });
+
+                if (otpError) {
+                    console.error("Failed to send OTP:", otpError);
+                    // We still proceed to Step 2, user can try "Resend" there
+                    alert("Gagal mengirim OTP. Silakan coba kirim ulang di halaman berikutnya.");
+                }
+
                 setStep(2); // Go to OTP
             }
 
@@ -142,14 +156,21 @@ const UserRegister = () => {
     const handleResendOtp = async () => {
         setLoading(true);
         setErrorMsg("");
-        const { error } = await supabase.auth.resend({
-            type: 'signup',
-            email: form.email,
+
+        // We need user_id, but if we don't have it easily in state, we might need to rely on email only?
+        // The send-otp function handles optional user_id. 
+        // However, we should try to get it if possible, but let's just send email for now.
+        // Actually, we can't easily get user_id here without storing it in state step 1.
+        // Let's try sending with just email. The function definition says user_id is optional.
+
+        const { error } = await supabase.functions.invoke('send-otp', {
+            body: { email: form.email }
         });
+
         if (error) {
-            setErrorMsg(error.message);
+            setErrorMsg("Gagal mengirim ulang OTP: " + error.message);
         } else {
-            alert("Kode OTP baru telah dikirim ke email Anda. Silakan cek Inbox atau Spam.");
+            alert("Kode OTP baru telah dikirim ke email Anda.");
         }
         setLoading(false);
     };
