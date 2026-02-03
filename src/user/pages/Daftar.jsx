@@ -1,4 +1,4 @@
-import Daftar from "../../components/auth/daftar";
+import UserRegister from "../../components/auth/UserRegister";
 import RegisterNav from "../../components/Layout/RegisterNav";
 import Footer from "../../components/Layout/Footer";
 import { motion } from "framer-motion";
@@ -17,7 +17,7 @@ export default function DaftarPage({ role = "user" }) {
                     ease: [0.22, 1, 0.36, 1], // smooth cinematic
                 }}
             >
-                <Daftar role={role} />
+                <UserRegister />
             </motion.main>
         </>
     );

@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import EventNavbar from "../../components/Layout/EventNavbar";
 import Footer from "../../components/Layout/Footer";
 import { HiOutlineDuplicate } from "react-icons/hi";
+import { emailService } from "../../services/email";
 import { supabase } from "../../lib/supabaseClient";
 
 const rupiah = (value) => {
@@ -18,7 +19,7 @@ export default function Payment() {
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const { total, selectedPayment, orderId, eventTitle } = location.state || { total: 0, selectedPayment: "bca", orderId: null };
+    const { total, selectedPayment, orderId, eventTitle, visitorEmail } = location.state || { total: 0, selectedPayment: "bca", orderId: null, eventTitle: "", visitorEmail: "" };
 
     const [timeLeft, setTimeLeft] = useState(28 * 60 + 3);
     const [activeTab, setActiveTab] = useState("MBanking");
@@ -142,8 +143,17 @@ export default function Payment() {
                 }
             }
 
+            // 4. Send Email Notification
+            // 4. Send Email Notification
+            await emailService.sendTicketEmail(orderId, visitorEmail);
+
             alert("Pembayaran Berhasil! Tiket Anda telah diterbitkan.");
-            navigate(`/transaction-detail/${orderId}`);
+            navigate(`/transaction-detail/${orderId}`, {
+                state: {
+                    total: total,
+                    selectedPayment: selectedPayment
+                }
+            });
 
         } catch (error) {
             console.error("Payment error:", error);
@@ -188,8 +198,37 @@ export default function Payment() {
                                 </div>
                             </div>
                             <div className="w-1/3 p-6 flex items-center justify-center bg-slate-50/50">
-                                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 font-black text-blue-700 italic text-xl uppercase">
-                                    {selectedPayment}
+                                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center min-w-[100px]">
+                                    {(() => {
+                                        const logos = {
+                                            "bca": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Bank_Central_Asia.svg/2560px-Bank_Central_Asia.svg.png",
+                                            "mandiri": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Bank_Mandiri_logo_2016.svg/1200px-Bank_Mandiri_logo_2016.svg.png",
+                                            "bni": "https://upload.wikimedia.org/wikipedia/id/thumb/5/55/BNI_logo.svg/1200px-BNI_logo.svg.png",
+                                            "bri": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/BANK_BRI_logo.svg/1200px-BANK_BRI_logo.svg.png",
+                                            "gopay": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Gopay_logo.svg/1200px-Gopay_logo.svg.png",
+                                            "ovo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Logo_ovo_purple.svg/1200px-Logo_ovo_purple.svg.png",
+                                            "dana": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Logo_dana_blue.svg/1200px-Logo_dana_blue.svg.png",
+                                            "shopeepay": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Shopee.svg/1200px-Shopee.svg.png"
+                                        };
+
+                                        const logoUrl = logos[selectedPayment?.toLowerCase()];
+
+                                        if (logoUrl) {
+                                            return (
+                                                <img
+                                                    src={logoUrl}
+                                                    alt={selectedPayment}
+                                                    className="h-8 w-auto object-contain"
+                                                />
+                                            );
+                                        }
+
+                                        return (
+                                            <span className="font-black text-blue-700 italic text-xl uppercase">
+                                                {selectedPayment}
+                                            </span>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>

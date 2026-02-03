@@ -1,9 +1,103 @@
-import React from "react";
+import React, { useState } from "react";
 import Navbar from '../../components/Layout/Navbar';
 import Footer from '../../components/Layout/Footer';
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export default function PrivacyPolicy() {
+    const [expandedSection, setExpandedSection] = useState(null);
+
+    const toggleSection = (index) => {
+        setExpandedSection(expandedSection === index ? null : index);
+    };
+
+    const policyPoints = [
+        {
+            title: "Pengumpulan Data",
+            content: (
+                <div className="space-y-4">
+                    <p>
+                        Heroestix mengumpulkan data dari Pengguna dan Creator untuk memastikan layanan berjalan dengan baik. Data yang dikumpulkan dapat berupa nama, alamat email, nomor telepon, informasi pembayaran, data transaksi, dan aktivitas penggunaan platform.
+                    </p>
+                    <p>
+                        Data tambahan seperti perangkat, lokasi, atau data perilaku pengguna juga dapat dikumpulkan untuk meningkatkan keamanan, performa, dan pengalaman layanan. Pengumpulan data dilakukan sesuai dengan hukum yang berlaku dan dengan persetujuan pengguna.
+                    </p>
+                </div>
+            ),
+            isExpandable: true,
+            expandLabel: "Lihat Detail"
+        },
+        {
+            title: "Penggunaan Data",
+            content: (
+                <div className="space-y-4">
+                    <p>Data yang dikumpulkan digunakan untuk:</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li>Memproses transaksi dan penerbitan E-Ticket</li>
+                        <li>Menyediakan Konten Kreatif sesuai akses pengguna</li>
+                        <li>Mengirim notifikasi penting, update layanan, atau promosi resmi Heroestix</li>
+                        <li>Meningkatkan pengalaman pengguna dan keamanan platform</li>
+                        <li>Mematuhi kewajiban hukum dan peraturan perpajakan</li>
+                    </ul>
+                    <p>Heroestix tidak menggunakan data untuk tujuan yang merugikan Pengguna atau Creator.</p>
+                </div>
+            ),
+            isExpandable: true,
+            expandLabel: "Lihat Detail"
+        },
+        {
+            title: "Penyimpanan dan Keamanan Data",
+            content: (
+                <div className="space-y-4">
+                    <p>
+                        Heroestix menyimpan data pada server yang aman dengan proteksi teknologi terkini. Akses data dibatasi hanya untuk tim internal yang memerlukan untuk operasional layanan.
+                    </p>
+                    <p>
+                        Heroestix melakukan enkripsi pada informasi sensitif, termasuk data pembayaran dan kredensial akun, untuk mencegah akses tidak sah. Pengguna bertanggung jawab menjaga keamanan akun mereka, termasuk password dan E-Ticket.
+                    </p>
+                </div>
+            ),
+            isExpandable: true,
+            expandLabel: "Lihat Detail"
+        },
+        {
+            title: "Pengungkapan Data",
+            content: (
+                <div className="space-y-4">
+                    <p>Heroestix tidak menjual data pribadi kepada pihak ketiga. Data dapat dibagikan secara terbatas jika:</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li>Diperlukan untuk proses transaksi dengan Creator atau pihak payment gateway</li>
+                        <li>Diperlukan untuk mematuhi hukum, peraturan, atau permintaan otoritas yang sah</li>
+                        <li>Dalam kasus merger, akuisisi, atau transfer bisnis, dengan pemberitahuan kepada Pengguna</li>
+                    </ul>
+                    <p>Setiap pengungkapan dilakukan dengan memperhatikan keamanan dan privasi pengguna.</p>
+                </div>
+            ),
+            isExpandable: true,
+            expandLabel: "Lihat Detail"
+        },
+        {
+            title: "Hak Pengguna dan Akses Data",
+            content: (
+                <div className="space-y-4">
+                    <p>Pengguna berhak:</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li>Mengakses data pribadi yang dikumpulkan Heroestix</li>
+                        <li>Memperbaiki atau memperbarui informasi yang tidak akurat</li>
+                        <li>Mengajukan penghapusan data pribadi, sesuai ketentuan hukum yang berlaku</li>
+                        <li>Menolak penggunaan data untuk tujuan promosi atau marketing</li>
+                        <li>Mengajukan pertanyaan atau keluhan terkait privasi melalui kontak resmi Heroestix</li>
+                    </ul>
+                    <p>
+                        Heroestix berkomitmen untuk menanggapi permintaan pengguna terkait data pribadi secara transparan dan dalam jangka waktu yang wajar.
+                    </p>
+                </div>
+            ),
+            isExpandable: true,
+            expandLabel: "Lihat Detail"
+        }
+    ];
+
     return (
         <div className="bg-white min-h-screen">
             <Navbar />
@@ -11,95 +105,61 @@ export default function PrivacyPolicy() {
             <main className="pt-32 pb-24 px-6 md:px-12 bg-white">
                 <div className="max-w-4xl mx-auto">
                     {/* Header */}
-                    <div className="text-center mb-16">
+                    <div className="text-left mb-8">
                         <motion.h1
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4"
+                            className="text-xl font-bold text-slate-500 mb-1"
                         >
-                            Kebijakan <span className="text-blue-600">Privasi</span>
+                            Kebijakan Privasi
                         </motion.h1>
-                        <p className="text-slate-500 text-lg font-medium">
-                            Terakhir diperbarui: 2 Februari 2026
+                        <p className="text-slate-400 text-sm">
+                            Terakhir diperbarui: 3 Februari 2026
                         </p>
                     </div>
 
                     {/* Content */}
-                    <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-slate-100">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="prose prose-lg prose-slate max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-p:text-slate-600 prose-p:leading-relaxed prose-a:text-blue-600 hover:prose-a:text-blue-700"
-                        >
-                            <p className="lead">
-                                Di Heroestix, kami sangat menghargai privasi Anda. Dokumen Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi informasi pribadi Anda saat menggunakan platform kami.
-                            </p>
+                    <div className="space-y-6">
+                        {policyPoints.map((point, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300"
+                            >
+                                <div
+                                    className={`p-6 md:p-8 flex items-center justify-between cursor-pointer ${point.isExpandable ? 'bg-slate-50 hover:bg-slate-100 transition-colors' : ''}`}
+                                    onClick={() => point.isExpandable ? toggleSection(index) : null}
+                                >
+                                    <h3 className="text-xl font-bold text-slate-900 m-0">
+                                        {point.title}
+                                    </h3>
+                                    {point.isExpandable && (
+                                        <div className="flex items-center text-blue-600 font-semibold text-sm">
+                                            <span className="mr-2">{point.expandLabel || "Lihat Detail"}</span>
+                                            {expandedSection === index ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                        </div>
+                                    )}
+                                </div>
 
-                            <h3>1. Informasi yang Kami Kumpulkan</h3>
-                            <p>
-                                Kami mengumpulkan beberapa jenis informasi untuk memberikan layanan terbaik bagi Anda:
-                            </p>
-                            <ul>
-                                <li><strong>Informasi Pribadi:</strong> Nama, alamat email, nomor telepon, dan data lain yang Anda berikan saat mendaftar atau membeli tiket.</li>
-                                <li><strong>Data Transaksi:</strong> Detail pembelian tiket, metode pembayaran, dan riwayat pesanan (kami tidak menyimpan detail kartu kredit/debit secara penuh).</li>
-                                <li><strong>Data Penggunaan:</strong> Informasi tentang bagaimana Anda mengakses dan menggunakan situs kami, termasuk alamat IP, jenis perangkat, dan browser.</li>
-                            </ul>
-
-                            <h3>2. Penggunaan Informasi</h3>
-                            <p>
-                                Kami menggunakan informasi yang dikumpulkan untuk tujuan berikut:
-                            </p>
-                            <ul>
-                                <li>Memproses pesanan tiket dan pembayaran Anda secara akurat.</li>
-                                <li>Mengirimkan E-Tiket dan konfirmasi pesanan ke email Anda.</li>
-                                <li>Memberikan dukungan pelanggan dan menanggapi pertanyaan Anda.</li>
-                                <li>Meningkatkan fungsionalitas dan keamanan platform Heroestix.</li>
-                                <li>Mengirimkan informasi promo atau event menarik (jika Anda setuju untuk berlangganan).</li>
-                            </ul>
-
-                            <h3>3. Perlindungan & Keamanan Data</h3>
-                            <p>
-                                Keamanan data Anda adalah prioritas utama kami. Kami menerapkan langkah-langkah keamanan teknis dan organisasi yang sesuai untuk melindungi informasi pribadi Anda dari akses, penggunaan, atau pengungkapan yang tidak sah. Protokol enkripsi standar industri digunakan untuk melindungi data sensitif selama transmisi.
-                            </p>
-
-                            <h3>4. Berbagi Informasi dengan Pihak Ketiga</h3>
-                            <p>
-                                Kami tidak menjual atau menyewakan informasi pribadi Anda kepada pihak ketiga. Kami hanya membagikan data Anda dalam situasi berikut:
-                            </p>
-                            <ul>
-                                <li><strong>Penyelenggara Event:</strong> Nama dan alamat email Anda mungkin dibagikan kepada penyelenggara event yang tiketnya Anda beli untuk keperluan verifikasi dan check-in.</li>
-                                <li><strong>Penyedia Layanan:</strong> Kami bekerja sama dengan mitra terpercaya (seperti gateway pembayaran) yang membantu kami dalam operasional layanan.</li>
-                                <li><strong>Kewajiban Hukum:</strong> Jika diwajibkan oleh hukum atau permintaan resmi dari penegak hukum yang sah.</li>
-                            </ul>
-
-                            <h3>5. Cookie dan Teknologi Pelacakan</h3>
-                            <p>
-                                Kami menggunakan cookie untuk meningkatkan pengalaman pengguna Anda. Cookie membantu kami mengingat preferensi Anda, menjaga sesi login, dan menganalisis lalu lintas situs web. Anda dapat mengatur browser Anda untuk menolak cookie, namun hal ini mungkin memengaruhi fungsi tertentu dari situs web.
-                            </p>
-
-                            <h3>6. Kontrol Privasi Anda</h3>
-                            <p>
-                                Anda memiliki hak untuk:
-                            </p>
-                            <ul>
-                                <li>Mengakses dan memperbarui informasi pribadi Anda melalui halaman profil.</li>
-                                <li>Meminta penghapusan akun dan data pribadi Anda dari sistem kami.</li>
-                                <li>Berhenti berlangganan dari komunikasi pemasaran kapan saja.</li>
-                            </ul>
-
-                            <h3>7. Hubungi Kami</h3>
-                            <p>
-                                Jika Anda memiliki pertanyaan tentang Kebijakan Privasi ini, silakan hubungi tim kami:
-                            </p>
-                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 not-prose">
-                                <ul className="space-y-2 text-sm font-medium text-slate-600 mb-0">
-                                    <li><strong>Email:</strong> support@heroestix.com</li>
-                                    <li><strong>Alamat:</strong> Komplek Bumi Panyileukan jl. Sauyunan 10 Blok F10 5, Kota Bandung</li>
-                                    <li><strong>WhatsApp:</strong> +62 823-3290-1726</li>
-                                </ul>
-                            </div>
-                        </motion.div>
+                                <AnimatePresence>
+                                    {(!point.isExpandable || expandedSection === index) && (
+                                        <motion.div
+                                            initial={point.isExpandable ? { height: 0, opacity: 0 } : { opacity: 1 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="p-6 md:p-8 pt-0 prose prose-slate max-w-none text-slate-600">
+                                                {point.content}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
             </main>

@@ -7,21 +7,9 @@ import useAuthStore from "../../auth/useAuthStore";
 
 
 const Navbar = ({ alwaysScrolled = false }) => {
-    const [scrolled, setScrolled] = useState(alwaysScrolled);
+    // Force navbar to always appear in the "scrolled" (solid) state
+    const scrolled = true;
     const { user, role, isAuthenticated, logout } = useAuthStore();
-
-    // Scroll effect
-    useEffect(() => {
-        if (alwaysScrolled) {
-            setScrolled(true);
-            return;
-        }
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 20);
-        };
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, [alwaysScrolled]);
 
     // Logout
     const handleLogout = async () => {

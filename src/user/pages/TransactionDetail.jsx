@@ -4,6 +4,7 @@ import Navbar from "../../components/Layout/Navbar";
 import Footer from "../../components/Layout/Footer";
 import { HiOutlineDuplicate, HiChevronDown } from "react-icons/hi";
 import { supabase } from "../../lib/supabaseClient";
+import { QRCode } from "react-qr-code";
 
 import topEvents from "../../data/TopEvent";
 import newEvents from "../../data/NewEvent";
@@ -72,7 +73,7 @@ export default function TransactionDetail() {
 
     return (
         <div className="bg-[#fbffff] min-h-screen font-sans text-slate-900">
-            <Navbar showSearch={false} />
+            <Navbar alwaysScrolled={true} />
 
             <div className="pt-32 pb-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -172,9 +173,24 @@ export default function TransactionDetail() {
                                                     <div>
                                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Status Tiket</p>
                                                         <p className="text-sm font-bold text-slate-700 uppercase">{ticket.status}</p>
+
+                                                        <div className="mt-4 p-2 bg-white border border-slate-100 rounded-xl w-fit">
+                                                            {ticket.qr_code ? (
+                                                                <QRCode
+                                                                    size={100}
+                                                                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                                                    value={ticket.qr_code}
+                                                                    viewBox={`0 0 256 256`}
+                                                                />
+                                                            ) : (
+                                                                <div className="w-24 h-24 bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 font-bold">
+                                                                    NO QR
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div className="lg:col-span-2">
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">PayLoad / ID</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">PayLoad / ID / Barcode</p>
                                                         <p className="text-sm font-mono text-slate-500 break-all">{ticket.qr_code}</p>
                                                     </div>
                                                 </div>

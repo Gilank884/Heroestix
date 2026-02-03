@@ -1,4 +1,4 @@
-import Daftar from "../../components/auth/daftar";
+import CreatorRegister from "../../components/auth/CreatorRegister";
 import RegisterNav from "../../components/Layout/RegisterNav";
 import Footer from "../../components/Layout/Footer";
 import { motion } from "framer-motion";
@@ -17,7 +17,7 @@ export default function CreatorDaftarPage() {
                     ease: [0.22, 1, 0.36, 1], // smooth cinematic
                 }}
             >
-                <Daftar role="creator" />
+                <CreatorRegister />
             </motion.main>
         </>
     );
