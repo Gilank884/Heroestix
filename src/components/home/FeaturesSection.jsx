@@ -1,82 +1,100 @@
 import React from "react";
 import {
-    Layout,
+    Zap,
     ShieldCheck,
+    CreditCard,
     BarChart3,
-    Ticket,
-    CreditCard
+    QrCode,
+    Headphones
 } from "lucide-react";
 
 const features = [
     {
-        icon: <Layout size={32} className="text-blue-500" />,
-        title: "Kelola Event Terpadu",
-        desc: "Monitor pendaftaran hingga check-in peserta dalam satu dashboard intuitif.",
-        bgColor: "bg-blue-50/50",
-        borderColor: "border-blue-100"
+        icon: <Zap size={24} className="text-white" />,
+        title: "Pemesanan Kilat",
+        desc: "Proses pembelian tiket yang super cepat dan mudah, tanpa antrian panjang.",
+        bgColor: "bg-blue-500",
     },
     {
-        icon: <BarChart3 size={32} className="text-emerald-500" />,
-        title: "Analitik Akurat",
-        desc: "Pantau statistik penjualan dan demografi peserta secara real-time.",
-        bgColor: "bg-emerald-50/50",
-        borderColor: "border-emerald-100"
+        icon: <ShieldCheck size={24} className="text-white" />,
+        title: "Keamanan Terjamin",
+        desc: "Data dan transaksi Anda dilindungi dengan sistem keamanan enkripsi terkini.",
+        bgColor: "bg-cyan-500",
     },
     {
-        icon: <ShieldCheck size={32} className="text-amber-500" />,
-        title: "Keamanan Transaksi",
-        desc: "Sistem enkripsi mutakhir menjamin data dan dana transaksi tetap aman.",
-        bgColor: "bg-amber-50/50",
-        borderColor: "border-amber-100"
+        icon: <CreditCard size={24} className="text-white" />,
+        title: "Pembayaran Lengkap",
+        desc: "Mendukung berbagai metode pembayaran, mulai dari QRIS hingga Virtual Account.",
+        bgColor: "bg-orange-500",
     },
     {
-        icon: <CreditCard size={32} className="text-rose-500" />,
-        title: "Metode Pembayaran Luas",
-        desc: "Terintegrasi dengan berbagai bank dan e-wallet untuk kemudahan peserta.",
-        bgColor: "bg-rose-50/50",
-        borderColor: "border-rose-100"
+        icon: <BarChart3 size={24} className="text-white" />,
+        title: "Analitik Real-Time",
+        desc: "Pantau performa penjualan tiket dan data pengunjung secara langsung.",
+        bgColor: "bg-yellow-500",
+    },
+    {
+        icon: <QrCode size={24} className="text-white" />,
+        title: "Validasi Tiket Instan",
+        desc: "Check-in peserta lebih cepat dengan sistem scan QR Code yang efisien.",
+        bgColor: "bg-purple-500",
+    },
+    {
+        icon: <Headphones size={24} className="text-white" />,
+        title: "Layanan 24/7",
+        desc: "Tim support kami siap membantu kendala teknis maupun non-teknis kapan saja.",
+        bgColor: "bg-red-500",
     }
 ];
 
 export default function FeaturesSection() {
     return (
-        <section id="features" className="py-24 bg-white">
-            <div className="container mx-auto px-4">
-                {/* Header */}
-                <div className="max-w-3xl mx-auto text-center mb-16">
-                    <h2 className="text-3xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight">
-                        Kenapa Harus <span className="text-blue-600">Heroestix</span>?
-                    </h2>
-                    <p className="text-lg text-slate-600 leading-relaxed">
-                        Kami menyediakan solusi end-to-end untuk manajemen event Anda,
-                        memastikan setiap langkah berjalan lancar dan profesional.
-                    </p>
-                    <div className="h-1.5 w-20 bg-blue-600 mx-auto mt-8 rounded-full" />
+        <section className="w-full py-16 px-4 md:px-12 bg-white">
+            <div className="max-w-7xl mx-auto rounded-[2.5rem] bg-blue-700 overflow-hidden flex flex-col md:flex-row shadow-2xl">
+                {/* Left Side - Text Content */}
+                <div className="w-full md:w-5/12 p-10 md:p-16 flex flex-col justify-center text-white relative overflow-hidden">
+                    {/* Background decoration */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2"></div>
+
+                    <div className="relative z-10">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight flex flex-wrap items-center gap-3">
+                            Kenapa Harus
+                            <span className="inline-flex items-center gap-3 bg-white/10 px-4 py-2 rounded-2xl border border-white/10 backdrop-blur-sm">
+                                <img
+                                    src="/Logo/Hero.png"
+                                    alt="Hero Icon"
+                                    className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-lg"
+                                />
+                                <span className="text-white">Heroestix ?</span>
+                            </span>
+                        </h2>
+                        <p className="text-blue-100 text-lg mb-10 leading-relaxed opacity-90">
+                            Kami menyediakan solusi manajemen tiket event yang lengkap, aman, dan mudah digunakan untuk kesuksesan acara Anda.
+                        </p>
+
+                        <button className="px-8 py-3 border-2 border-white/30 rounded-2xl hover:bg-white hover:text-blue-700 transition-all duration-300 font-semibold text-sm tracking-wide w-fit">
+                            Pelajari Selengkapnya
+                        </button>
+                    </div>
                 </div>
 
-                {/* Features Grid */}
-                <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {features.map((feature, index) => (
-                        <div
-                            key={index}
-                            className={`group p-8 rounded-[2rem] border ${feature.borderColor} ${feature.bgColor} transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col items-center text-center`}
-                        >
-                            {/* Icon Wrapper */}
-                            <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                                {feature.icon}
+                {/* Right Side - Feature Grid */}
+                <div className="w-full md:w-7/12 bg-white/5 p-8 md:p-12">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {features.map((feature, index) => (
+                            <div key={index} className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 h-full flex flex-col">
+                                <div className={`w-12 h-12 rounded-2xl ${feature.bgColor} flex items-center justify-center mb-5 shrink-0 shadow-sm transition-transform duration-300 group-hover:scale-110`}>
+                                    {feature.icon}
+                                </div>
+                                <h3 className="font-bold text-gray-900 text-lg mb-3">
+                                    {feature.title}
+                                </h3>
+                                <p className="text-gray-500 text-sm leading-relaxed">
+                                    {feature.desc}
+                                </p>
                             </div>
-
-                            {/* Title */}
-                            <h3 className="text-xl font-bold text-slate-900 mb-4">
-                                {feature.title}
-                            </h3>
-
-                            {/* Description */}
-                            <p className="text-slate-600 leading-relaxed">
-                                {feature.desc}
-                            </p>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </div>
         </section>

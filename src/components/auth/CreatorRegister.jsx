@@ -102,28 +102,46 @@ const CreatorRegister = () => {
                     .getPublicUrl(filePath);
 
                 photoUrl = publicUrl;
-                setForm(prev => ({ ...prev, photoUrl: publicUrl })); // Save to state
+                setForm(prev => ({ ...prev, photoUrl: publicUrl }));
             }
 
-            // 2. Use Supabase Auth OTP (creates user in auth.users + triggers profile creation)
-            const { error } = await supabase.auth.signInWithOtp({
+            // 2. Create user in auth.users first (this triggers profile creation)
+            const { data: authData, error: signUpError } = await supabase.auth.signUp({
                 email: form.email,
+                password: form.password,
                 options: {
+                    emailRedirectTo: window.location.origin + "/creator/dashboard",
                     data: {
                         full_name: form.brand_name,
                         brand_name: form.brand_name,
-                        role: 'creator',
-                        phone: form.phone,
-                        address: form.address,
-                        description: form.description,
-                        photo_url: photoUrl
+                        role: 'creator'
                     }
                 }
             });
 
-            if (error) throw error;
+            if (signUpError) throw signUpError;
 
-            console.log("OTP sent to:", form.email);
+            if (!authData.user) {
+                throw new Error("Failed to create user");
+            }
+
+            console.log("User created in auth.users:", authData.user.id);
+            setUserId(authData.user.id);
+
+            // 3. Send custom OTP via Resend (not Supabase email)
+            const { error: otpError } = await supabase.functions.invoke('send-otp', {
+                body: {
+                    email: form.email,
+                    user_id: authData.user.id
+                }
+            });
+
+            if (otpError) {
+                console.error("Failed to send OTP:", otpError);
+                alert("Gagal mengirim OTP. Silakan coba kirim ulang.");
+            }
+
+            console.log("Custom OTP sent to:", form.email);
             setStep(3); // Go to OTP
 
         } catch (err) {
@@ -140,23 +158,22 @@ const CreatorRegister = () => {
         setErrorMsg("");
 
         try {
-            // Verify OTP using Supabase Auth
-            const { data, error } = await supabase.auth.verifyOtp({
-                email: form.email,
-                token: otpCode,
-                type: 'email'
-            });
+            // Verify OTP from custom table
+            const { data: otpData, error: otpError } = await supabase
+                .from('otp')
+                .select('*')
+                .eq('email', form.email)
+                .eq('otp_code', otpCode)
+                .eq('used', false)
+                .gt('expires_at', new Date().toISOString())
+                .single();
 
-            if (error) throw error;
-
-            if (!data.user) {
-                throw new Error("Verifikasi gagal");
+            if (otpError || !otpData) {
+                throw new Error("Kode OTP salah atau kedaluarsa.");
             }
 
-            console.log("OTP verified, user logged in:", data.user.id);
-
-            // User now exists in auth.users and profiles (created by trigger)
-            // Call edge function to create creator record ONLY
+            // Mark OTP as used
+            await supabase.from('otp').update({ used: true }).eq('id', otpData.id);
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
@@ -207,8 +224,11 @@ const CreatorRegister = () => {
         setLoading(true);
         setErrorMsg("");
 
-        const { error } = await supabase.auth.signInWithOtp({
-            email: form.email
+        const { error } = await supabase.functions.invoke('send-otp', {
+            body: {
+                email: form.email,
+                user_id: userId
+            }
         });
 
         if (error) {

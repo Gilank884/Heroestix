@@ -36,7 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         // 2. Save OTP to database
         // Requires 'otp' table: id, email, otp_code, created_at, expires_at, used, user_id (optional)
-        const { params, error: dbError } = await supabase
+        const { data, error: dbError } = await supabase
             .from("otp")
             .insert({
                 email,
@@ -47,8 +47,8 @@ const handler = async (req: Request): Promise<Response> => {
             });
 
         if (dbError) {
-            console.error("Database Error:", dbError);
-            throw new Error("Failed to save OTP");
+            console.error("Database Error Details:", JSON.stringify(dbError, null, 2));
+            throw new Error(`Failed to save OTP: ${dbError.message || dbError.code || 'Unknown error'}`);
         }
 
         // 3. Send Email using Resend

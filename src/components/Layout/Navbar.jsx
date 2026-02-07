@@ -32,25 +32,28 @@ const Navbar = ({ alwaysScrolled = false }) => {
     return (
         <header
             className={`
-                fixed top-0 left-0 w-full z-50 
+                fixed top-6 left-1/2 -translate-x-1/2 z-50 
+                w-[90%] md:w-[95%] max-w-6xl
                 transition-all duration-300 ease-in-out
+                rounded-full border border-white/40 shadow-2xl shadow-blue-900/10
+                backdrop-blur-md 
                 ${scrolled
-                    ? "py-3 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm"
-                    : "py-5 bg-transparent"}
+                    ? "py-3 bg-white/80 supports-[backdrop-filter]:bg-white/60"
+                    : "py-4 bg-white/10"}
             `}
         >
-            <div className="max-w-7xl mx-auto px-6 md:px-10 flex items-center justify-between">
+            <div className="px-6 md:px-8 flex items-center justify-between">
                 {/* Logo Section - Professional Blue */}
                 <div className="flex items-center gap-10">
                     <Link to="/" className="flex-shrink-0 flex items-center gap-3 group/logo">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center transform group-hover/logo:rotate-6 transition-transform duration-300">
+                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center transform group-hover/logo:rotate-12 transition-transform duration-300 shadow-lg shadow-blue-600/30">
                             <img
                                 src="/Logo/Logo.png"
                                 alt="Heroestix Logo"
-                                className="h-6 w-auto brightness-0 invert"
+                                className="h-5 w-auto brightness-0 invert"
                             />
                         </div>
-                        <span className={`text-2xl font-bold tracking-tight ${scrolled ? "text-slate-900" : "text-white"} transition-colors duration-300`}>
+                        <span className="text-xl font-bold tracking-tight text-slate-800 group-hover/logo:text-blue-600 transition-colors duration-300">
                             Heroestix
                         </span>
                     </Link>
@@ -67,23 +70,19 @@ const Navbar = ({ alwaysScrolled = false }) => {
                                     href={item.path}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className={`
-                                        text-[13px] font-semibold uppercase tracking-wider transition-all 
-                                        ${scrolled ? "text-slate-600 hover:text-blue-600" : "text-white/90 hover:text-white"}
-                                    `}
+                                    className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors relative group"
                                 >
                                     {item.name}
+                                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
                                 </a>
                             ) : (
                                 <Link
                                     key={item.name}
                                     to={item.path}
-                                    className={`
-                                        text-[13px] font-semibold uppercase tracking-wider transition-all 
-                                        ${scrolled ? "text-slate-600 hover:text-blue-600" : "text-white/90 hover:text-white"}
-                                    `}
+                                    className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors relative group"
                                 >
                                     {item.name}
+                                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
                                 </Link>
                             )
                         ))}
@@ -91,11 +90,8 @@ const Navbar = ({ alwaysScrolled = false }) => {
 
                     {user ? (
                         <div className="relative group">
-                            <div className={`
-                                            flex items-center gap-2 cursor-pointer transition-all
-                                            ${scrolled ? "text-slate-900" : "text-white"}
-                                        `}>
-                                <div className="w-9 h-9 rounded-xl bg-blue-600/10 overflow-hidden flex items-center justify-center border border-blue-600/20">
+                            <div className="flex items-center gap-3 cursor-pointer p-1 pr-4 rounded-full hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200">
+                                <div className="w-9 h-9 rounded-full bg-blue-100 overflow-hidden flex items-center justify-center border-2 border-white shadow-sm">
                                     {user.user_metadata?.avatar_url ? (
                                         <img
                                             src={user.user_metadata.avatar_url}
@@ -113,70 +109,71 @@ const Navbar = ({ alwaysScrolled = false }) => {
                                         style={{ display: user.user_metadata?.avatar_url ? 'none' : 'block' }}
                                     />
                                 </div>
-                                <span className="hidden sm:inline text-sm font-medium">{displayName}</span>
+                                <span className="hidden sm:inline text-sm font-semibold text-slate-700">{displayName}</span>
                             </div>
 
                             {/* Dropdown Menu - Sleek Dark/Professional */}
                             <div className="
-                                absolute right-0 mt-4 w-56
-                                rounded-2xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100
+                                absolute right-0 mt-4 w-60
+                                rounded-[2rem] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100
                                 opacity-0 invisible group-hover:opacity-100 group-hover:visible
                                 transition-all duration-200 transform origin-top-right scale-95 group-hover:scale-100
-                                overflow-hidden
+                                overflow-hidden p-2
                             ">
-                                <div className="px-4 py-3 border-b border-slate-50">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Signed in as</p>
-                                    <p className="text-sm font-semibold text-slate-900 truncate">{displayName}</p>
+                                <div className="px-4 py-3 mb-2 bg-slate-50 rounded-2xl">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
+                                    <p className="text-sm font-bold text-slate-900 truncate">{displayName}</p>
                                 </div>
 
-                                <Link
-                                    to="/profile"
-                                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors"
-                                >
-                                    <FiUser size={16} />
-                                    <span>My Profile</span>
-                                </Link>
-
-                                {role === "creator" && (
-                                    <a
-                                        href={getSubdomainUrl("creator")}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors border-t border-slate-50"
+                                <div className="space-y-1">
+                                    <Link
+                                        to="/profile"
+                                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-xl"
                                     >
-                                        <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white italic">C</div>
-                                        <span>Creator Portal</span>
-                                    </a>
-                                )}
+                                        <FiUser size={16} />
+                                        <span>My Profile</span>
+                                    </Link>
 
-                                {role === "developer" && (
-                                    <a
-                                        href={getSubdomainUrl("dev")}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors border-t border-slate-50"
+                                    {role === "creator" && (
+                                        <a
+                                            href={getSubdomainUrl("creator")}
+                                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-xl"
+                                        >
+                                            <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white italic">C</div>
+                                            <span>Creator Portal</span>
+                                        </a>
+                                    )}
+
+                                    {role === "developer" && (
+                                        <a
+                                            href={getSubdomainUrl("dev")}
+                                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-xl"
+                                        >
+                                            <div className="w-5 h-5 rounded bg-slate-900 flex items-center justify-center text-[10px] font-bold text-white italic">D</div>
+                                            <span>Dev Portal</span>
+                                        </a>
+                                    )}
+
+                                    <div className="border-t border-slate-100 my-1"></div>
+
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors rounded-xl"
                                     >
-                                        <div className="w-5 h-5 rounded bg-slate-900 flex items-center justify-center text-[10px] font-bold text-white italic">D</div>
-                                        <span>Dev Portal</span>
-                                    </a>
-                                )}
-
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-slate-50"
-                                >
-                                    <FiLogOut size={16} />
-                                    <span>Sign Out</span>
-                                </button>
+                                        <FiLogOut size={16} />
+                                        <span>Sign Out</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ) : (
                         <div className="flex items-center gap-3">
                             <Link
                                 to="/masuk"
-                                className={`
-                                    px-6 py-2.5 rounded-xl font-bold text-sm transition-all
-                                    ${scrolled
-                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-900/10 hover:bg-blue-700"
-                                        : "bg-white text-blue-600 hover:bg-blue-50"}
-                                    hover:scale-105 active:scale-95
-                                `}
+                                className="
+                                    px-7 py-2.5 rounded-full font-bold text-sm transition-all
+                                    bg-slate-900 text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800 hover:-translate-y-0.5
+                                "
                             >
                                 Get In
                             </Link>

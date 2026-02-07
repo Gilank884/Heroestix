@@ -41,31 +41,38 @@ const EventNavbar = ({ searchTerm, setSearchTerm }) => {
         "User";
 
     return (
-        <header className="fixed z-50 transition-all duration-300 top-0 left-0 w-full py-3 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
-            <div className="flex items-center gap-10 max-w-7xl mx-auto px-6 md:px-10">
+        <header
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-50 
+                w-[90%] md:w-[95%] max-w-6xl
+                transition-all duration-300 ease-in-out
+                rounded-full border border-white/40 shadow-2xl shadow-blue-900/10
+                backdrop-blur-md 
+                py-3 bg-white/80 supports-[backdrop-filter]:bg-white/60"
+        >
+            <div className="px-6 md:px-8 flex items-center justify-between h-full">
                 {/* Logo + Search */}
                 <div className="flex items-center gap-4 w-full sm:w-auto">
                     <Link to="/">
                         <img
                             src="/Logo/Logo.png"
                             alt="Logo"
-                            className="h-10 w-auto cursor-pointer"
+                            className="h-9 w-auto cursor-pointer"
                         />
                     </Link>
 
                     <div className="relative w-full sm:w-64">
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Heroestix <span className="text-blue-600">Official</span></h2>
+                        <h2 className="text-xl font-black text-slate-900 tracking-tight">Heroestix <span className="text-blue-600">Official</span></h2>
                     </div>
                 </div>
 
                 {/* Menu Kanan */}
-                <div className="ml-auto flex items-center gap-8 text-[13px] font-semibold uppercase tracking-wider text-slate-600">
-                    <Link to="/about-us" className="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                <div className="ml-auto flex items-center gap-6 text-[13px] font-semibold uppercase tracking-wider text-slate-600">
+                    <Link to="/about-us" className="hidden md:flex items-center gap-2 hover:text-blue-600 transition-colors">
                         <HiOutlineInformationCircle size={18} className="text-blue-500" />
                         Tentang Kami
                     </Link>
 
-                    <Link to="/error" className="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                    <Link to="/error" className="hidden md:flex items-center gap-2 hover:text-blue-600 transition-colors">
                         <MdOutlineContactSupport size={18} className="text-blue-500" />
                         Konsultasi
                     </Link>
@@ -73,44 +80,53 @@ const EventNavbar = ({ searchTerm, setSearchTerm }) => {
                     {/* Auth */}
                     {user ? (
                         <div className="relative group">
-                            <div className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 hover:text-blue-600">
-                                <FiUser size={18} className="text-blue-600" />
-                                {displayName}
+                            <div className="flex items-center gap-2 cursor-pointer p-1 pr-4 rounded-full hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 overflow-hidden flex items-center justify-center border-2 border-white shadow-sm">
+                                    <FiUser size={16} className="text-blue-600" />
+                                </div>
+                                <span className="hidden sm:inline text-xs font-bold text-slate-700">{displayName}</span>
                             </div>
 
                             <div className="
-                                absolute right-0 mt-3 w-40
-                                rounded-xl bg-white shadow-xl
+                                absolute right-0 mt-4 w-52
+                                rounded-[2rem] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100
                                 opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                                transition-all duration-300
-                                text-black
+                                transition-all duration-200 transform origin-top-right scale-95 group-hover:scale-100
+                                overflow-hidden p-2
                             ">
-                                <Link
-                                    to="/profile"
-                                    className="flex items-center gap-2 px-4 py-3 hover:bg-[#f9e2d2] rounded-t-xl"
-                                >
-                                    <FiUser size={16} />
-                                    Profile
-                                </Link>
+                                <div className="px-4 py-3 mb-2 bg-slate-50 rounded-2xl">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
+                                    <p className="text-sm font-bold text-slate-900 truncate">{displayName}</p>
+                                </div>
 
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full flex items-center gap-2 px-4 py-3 hover:bg-red-50 text-red-600 rounded-b-xl"
-                                >
-                                    <FiLogOut size={16} />
-                                    Logout
-                                </button>
+                                <div className="space-y-1">
+                                    <Link
+                                        to="/profile"
+                                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-xl font-medium normal-case"
+                                    >
+                                        <FiUser size={16} />
+                                        <span>Profile</span>
+                                    </Link>
+
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors rounded-xl font-medium normal-case"
+                                    >
+                                        <FiLogOut size={16} />
+                                        <span>Logout</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-4">
-                            <Link to="/masuk" className="text-slate-600 hover:text-blue-600">
+                        <div className="flex items-center gap-3">
+                            <Link to="/masuk" className="text-slate-600 hover:text-blue-600 hidden sm:block">
                                 Masuk
                             </Link>
 
                             <Link
                                 to="/daftar"
-                                className="px-5 py-2 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20"
+                                className="px-5 py-2 rounded-full font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-900/20 transition-all hover:-translate-y-0.5"
                             >
                                 Daftar
                             </Link>

@@ -34,13 +34,13 @@ const HeroSection = () => {
             </div>
 
             <div className="max-w-6xl mx-auto relative z-10">
-                {/* Main Headline (Optional, but adds professionalism) */}
+                {/* Main Headline (Static) */}
                 <div className="text-center mb-12 space-y-4">
                     <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight">
-                        Experience <span className="text-blue-500">Unforgettable</span> Events
+                        Rasakan Pengalaman Event Tak Terlupakan
                     </h1>
                     <p className="text-slate-400 text-lg max-w-2xl mx-auto font-medium">
-                        Your gateway to the most exclusive concerts, festivals, and cultural experiences.
+                        Gerbang utama Anda menuju konser eksklusif, festival meriah, dan pengalaman budaya yang memukau.
                     </p>
                 </div>
 

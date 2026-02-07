@@ -22,7 +22,7 @@ entrypoint = "./functions/send-ticket-email/index.ts"
 
 [functions.send-otp]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 entrypoint = "./functions/send-otp/index.ts"
 
 [functions.create-creator-profile]
