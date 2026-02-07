@@ -1,0 +1,9 @@
+{
+    "imports": {
+        "supabase": "https://esm.sh/@supabase/supabase-js@2.45.4"
+    },
+    "env": [
+        "SUPABASE_URL",
+        "SUPABASE_SERVICE_ROLE_KEY"
+    ]
+}

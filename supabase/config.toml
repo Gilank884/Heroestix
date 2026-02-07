@@ -1,0 +1,36 @@
+
+[functions.create-invoice]
+enabled = true
+verify_jwt = true
+import_map = "./functions/create-invoice/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/create-invoice/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/create-invoice/*.html" ]
+
+[functions.payment-gateway]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/payment-gateway/index.ts"
+
+[functions.send-ticket-email]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-ticket-email/index.ts"
+
+[functions.send-otp]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-otp/index.ts"
+
+[functions.create-creator-profile]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/create-creator-profile/index.ts"
+
+[functions.register-creator]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/register-creator/index.ts"

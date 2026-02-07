@@ -15,9 +15,14 @@ import SelectTicket from "./user/pages/SelectTicket";
 import Checkout from "./user/pages/Checkout";
 import Payment from "./user/pages/Payment";
 import TransactionDetail from "./user/pages/TransactionDetail";
+import PaymentProcessing from "./user/pages/PaymentProcessing";
+import PaymentReceipt from "./user/pages/PaymentReceipt";
+import MockBayarind from "./user/pages/MockBayarind"; // Mock Import
 import CreatorPage from "./user/pages/CreatorPage";
+
 import PrivacyPolicy from "./user/pages/PrivacyPolicy";
 import TermsOfService from "./user/pages/TermsOfService";
+import CompleteRegistration from "./user/pages/CompleteRegistration"; // New Import
 
 // Layouts
 import CreatorLayout from "./creator/layouts/CreatorLayout";
@@ -130,53 +135,25 @@ export default function App() {
           // If profile doesn't exist and they are registering OR logging in with Google
           const isGoogleProvider = session.user.app_metadata?.provider === "google";
 
-          if (authMode === "register" || isGoogleProvider) {
-            const role = localStorage.getItem("auth_role") || "user";
-            console.log(`Auto-creating profile for ${isGoogleProvider ? "Google user" : "registering user"}. Role: ${role}`);
+          // MODIFIED: If Google Provider, REDIRECT to Complete Registration instead of Auto-Create
+          if ((authMode === "register" || isGoogleProvider)) {
+            // If manual email register, profile should have been created in UserRegister.jsx, but if not, logic might fall here.
+            // But for Google, we want to force completion.
 
-            // Create profile
-            const { error: createError } = await supabase.from("profiles").upsert({
-              id: session.user.id,
-              email: session.user.email,
-              full_name: session.user.user_metadata?.nama || session.user.user_metadata?.full_name || "Google User",
-              role: role,
-            });
-
-            if (!createError) {
-              console.log("Profile created/updated successfully.");
-              // Call login even if we reload, to ensure store is populated
-              login(session.user, session.access_token, role);
-            } else {
-              console.error("CRITICAL: Error creating profile in database:", createError.message);
-              console.error("This usually happens due to RLS policies or missing table. Error code:", createError.code);
-            }
-
-            if (!createError && role === "creator") {
-              console.log("Creating/Updating creator record with metadata:", {
-                brand_name: session.user.user_metadata?.brand_name,
-                bank_name: session.user.user_metadata?.bank_name
-              });
-              // Also create creator record with metadata from user_metadata
-              const { error: creatorError } = await supabase.from("creators").upsert({
-                id: session.user.id,
-                brand_name: session.user.user_metadata?.brand_name || "My Brand",
-                bank_name: session.user.user_metadata?.bank_name || "",
-                bank_account: session.user.user_metadata?.bank_account || "",
-                verified: false
-              });
-
-              if (!creatorError) {
-                console.log("Creator record created/updated successfully.");
-              } else {
-                console.error("CRITICAL: Error creating creator record in database:", creatorError.message);
+            if (isGoogleProvider) {
+              // Check if we are already on the completion page to avoid infinite loop
+              if (window.location.pathname !== "/complete-registration") {
+                window.location.href = "/complete-registration";
               }
+              setChecking(false); // Stop checking, let them fill the form
+              return;
             }
 
-            localStorage.removeItem("auth_mode");
-            localStorage.removeItem("auth_role");
-            console.log("Auth sequence complete. Reloading page to finalize...");
-            window.location.reload(); // Still helpful to clear hash/params cleanly
-            return;
+            // Below logic kept for reference or other providers, but strictly for Google we redirect above.
+            // Actually, if it's manual register and NO profile, something went wrong in UserRegister.jsx or it's a legacy flow.
+            // Let's keep the old auto-create as fallback for non-google if needed, although UserRegister handles it now.
+
+            // ... Old Auto Create Logic Removed for Google ...
           } else {
             // Unregistered user trying to login (manual email)
             console.warn("Unregistered user (manual login) attempted. Redirecting to error.");
@@ -208,6 +185,12 @@ export default function App() {
           // 🔄 CROSS-SUBDOMAIN REDIRECTION LOGIC
           // Rule: Only redirect if on the WRONG subdomain, OR if explicitly logging in/registering
           const shouldForceRedirect = authMode === "login" || authMode === "register";
+
+          // If on completion page but profile exists, redirect out
+          if (window.location.pathname === "/complete-registration") {
+            window.location.href = "/";
+            return;
+          }
 
           if (role === "creator") {
             if (isDevSub || (shouldForceRedirect && !isCreatorSub)) {
@@ -357,9 +340,13 @@ export default function App() {
         <Route path="/select-ticket/:id" element={<SelectTicket />} />
         <Route path="/checkout/:id" element={<Checkout />} />
         <Route path="/payment/:id" element={<Payment />} />
+        <Route path="/payment/processing" element={<PaymentProcessing />} />
+        <Route path="/payment/receipt" element={<PaymentReceipt />} />
+        <Route path="/payment/mock-bayarind" element={<MockBayarind />} />
         <Route path="/transaction-detail/:id" element={<TransactionDetail />} />
         <Route path="/become-creator" element={<BecomeCreator />} />
         <Route path="/creator/:id" element={<CreatorPage />} />
+        <Route path="/complete-registration" element={<CompleteRegistration />} /> {/* New Route */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>

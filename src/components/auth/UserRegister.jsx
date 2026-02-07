@@ -3,9 +3,9 @@ import { supabase } from "../../lib/supabaseClient";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
+import { RxCheckCircled } from "react-icons/rx"; // Import added
 
 const UserRegister = () => {
-    const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
 
@@ -21,7 +21,6 @@ const UserRegister = () => {
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [otpCode, setOtpCode] = useState("");
 
     const handleChange = (e) => {
         const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -43,7 +42,7 @@ const UserRegister = () => {
         if (error) console.error("Google login error:", error.message);
     };
 
-    const handleStep1Submit = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setErrorMsg("");
@@ -96,21 +95,20 @@ const UserRegister = () => {
                     return;
                 }
 
-                // Send Custom OTP via Edge Function
-                const { error: otpError } = await supabase.functions.invoke('send-otp', {
-                    body: {
-                        email: form.email,
-                        user_id: authData.user.id
-                    }
+                // DIRECT REGISTER: No OTP. Create profile immediately.
+                await supabase.from('profiles').upsert({
+                    id: authData.user.id,
+                    email: form.email,
+                    full_name: form.nama,
+                    role: 'user',
                 });
 
-                if (otpError) {
-                    console.error("Failed to send OTP:", otpError);
-                    // We still proceed to Step 2, user can try "Resend" there
-                    alert("Gagal mengirim OTP. Silakan coba kirim ulang di halaman berikutnya.");
-                }
+                alert("Pendaftaran berhasil! Silahkan Masuk.");
 
-                setStep(2); // Go to OTP
+                // Clear session to force login logic if needed, or just redirect
+                await supabase.auth.signOut();
+
+                window.location.href = "/masuk";
             }
 
         } catch (err) {
@@ -119,60 +117,6 @@ const UserRegister = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleVerifyOtp = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setErrorMsg("");
-
-        const { data, error } = await supabase.auth.verifyOtp({
-            email: form.email,
-            token: otpCode,
-            type: 'signup'
-        });
-
-        if (error) {
-            setErrorMsg(error.message);
-            setLoading(false);
-        } else {
-            // Create entries in profiles table
-            await supabase.from('profiles').upsert({
-                id: data.user.id,
-                email: form.email,
-                full_name: form.nama,
-                role: 'user',
-            });
-
-            alert("Verifikasi berhasil! Akun Anda telah aktif, Silahkan Masuk.");
-
-            // Clear session to force login
-            await supabase.auth.signOut();
-
-            window.location.href = "/masuk";
-        }
-    };
-
-    const handleResendOtp = async () => {
-        setLoading(true);
-        setErrorMsg("");
-
-        // We need user_id, but if we don't have it easily in state, we might need to rely on email only?
-        // The send-otp function handles optional user_id. 
-        // However, we should try to get it if possible, but let's just send email for now.
-        // Actually, we can't easily get user_id here without storing it in state step 1.
-        // Let's try sending with just email. The function definition says user_id is optional.
-
-        const { error } = await supabase.functions.invoke('send-otp', {
-            body: { email: form.email }
-        });
-
-        if (error) {
-            setErrorMsg("Gagal mengirim ulang OTP: " + error.message);
-        } else {
-            alert("Kode OTP baru telah dikirim ke email Anda.");
-        }
-        setLoading(false);
     };
 
     return (
@@ -186,25 +130,12 @@ const UserRegister = () => {
                 <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
                     {/* Header Steps */}
                     <div className="p-8 border-b border-slate-50 bg-slate-50/50">
-                        <div className="flex items-center justify-between max-w-[200px] mx-auto mb-8 relative">
-                            {/* Line */}
-                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-200 -z-10" />
-
-                            {/* Step 1 Indicator */}
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white text-slate-400 border border-slate-200'}`}>1</div>
-
-                            {/* Step 2 Indicator */}
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 2 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white text-slate-400 border border-slate-200'}`}>2</div>
-                        </div>
-
                         <div className="text-center">
                             <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
-                                {step === 1 && "Daftar Akun"}
-                                {step === 2 && "Verifikasi Email"}
+                                Daftar Akun
                             </h2>
                             <p className="text-sm text-slate-500 font-medium">
-                                {step === 1 && "Nikmati kemudahan beli tiket konser & event."}
-                                {step === 2 && `Masukkan OTP yang dikirim ke ${form.email}`}
+                                Nikmati kemudahan beli tiket konser & event.
                             </p>
                         </div>
                     </div>
@@ -216,154 +147,115 @@ const UserRegister = () => {
                             </div>
                         )}
 
-                        {step === 1 && (
-                            <form onSubmit={handleStep1Submit} className="space-y-5">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Nama Lengkap</label>
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Nama Lengkap</label>
+                                <input
+                                    type="text"
+                                    name="nama"
+                                    placeholder="Sesuai ID"
+                                    value={form.nama}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tanggal Lahir</label>
+                                <input
+                                    type="date"
+                                    name="tanggal_lahir"
+                                    value={form.tanggal_lahir}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold text-slate-500"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Email</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    placeholder="email@anda.com"
+                                    value={form.email}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Kata Sandi</label>
+                                <div className="relative">
                                     <input
-                                        type="text"
-                                        name="nama"
-                                        placeholder="Sesuai ID"
-                                        value={form.nama}
+                                        type={showPassword ? "text" : "password"}
+                                        name="password"
+                                        placeholder="••••••••"
+                                        value={form.password}
                                         onChange={handleChange}
                                         required
-                                        className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                        className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400 pr-12"
                                     />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tanggal Lahir</label>
-                                    <input
-                                        type="date"
-                                        name="tanggal_lahir"
-                                        value={form.tanggal_lahir}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold text-slate-500"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Email</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        placeholder="email@anda.com"
-                                        value={form.email}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Kata Sandi</label>
-                                    <div className="relative">
-                                        <input
-                                            type={showPassword ? "text" : "password"}
-                                            name="password"
-                                            placeholder="••••••••"
-                                            value={form.password}
-                                            onChange={handleChange}
-                                            required
-                                            className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400 pr-12"
-                                        />
-                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                            {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Konfirmasi Kata Sandi</label>
-                                    <div className="relative">
-                                        <input
-                                            type={showConfirmPassword ? "text" : "password"}
-                                            name="confirm_password"
-                                            placeholder="••••••••"
-                                            value={form.confirm_password}
-                                            onChange={handleChange}
-                                            required
-                                            className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400 pr-12"
-                                        />
-                                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                            {showConfirmPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Terms Checkbox */}
-                                <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer" onClick={() => setForm({ ...form, termsAgreed: !form.termsAgreed })}>
-                                    <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${form.termsAgreed ? 'bg-blue-600 border-blue-600' : 'border-slate-300 bg-white'}`}>
-                                        {form.termsAgreed ? (
-                                            <div className="w-2.5 h-2.5 bg-white rounded-full" />
-                                        ) : null}
-                                    </div>
-                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                        I agree to the <Link target="_blank" to="/terms-of-service" className="text-blue-600 font-bold hover:underline">Terms and Conditions</Link> and <Link target="_blank" to="/privacy" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link> applicable at Heroestix.
-                                    </p>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] mt-4 flex items-center justify-center disabled:opacity-50"
-                                >
-                                    {loading ? "Memproses..." : "Buat Akun Sekarang"}
-                                </button>
-
-                                <div className="flex items-center gap-4 w-full my-6">
-                                    <div className="flex-1 h-px bg-slate-100" />
-                                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">atau</span>
-                                    <div className="flex-1 h-px bg-slate-100" />
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={handleGoogleLogin}
-                                    className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-900 rounded-2xl py-3.5 text-sm font-bold hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
-                                >
-                                    <FcGoogle size={20} />
-                                    <span>Lanjut dengan Google</span>
-                                </button>
-
-                                <p className="text-center text-[13px] text-slate-500 font-bold mt-6">
-                                    Sudah punya akun?{" "}
-                                    <Link to="/masuk" className="text-blue-600 hover:underline underline-offset-4">Masuk</Link>
-                                </p>
-                            </form>
-                        )}
-
-                        {step === 2 && (
-                            <form onSubmit={handleVerifyOtp} className="space-y-8">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Kode OTP 6-Digit</label>
-                                    <input
-                                        type="text"
-                                        placeholder="000000"
-                                        maxLength={6}
-                                        value={otpCode}
-                                        onChange={(e) => setOtpCode(e.target.value)}
-                                        required
-                                        className="w-full rounded-2xl px-5 py-4 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-2xl tracking-[0.5em] text-center outline-none transition-all font-black placeholder:text-slate-200"
-                                    />
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading || otpCode.length !== 6}
-                                    className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center"
-                                >
-                                    {loading ? "Memverifikasi..." : "Verifikasi Sekarang"}
-                                </button>
-                                <div className="text-center pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={handleResendOtp}
-                                        disabled={loading}
-                                        className="text-[11px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest disabled:opacity-50"
-                                    >
-                                        Tidak menerima kode? Kirim ulang
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                                        {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                                     </button>
                                 </div>
-                            </form>
-                        )}
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Konfirmasi Kata Sandi</label>
+                                <div className="relative">
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        name="confirm_password"
+                                        placeholder="••••••••"
+                                        value={form.confirm_password}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400 pr-12"
+                                    />
+                                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                                        {showConfirmPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                    </button>
+                                </div>
+                            </div>
 
+                            {/* Terms Checkbox */}
+                            <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer" onClick={() => setForm({ ...form, termsAgreed: !form.termsAgreed })}>
+                                <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${form.termsAgreed ? 'bg-blue-600 border-blue-600' : 'border-slate-300 bg-white'}`}>
+                                    {form.termsAgreed && <RxCheckCircled className="text-white text-xs" />}
+                                </div>
+                                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                    I agree to the <Link target="_blank" to="/terms-of-service" className="text-blue-600 font-bold hover:underline">Terms and Conditions</Link> and <Link target="_blank" to="/privacy" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link> applicable at Heroestix.
+                                </p>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] mt-4 flex items-center justify-center disabled:opacity-50"
+                            >
+                                {loading ? "Memproses..." : "Buat Akun Sekarang"}
+                            </button>
+
+                            <div className="flex items-center gap-4 w-full my-6">
+                                <div className="flex-1 h-px bg-slate-100" />
+                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">atau</span>
+                                <div className="flex-1 h-px bg-slate-100" />
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleGoogleLogin}
+                                className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-900 rounded-2xl py-3.5 text-sm font-bold hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
+                            >
+                                <FcGoogle size={20} />
+                                <span>Lanjut dengan Google</span>
+                            </button>
+
+                            <p className="text-center text-[13px] text-slate-500 font-bold mt-6">
+                                Sudah punya akun?{" "}
+                                <Link to="/masuk" className="text-blue-600 hover:underline underline-offset-4">Masuk</Link>
+                            </p>
+                        </form>
                     </div>
                 </div>
                 <p className="mt-8 text-center text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em]">

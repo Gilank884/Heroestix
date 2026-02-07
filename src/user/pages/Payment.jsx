@@ -237,10 +237,13 @@ export default function Payment() {
                     <div className="grid grid-cols-1 gap-4 mb-4">
                         <button
                             disabled={loading}
-                            onClick={handleSimulatePayment}
+                            onClick={() => {
+                                setLoading(true);
+                                navigate(`/payment/processing?order_id=${orderId}&amount=${total}`);
+                            }}
                             className={`w-full py-4 rounded-2xl font-black text-white transition-all shadow-xl ${loading ? 'bg-slate-300' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-100'}`}
                         >
-                            {loading ? "PROCESSING TRANSACTION..." : "SIMULATE SUCCESSFUL PAYMENT"}
+                            {loading ? "REDIRECTING TO PAYMENT..." : "PAY NOW"}
                         </button>
                     </div>
 

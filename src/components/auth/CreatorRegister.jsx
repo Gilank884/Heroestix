@@ -35,6 +35,7 @@ const CreatorRegister = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [otpCode, setOtpCode] = useState("");
+    const [userId, setUserId] = useState(null); // Store User ID for verification step
 
     const handleChange = (e) => {
         const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -104,66 +105,26 @@ const CreatorRegister = () => {
                 setForm(prev => ({ ...prev, photoUrl: publicUrl })); // Save to state
             }
 
-            // 2. Sign Up
-            const { data: authData, error } = await supabase.auth.signUp({
+            // 2. Use Supabase Auth OTP (creates user in auth.users + triggers profile creation)
+            const { error } = await supabase.auth.signInWithOtp({
                 email: form.email,
-                password: form.password,
                 options: {
-                    emailRedirectTo: window.location.origin + "/creator/dashboard",
                     data: {
                         full_name: form.brand_name,
                         brand_name: form.brand_name,
-                        phone: form.phone,
                         role: 'creator',
+                        phone: form.phone,
                         address: form.address,
                         description: form.description,
-                        photo_url: photoUrl,
-                        social_media: {
-                            instagram: form.social_instagram,
-                            tiktok: form.social_tiktok,
-                            x: form.social_x,
-                            facebook: form.social_facebook
-                        }
-                    },
-                },
+                        photo_url: photoUrl
+                    }
+                }
             });
-
-            console.log("DEBUG REGISTRATION:", { authData, error });
 
             if (error) throw error;
 
-            if (authData.user) {
-                // Check if user is already a creator
-                const { data: creatorData } = await supabase
-                    .from('creators')
-                    .select('id')
-                    .eq('id', authData.user.id)
-                    .maybeSingle();
-
-                if (creatorData) {
-                    setErrorMsg("Email ini sudah terdaftar sebagai Creator. Silakan Login.");
-                    setLoading(false);
-                    return;
-                }
-
-                // If user exists but NOT creator, they can proceed.
-                // Or if new user, they can proceed.
-
-                // Send Custom OTP
-                const { error: otpError } = await supabase.functions.invoke('send-otp', {
-                    body: {
-                        email: form.email,
-                        user_id: authData.user.id
-                    }
-                });
-
-                if (otpError) {
-                    console.error("Failed to send OTP:", otpError);
-                    alert("Gagal mengirim OTP. Silakan coba kirim ulang.");
-                }
-
-                setStep(3); // Go to OTP
-            }
+            console.log("OTP sent to:", form.email);
+            setStep(3); // Go to OTP
 
         } catch (err) {
             console.error("Registration Error:", err);
@@ -179,71 +140,66 @@ const CreatorRegister = () => {
         setErrorMsg("");
 
         try {
-            // Verify against 'otp' table
-            const { data, error } = await supabase
-                .from('otp')
-                .select('*')
-                .eq('email', form.email)
-                .eq('otp_code', otpCode)
-                .eq('used', false)
-                .gt('expires_at', new Date().toISOString())
-                .single();
+            // Verify OTP using Supabase Auth
+            const { data, error } = await supabase.auth.verifyOtp({
+                email: form.email,
+                token: otpCode,
+                type: 'email'
+            });
 
-            if (error || !data) {
-                throw new Error("Kode OTP salah atau kedaluwarsa.");
+            if (error) throw error;
+
+            if (!data.user) {
+                throw new Error("Verifikasi gagal");
             }
 
-            // Mark OTP as used
-            await supabase.from('otp').update({ used: true }).eq('id', data.id);
+            console.log("OTP verified, user logged in:", data.user.id);
 
-            // Create/Update entries in tables
-            // Note: If user already exists, upsert profiles is fine.
-            await supabase.from('profiles').upsert({
-                id: data.user_id,
-                email: form.email,
-                full_name: form.brand_name, // Should we overwrite name? Maybe.
-                role: 'creator', // UPGRADE ROLE to creator
-            });
+            // User now exists in auth.users and profiles (created by trigger)
+            // Call edge function to create creator record ONLY
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
 
-            await supabase.from('creators').insert({
-                id: data.user_id,
-                brand_name: form.brand_name,
-                description: form.description,
-                address: form.address,
-                image_url: data.user_id ? form.photoUrl : null, // Wait, photoUrl is local var in previous step. We need to store it in state or retrieve?
-                // Actually, in handleStep2Submit, we uploaded photo but didn't save URL to state.
-                // We passed it to signUp metadata.
-                // But since we are bypassing signUp (if user exists), metadata might not be updated?
-                // Better to rely on Form State or re-upload?
-                // Re-upload is bad.
-                // Let's check where photoUrl comes from. 
-                // In handleStep2Submit, we got photoUrl. We need it here.
-                // We should store photoUrl in state.
-                // For now, let's fix the photoUrl issue.
+            const functionUrl = "https://qftuhnkzyegcxfozdfyz.supabase.co/functions/v1/create-creator-profile";
 
-                // TEMP FIX: We can't easily get metadata if we didn't update it. 
-                // Let's assume we can get it from state if we save it.
-                // I will add photoUrl to form state in handleStep2Submit first.
-
-                // Wait, I can't access local variable `photoUrl` from handleStep2Submit here.
-                // I need to update handleStep2Submit to save to state.
-
-                social_media: {
-                    instagram: form.social_instagram,
-                    tiktok: form.social_tiktok,
-                    x: form.social_x,
-                    facebook: form.social_facebook
+            const response = await fetch(functionUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
-                verified: false,
-                phone: form.phone
+                body: JSON.stringify({
+                    user_id: data.user.id,
+                    email: form.email,
+                    brand_name: form.brand_name,
+                    phone: form.phone,
+                    address: form.address,
+                    description: form.description,
+                    photo_url: form.photoUrl,
+                    social_media: {
+                        instagram: form.social_instagram,
+                        tiktok: form.social_tiktok,
+                        x: form.social_x,
+                        facebook: form.social_facebook
+                    }
+                })
             });
 
+            const funcData = await response.json();
+
+            if (!response.ok) {
+                console.error("Function Error:", funcData);
+                throw new Error("Gagal membuat profil: " + (funcData.error || "Unknown Error"));
+            }
+
+            // Success
+            alert("Verifikasi berhasil! Akun Anda telah aktif.");
+            window.location.href = "/creator/dashboard";
         } catch (err) {
-            // Handling image_url missing: If it fails, maybe optional?
-            // But wait, the previous code used: `data.user.user_metadata.photo_url`.
-            // If we use custom OTP, `data` is from OTP table, NOT from auth.verifyOtp.
-            // So `data.user` is undefined.
-            // We MUST fix the data source.
+            console.error("Verification Error:", err);
+            setErrorMsg(err.message || "Terjadi kesalahan saat verifikasi.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -251,8 +207,8 @@ const CreatorRegister = () => {
         setLoading(true);
         setErrorMsg("");
 
-        const { error } = await supabase.functions.invoke('send-otp', {
-            body: { email: form.email }
+        const { error } = await supabase.auth.signInWithOtp({
+            email: form.email
         });
 
         if (error) {
