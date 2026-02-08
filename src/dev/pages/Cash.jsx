@@ -45,78 +45,27 @@ const Cash = () => {
         setLoading(true);
         setError(null);
         try {
-            // Fetch everything for cross-referencing to bypass relationship issues
-            const [withdrawalsRes, creatorsRes, profilesRes, ticketTypesRes, eventsRes] = await Promise.all([
-                supabase.from('withdrawals').select('*').order('created_at', { ascending: false }),
-                supabase.from('creators').select('*'),
-                supabase.from('profiles').select('id, full_name'),
-                supabase.from('ticket_types').select('price, sold, event_id'),
-                supabase.from('events').select('id, creator_id')
-            ]);
+            // Fetch aggregated data from Edge Function to bypass client-side row limits
+            const { data, error } = await supabase.functions.invoke('get-admin-financials');
 
-            if (withdrawalsRes.error) throw withdrawalsRes.error;
+            if (error) throw error;
 
-            const withdrawalsData = withdrawalsRes.data || [];
-            const creatorsData = creatorsRes.data || [];
-            const profilesData = profilesRes.data || [];
-            const ttData = ticketTypesRes.data || [];
-            const eventsData = eventsRes.data || [];
+            console.log("Admin Financials Data:", data);
 
-            // Maps for merging
-            const profileMap = profilesData.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
-            const creatorMap = creatorsData.reduce((acc, c) => ({
-                ...acc,
-                [c.id]: { ...c, profiles: profileMap[c.id] || null }
-            }), {});
-
-            // Merge withdrawals with creator/profile info
-            const mergedWithdrawals = withdrawalsData.map(w => ({
-                ...w,
-                creators: creatorMap[w.creator_id] || null
-            }));
-
-            // TAX LOGIC: Price is the creator's share (Net). Gross is Price + 10% Tax.
-            const TAX_RATE = 0.10;
-
-            // 1. Calculate Global Metrics
-            const totalNet = ttData.reduce((sum, tt) => sum + ((tt.price || 0) * (tt.sold || 0)), 0);
-            const totalGross = totalNet * (1 + TAX_RATE);
-
-            // Global Disbursed = sum of withdrawals with status 'approved'
-            const globalDisbursed = withdrawalsData
-                .filter(w => w.status === 'approved')
-                .reduce((sum, w) => sum + (w.amount || 0), 0);
-
-            // 2. Aggregate Per-Creator Settlements
-            const settlements = creatorsData.map(creator => {
-                const creatorEvents = eventsData.filter(ev => ev.creator_id === creator.id);
-                const eventIds = creatorEvents.map(ev => ev.id);
-
-                const creatorTicketTypes = ttData.filter(tt => eventIds.includes(tt.event_id));
-                const creatorNet = creatorTicketTypes.reduce((sum, tt) => sum + ((tt.price || 0) * (tt.sold || 0)), 0);
-                const creatorGross = creatorNet * (1 + TAX_RATE);
-
-                const creatorDisbursed = withdrawalsData
-                    .filter(w => w.creator_id === creator.id && (w.status === 'approved'))
-                    .reduce((sum, w) => sum + (w.amount || 0), 0);
-
-                return {
-                    id: creator.id,
-                    brandName: creator.brand_name || 'Anonymous',
-                    ownerName: profileMap[creator.id]?.full_name || 'Anonymous Owner',
-                    gross: creatorGross,
-                    net: creatorNet,
-                    disbursed: creatorDisbursed
-                };
-            }).sort((a, b) => b.net - a.net);
-
+            // Set Metrics
             setMetrics({
-                totalGross,
-                totalNet,
-                disbursed: globalDisbursed
+                totalGross: data.metrics.totalGross || 0,
+                totalNet: data.metrics.totalNet || 0,
+                disbursed: data.metrics.disbursed || 0
             });
-            setRequests(mergedWithdrawals);
-            setCreatorSettlements(settlements);
+
+            // Set Settlements
+            setCreatorSettlements(data.settlements || []);
+
+            // Set Requests (Withdrawals)
+            // The Edge Function returns 'withdrawals' with 'creators' + 'profiles' joined
+            setRequests(data.withdrawals || []);
+
         } catch (err) {
             console.error('CRITICAL: Error merging ledger data:', err.message);
             setError(err.message);

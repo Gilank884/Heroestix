@@ -1,36 +1,64 @@
-import React from "react";
+import { useState } from "react";
 import Navbar from "../../components/Layout/Navbar";
 import Footer from "../../components/Layout/Footer";
-import { motion } from "framer-motion";
-import { HiRocketLaunch, HiCurrencyDollar, HiPresentationChartLine } from "react-icons/hi2";
-import { MdPeopleAlt } from "react-icons/md";
+import { motion, AnimatePresence } from "framer-motion";
+import { HiRocketLaunch, HiCurrencyDollar, HiPresentationChartLine, HiMegaphone, HiCheckBadge, HiUserCircle, HiCalendar, HiTicket } from "react-icons/hi2";
+import { MdPeopleAlt, MdVerified } from "react-icons/md";
+import { FiUpload, FiCheckCircle } from "react-icons/fi";
 import { getSubdomainUrl } from "../../lib/navigation";
 
 
 const BecomeCreator = () => {
+    const [activeStep, setActiveStep] = useState(0);
+
+
+    const steps = [
+        {
+            id: 0,
+            step: "01",
+            title: "Registrasi Akun",
+            desc: "Buat akun sebagai Creator atau Event Organizer hanya dalam hitungan detik. Kami akan memverifikasi profilmu agar terlihat profesional dan terpercaya di mata calon pembeli.",
+            icon: <HiUserCircle size={24} />
+        },
+        {
+            id: 1,
+            step: "02",
+            title: "Buat Event",
+            desc: "Atur detail eventmu dengan mudah, mulai dari upload poster, lokasi, hingga variasi kategori tiket. Sistem kami mendukung berbagai jenis event, baik online maupun offline.",
+            icon: <HiCalendar size={24} />
+        },
+        {
+            id: 2,
+            step: "03",
+            title: "Publikasi",
+            desc: "Tayangkan eventmu ke ribuan audiens Heroestix. Pantau penjualan tiket secara real-time melalui dashboard analytics dan nikmati sistem check-in yang praktis saat hari-H.",
+            icon: <HiTicket size={24} />
+        }
+    ];
+
     const benefits = [
         {
             icon: <HiRocketLaunch size={32} />,
             title: "Mudah & Cepat",
-            description: "Buat event dan mulai jualan tiket hanya dalam hitungan menit.",
+            description: "Platform kami dirancang untuk kemudahan Anda. Buat event, atur kategori tiket, dan mulai penjualan dalam hitungan menit tanpa proses teknis yang rumit.",
             variant: "light"
         },
         {
             icon: <HiCurrencyDollar size={32} />,
             title: "Komisi Rendah",
-            description: "Nikmati bagi hasil yang kompetitif dan transparan untuk setiap tiket.",
+            description: "Kami mendukung pertumbuhan creator dengan skema bagi hasil yang sangat kompetitif. Nikmati pendapatan maksimal dari setiap tiket yang terjual.",
             variant: "dark"
         },
         {
             icon: <HiPresentationChartLine size={32} />,
             title: "Analitik Real-time",
-            description: "Pantau performa penjualan event kamu kapan saja dengan dashboard canggih.",
+            description: "Dapatkan wawasan mendalam tentang audiens Anda. Pantau penjualan tiket, demografi pengunjung, dan tren pendapatan secara real-time.",
             variant: "dark"
         },
         {
             icon: <MdPeopleAlt size={32} />,
             title: "Dukungan 24/7",
-            description: "Tim support kami siap membantu kendala event kamu kapanpun dibutuhkan.",
+            description: "Jangan khawatir jika mengalami kendala. Tim support kami yang berdedikasi siap membantu Anda 24/7 untuk memastikan event berjalan lancar.",
             variant: "light"
         }
     ];
@@ -140,25 +168,46 @@ const BecomeCreator = () => {
                         {/* Benefits List */}
                         <div className="space-y-6">
                             {[
-                                { title: "Real-time Analytics", desc: "Pantau performa penjualan tiket secara langsung kapan saja." },
-                                { title: "Pencairan Dana Cepat", desc: "Withdraw pendapatan hasil penjualan tiket kapanpun Anda butuhkan." },
-                                { title: "Promosi Otomatis", desc: "Jangkau ribuan calon pembeli melalui jaringan promosi kami." },
+                                {
+                                    icon: <HiPresentationChartLine size={24} />,
+                                    title: "Real-time Analytics",
+                                    desc: "Pantau performa penjualan tiket secara langsung kapan saja.",
+                                    color: "from-blue-500 to-blue-600",
+                                    shadow: "shadow-blue-500/30"
+                                },
+                                {
+                                    icon: <HiCurrencyDollar size={24} />,
+                                    title: "Pencairan Dana Cepat",
+                                    desc: "Withdraw pendapatan hasil penjualan tiket kapanpun Anda butuhkan.",
+                                    color: "from-violet-500 to-violet-600",
+                                    shadow: "shadow-violet-500/30"
+                                },
+                                {
+                                    icon: <HiMegaphone size={24} />,
+                                    title: "Promosi Otomatis",
+                                    desc: "Jangkau ribuan calon pembeli melalui jaringan promosi kami.",
+                                    color: "from-sky-500 to-sky-600",
+                                    shadow: "shadow-sky-500/30"
+                                },
                             ].map((item, idx) => (
                                 <motion.div
                                     key={idx}
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ duration: 0.5, delay: 0.4 + (idx * 0.1) }}
-                                    className="flex gap-4"
+                                    className="flex gap-5 items-start group"
                                 >
-                                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shrink-0 mt-1">
-                                        <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                        </svg>
+                                    <div className="relative shrink-0">
+                                        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center shrink-0 shadow-lg ${item.shadow} text-white transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
+                                            {item.icon}
+                                        </div>
+                                        <div className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 shadow-sm">
+                                            <HiCheckBadge className="text-green-500" size={20} />
+                                        </div>
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
-                                        <p className="text-slate-500">{item.desc}</p>
+                                        <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">{item.title}</h3>
+                                        <p className="text-slate-500 text-sm md:text-base leading-relaxed">{item.desc}</p>
                                     </div>
                                 </motion.div>
                             ))}
@@ -177,6 +226,161 @@ const BecomeCreator = () => {
                                 Daftar Sekarang
                             </a>
                         </motion.div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Steps - Journey Timeline Style */}
+            <section className="py-24 px-6 bg-slate-50 overflow-hidden relative">
+                {/* Background Grid Pattern */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '40px 40px', opacity: 0.3 }}></div>
+
+                <div className="max-w-6xl mx-auto relative z-10">
+                    <div className="text-center mb-24">
+                        <span className="inline-block py-1 px-3 rounded-full bg-blue-100 text-blue-600 font-bold text-xs uppercase tracking-wider mb-4 border border-blue-200">
+                            How It Works
+                        </span>
+                        <h2 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight mb-4">
+                            Perjalanan Menjadi Creator
+                        </h2>
+                        <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+                            Ikuti langkah mudah ini dan mulai perjalanan sukses event Anda bersama Heroestix.
+                        </p>
+                    </div>
+
+                    <div className="relative">
+                        {/* Central Line */}
+                        <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-blue-100 -translate-x-1/2 rounded-full hidden md:block"></div>
+                        <motion.div
+                            initial={{ height: 0 }}
+                            whileInView={{ height: "100%" }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 1.5, ease: "easeInOut" }}
+                            className="absolute left-1/2 top-0 w-1 bg-gradient-to-b from-blue-600 via-purple-600 to-blue-600 -translate-x-1/2 rounded-full hidden md:block origin-top"
+                        >
+                        </motion.div>
+
+                        <div className="space-y-12 md:space-y-24 relative">
+                            {steps.map((item, i) => {
+                                const isEven = i % 2 === 0;
+                                return (
+                                    <div key={i} className={`flex flex-col md:flex-row items-center justify-between gap-8 ${isEven ? 'md:flex-row-reverse' : ''}`}>
+
+                                        {/* Empty Space for alignment */}
+                                        <div className="w-full md:w-[45%]"></div>
+
+                                        {/* Center Node */}
+                                        <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center w-8 h-8 rounded-full bg-white border-4 border-blue-600 z-10 shadow-[0_0_0_4px_rgba(37,99,235,0.2)] hidden md:flex">
+                                            <div className="w-2.5 h-2.5 bg-blue-600 rounded-full"></div>
+                                        </div>
+
+                                        {/* Content Card */}
+                                        <motion.div
+                                            initial={{ opacity: 0, x: isEven ? -50 : 50 }}
+                                            whileInView={{ opacity: 1, x: 0 }}
+                                            viewport={{ once: true, margin: "-100px" }}
+                                            transition={{ duration: 0.6, delay: i * 0.2 }}
+                                            className="w-full md:w-[45%] bg-white rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 border border-slate-100 group"
+                                        >
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                                    {item.icon}
+                                                </div>
+                                                <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                                                    Step {item.step}
+                                                </span>
+                                            </div>
+
+                                            <h3 className="text-xl font-bold text-slate-900 mb-2">{item.title}</h3>
+                                            <p className="text-slate-500 text-sm mb-6 leading-relaxed">
+                                                {item.desc}
+                                            </p>
+
+                                            {/* PREVIEW / SIMULATION AREA */}
+                                            <div className="bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden relative group-hover:shadow-lg transition-all duration-300">
+                                                {/* Step 1: Profile Preview */}
+                                                {i === 0 && (
+                                                    <div className="p-4">
+                                                        <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100 flex items-center gap-3">
+                                                            <div className="w-12 h-12 rounded-full bg-slate-200 animate-pulse"></div>
+                                                            <div className="flex-1">
+                                                                <div className="h-4 bg-slate-200 rounded w-2/3 mb-2 animate-pulse"></div>
+                                                                <div className="h-3 bg-slate-100 rounded w-1/2 animate-pulse"></div>
+                                                            </div>
+                                                            <MdVerified className="text-green-500 text-xl" />
+                                                        </div>
+                                                        <div className="mt-4 flex gap-2 justify-center">
+                                                            <div className="h-2 w-16 bg-blue-100 rounded-full"></div>
+                                                            <div className="h-2 w-8 bg-slate-200 rounded-full"></div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Step 2: Upload UI */}
+                                                {i === 1 && (
+                                                    <div className="p-4 bg-slate-900 text-white relative overflow-hidden">
+                                                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl"></div>
+                                                        <div className="flex justify-between items-center mb-3">
+                                                            <span className="text-xs font-bold text-slate-400">Post Artist</span>
+                                                            <FiCheckCircle className="text-green-500" />
+                                                        </div>
+                                                        <div className="w-full h-24 bg-white/5 border border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center gap-2 mb-3 cursor-pointer hover:bg-white/10 transition-colors">
+                                                            <FiUpload />
+                                                            <span className="text-[10px] text-slate-400">Upload Media</span>
+                                                        </div>
+                                                        <div className="h-8 bg-blue-600 rounded-lg w-full flex items-center justify-center text-xs font-bold">
+                                                            Save Event
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Step 3: Ticket Preview */}
+                                                {i === 2 && (
+                                                    <div className="p-3 relative">
+                                                        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden relative">
+                                                            <div className="h-20 bg-gradient-to-r from-blue-600 to-purple-600"></div>
+                                                            <div className="p-4">
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div className="h-4 w-24 bg-slate-200 rounded animate-pulse"></div>
+                                                                    <div className="h-4 w-12 bg-blue-100 text-blue-600 rounded flex items-center justify-center text-[10px] font-bold">
+                                                                        $150
+                                                                    </div>
+                                                                </div>
+                                                                <div className="h-3 w-32 bg-slate-100 rounded mb-4"></div>
+                                                                <div className="border-t border-dashed border-slate-200 pt-3 flex justify-between items-center">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-6 h-6 rounded-full bg-slate-200"></div>
+                                                                        <div className="h-2 w-12 bg-slate-100 rounded"></div>
+                                                                    </div>
+                                                                    <div className="w-8 h-8 bg-slate-900 rounded flex items-center justify-center text-white">
+                                                                        <HiTicket size={14} />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {/* Ticket Cutouts */}
+                                                            <div className="absolute top-[5rem] -left-2 w-4 h-4 bg-slate-50 rounded-full"></div>
+                                                            <div className="absolute top-[5rem] -right-2 w-4 h-4 bg-slate-50 rounded-full"></div>
+                                                        </div>
+                                                        {/* Floating Badge */}
+                                                        <div className="absolute -top-1 -right-1 bg-red-500 text-white px-2 py-1 text-[10px] font-bold rounded-lg shadow-md rotate-6">
+                                                            LIVE
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="mt-6 flex items-center gap-2 text-slate-400 text-xs font-medium">
+                                                <div className="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center">
+                                                    <div className="w-1.5 h-1.5 bg-slate-300 rounded-full"></div>
+                                                </div>
+                                                Estimasi: {i === 0 ? '2 Menit' : i === 1 ? '5 Menit' : 'Instan'}
+                                            </div>
+                                        </motion.div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             </section>
@@ -256,26 +460,19 @@ const BecomeCreator = () => {
                                     <div className="relative z-10 w-full">
                                         <div className="inline-block mb-6">
                                             <span className={`
-                                                text-2xl md:text-3xl font-bold px-2
-                                                ${isDark ? 'bg-white text-slate-900' : 'bg-blue-300 text-slate-900'}
+                                                text-2xl md:text-3xl font-bold
+                                                ${isDark ? 'text-white' : 'text-slate-900'}
                                             `}>
                                                 {benefit.title}
                                             </span>
                                         </div>
 
                                         <div className="flex justify-between items-start gap-6">
-                                            {/* Arrow Link */}
-                                            <div className="mt-auto pt-10">
-                                                <div className={`
-                                                    w-10 h-10 rounded-full flex items-center justify-center border-2 transition-transform duration-300 group-hover:rotate-45
-                                                    ${isDark ? 'border-white/20 bg-white/10 text-white' : 'border-slate-900 bg-transparent text-slate-900'}
-                                                `}>
-                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                                        <line x1="7" y1="17" x2="17" y2="7"></line>
-                                                        <polyline points="7 7 17 7 17 17"></polyline>
-                                                    </svg>
-                                                </div>
-                                                <span className={`block mt-3 text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Learn more</span>
+                                            {/* Description */}
+                                            <div className="mt-auto pt-4 max-w-[65%]">
+                                                <p className={`text-sm md:text-base font-medium leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                                    {benefit.description}
+                                                </p>
                                             </div>
 
                                             {/* Icon/Illustration Area */}
@@ -299,61 +496,7 @@ const BecomeCreator = () => {
                 </div>
             </section>
 
-            {/* Steps - Clean & Minimalist */}
-            <section className="py-32 px-6 bg-white">
-                <div className="max-w-5xl mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-                        <div className="space-y-12">
-                            <h2 className="text-4xl font-black text-slate-900 leading-tight">Mulai Dalam 3 Langkah Sederhana</h2>
-                            <div className="space-y-10">
-                                {[
-                                    { step: "01", title: "Registrasi Akun", desc: "Daftar dan lengkapi profil creator kamu." },
-                                    { step: "02", title: "Buat Event", desc: "Upload detail event, tiket, dan poster." },
-                                    { step: "03", title: "Publikasi", desc: "Event kamu siap dikunjungi dan tiket siap terjual." }
-                                ].map((item, i) => (
-                                    <div key={i} className="flex gap-8 items-start group">
-                                        <span className="text-4xl font-black text-blue-100 group-hover:text-blue-600 transition-colors duration-500">{item.step}</span>
-                                        <div>
-                                            <h4 className="font-bold text-slate-900 text-xl mb-2">{item.title}</h4>
-                                            <p className="text-slate-500 font-medium">{item.desc}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="relative">
-                            <div className="absolute -inset-4 bg-blue-100 rounded-[3rem] blur-2xl opacity-20" />
-                            <div className="relative bg-white p-4 rounded-[3rem] border border-slate-100 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)]">
-                                <div className="bg-slate-50 w-full aspect-[4/3] rounded-[2.5rem] flex items-center justify-center overflow-hidden">
-                                    <div className="flex flex-col items-center gap-4 text-slate-300">
-                                        <HiPresentationChartLine size={48} />
-                                        <span className="text-xs font-black uppercase tracking-widest italic">Dashboard Preview</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
-            {/* Final CTA - Home Style Box */}
-            <section className="py-24 px-6 bg-white pb-40">
-                <div className="max-w-5xl mx-auto bg-slate-900 rounded-[3.5rem] p-12 md:p-24 text-center text-white relative overflow-hidden shadow-2xl shadow-blue-900/40">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px] -mr-48 -mt-48" />
-                    <h2 className="text-3xl md:text-5xl font-black mb-10 relative z-10 tracking-tight leading-tight">Siap Menghidupkan Event Kamu?</h2>
-                    <p className="text-slate-400 mb-12 text-lg max-w-2xl mx-auto relative z-10 font-medium">
-                        Bergabunglah dengan ribuan creator lainnya dan berikan pengalaman tak terlupakan bagi audiens kamu.
-                    </p>
-                    <div className="flex justify-center relative z-10">
-                        <a
-                            href={getSubdomainUrl("creator", "/daftar")}
-                            className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black tracking-widest uppercase text-sm hover:bg-blue-700 transition-all hover:scale-105"
-                        >
-                            Mulai Sekarang
-                        </a>
-                    </div>
-                </div>
-            </section>
 
             <Footer />
         </div>

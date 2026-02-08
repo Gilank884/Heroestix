@@ -35,7 +35,7 @@ const CreatorRegister = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [otpCode, setOtpCode] = useState("");
-    const [userId, setUserId] = useState(null); // Store User ID for verification step
+    // const [userId, setUserId] = useState(null); // No longer needed
 
     const handleChange = (e) => {
         const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -126,23 +126,72 @@ const CreatorRegister = () => {
             }
 
             console.log("User created in auth.users:", authData.user.id);
-            setUserId(authData.user.id);
 
-            // 3. Send custom OTP via Resend (not Supabase email)
-            const { error: otpError } = await supabase.functions.invoke('send-otp', {
-                body: {
-                    email: form.email,
-                    user_id: authData.user.id
-                }
-            });
+            // 2b. Ensure Profile Exists (Fix for 'profiles' FK constraint)
+            let resultSession = authData.session;
 
-            if (otpError) {
-                console.error("Failed to send OTP:", otpError);
-                alert("Gagal mengirim OTP. Silakan coba kirim ulang.");
+            if (!resultSession) {
+                // Try to fetch session if sign up didn't return it (rare, but possible if auto-confirm)
+                const { data: { session } } = await supabase.auth.getSession();
+                resultSession = session;
             }
 
-            console.log("Custom OTP sent to:", form.email);
-            setStep(3); // Go to OTP
+            console.log("Current Session for Profile Creation:", resultSession);
+
+            if (!resultSession) {
+                // Without a session, client-side insert to 'profiles' will likely fail due to RLS unless anon Key has access
+                console.warn("No active session. Profile creation may fail if RLS requires auth.");
+                // In this case, we might need to rely on the trigger or use the Edge Function (which user removed)
+            }
+
+            const { error: profileUpsertError } = await supabase.from('profiles').upsert({
+                id: authData.user.id,
+                full_name: form.brand_name
+            }, { onConflict: 'id' });
+
+            if (profileUpsertError) {
+                console.error("Profile Upsert Error:", profileUpsertError);
+
+                // DEBUG: Check if user exists in auth via Edge Function
+                try {
+                    const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-user', {
+                        body: { user_id: authData.user.id }
+                    });
+                    console.log("DEBUG USER CHECK:", debugData, debugError);
+                    alert(`DEBUG INFO: Auth User: ${debugData?.auth_user?.user?.id ? 'FOUND' : 'MISSING'}. Profile: ${debugData?.profile_data?.length > 0 ? 'FOUND' : 'MISSING'}. Error: ${profileUpsertError.message}`);
+                } catch (e) {
+                    console.error("Debug invoke failed", e);
+                }
+
+                throw new Error(`Profile creation failed. See alert for debug info.`);
+            }
+
+            // 3. DIRECT PROFILE CREATION (Client-side Insert)
+            // No Edge Function. Data will be reviewed by admin in dashboard.
+
+            const { error: profileError } = await supabase.from("creators").insert({
+                id: authData.user.id,
+                brand_name: form.brand_name,
+                description: form.description,
+                address: form.address,
+                image_url: photoUrl || "",
+                instagram_url: form.social_instagram,
+                tiktok_url: form.social_tiktok,
+                x_url: form.social_x,
+                facebook_url: form.social_facebook,
+                verified: false // Explicitly set to false for manual verification
+            });
+
+            if (profileError) {
+                console.error("Profile Creation Error:", profileError);
+                throw new Error("Gagal membuat profil kreator. Silakan coba lagi.");
+            }
+
+            console.log("Profile created successfully via client.");
+
+            // Success
+            alert("Registrasi berhasil! Akun Anda sedang menunggu verifikasi admin.");
+            window.location.href = "/creator/dashboard";
 
         } catch (err) {
             console.error("Registration Error:", err);
@@ -152,92 +201,7 @@ const CreatorRegister = () => {
         }
     };
 
-    const handleVerifyOtp = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setErrorMsg("");
 
-        try {
-            // Verify OTP from custom table
-            const { data: otpData, error: otpError } = await supabase
-                .from('otp')
-                .select('*')
-                .eq('email', form.email)
-                .eq('otp_code', otpCode)
-                .eq('used', false)
-                .gt('expires_at', new Date().toISOString())
-                .single();
-
-            if (otpError || !otpData) {
-                throw new Error("Kode OTP salah atau kedaluarsa.");
-            }
-
-            // Mark OTP as used
-            await supabase.from('otp').update({ used: true }).eq('id', otpData.id);
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token;
-
-            const functionUrl = "https://qftuhnkzyegcxfozdfyz.supabase.co/functions/v1/create-creator-profile";
-
-            const response = await fetch(functionUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    user_id: data.user.id,
-                    email: form.email,
-                    brand_name: form.brand_name,
-                    phone: form.phone,
-                    address: form.address,
-                    description: form.description,
-                    photo_url: form.photoUrl,
-                    social_media: {
-                        instagram: form.social_instagram,
-                        tiktok: form.social_tiktok,
-                        x: form.social_x,
-                        facebook: form.social_facebook
-                    }
-                })
-            });
-
-            const funcData = await response.json();
-
-            if (!response.ok) {
-                console.error("Function Error:", funcData);
-                throw new Error("Gagal membuat profil: " + (funcData.error || "Unknown Error"));
-            }
-
-            // Success
-            alert("Verifikasi berhasil! Akun Anda telah aktif.");
-            window.location.href = "/creator/dashboard";
-        } catch (err) {
-            console.error("Verification Error:", err);
-            setErrorMsg(err.message || "Terjadi kesalahan saat verifikasi.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleResendOtp = async () => {
-        setLoading(true);
-        setErrorMsg("");
-
-        const { error } = await supabase.functions.invoke('send-otp', {
-            body: {
-                email: form.email,
-                user_id: userId
-            }
-        });
-
-        if (error) {
-            setErrorMsg("Gagal mengirim ulang OTP: " + error.message);
-        } else {
-            alert("Kode OTP baru telah dikirim ke email Anda.");
-        }
-        setLoading(false);
-    };
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] py-20 px-4 relative overflow-hidden flex items-center justify-center">
@@ -260,20 +224,17 @@ const CreatorRegister = () => {
                             {/* Step 2 Indicator */}
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 2 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white text-slate-400 border border-slate-200'}`}>2</div>
 
-                            {/* Step 3 Indicator */}
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 3 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white text-slate-400 border border-slate-200'}`}>3</div>
+
                         </div>
 
                         <div className="text-center">
                             <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
                                 {step === 1 && "Informasi Dasar"}
                                 {step === 2 && "Profil Creator"}
-                                {step === 3 && "Verifikasi Email"}
                             </h2>
                             <p className="text-sm text-slate-500 font-medium">
                                 {step === 1 && "Lengkapi data akun untuk memulai."}
                                 {step === 2 && "Beritahu audiens tentang organizer kamu."}
-                                {step === 3 && `Masukkan OTP yang dikirim ke ${form.email}`}
                             </p>
                         </div>
                     </div>
@@ -514,45 +475,13 @@ const CreatorRegister = () => {
                                         disabled={loading}
                                         className="w-2/3 bg-blue-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center"
                                     >
-                                        {loading ? "Memproses..." : "Sign Up"}
+                                        {loading ? "Memproses..." : "Daftar Sekarang"}
                                     </button>
                                 </div>
                             </form>
                         )}
 
-                        {step === 3 && (
-                            <form onSubmit={handleVerifyOtp} className="space-y-8">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Kode OTP 6-Digit</label>
-                                    <input
-                                        type="text"
-                                        placeholder="000000"
-                                        maxLength={6}
-                                        value={otpCode}
-                                        onChange={(e) => setOtpCode(e.target.value)}
-                                        required
-                                        className="w-full rounded-2xl px-5 py-4 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-2xl tracking-[0.5em] text-center outline-none transition-all font-black placeholder:text-slate-200"
-                                    />
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading || otpCode.length !== 6}
-                                    className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center"
-                                >
-                                    {loading ? "Memverifikasi..." : "Verifikasi Sekarang"}
-                                </button>
-                                <div className="text-center pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={handleResendOtp}
-                                        disabled={loading}
-                                        className="text-[11px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest disabled:opacity-50"
-                                    >
-                                        Tidak menerima kode? Kirim ulang
-                                    </button>
-                                </div>
-                            </form>
-                        )}
+
 
                     </div>
                 </div>

@@ -29,6 +29,34 @@ const Navbar = ({ alwaysScrolled = false }) => {
         { name: "Contact Us", path: "https://wa.me/6282332901726", isExternal: true }
     ];
 
+    const [sessionTokens, setSessionTokens] = useState(null);
+
+    useEffect(() => {
+        const getSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                setSessionTokens({
+                    access_token: session.access_token,
+                    refresh_token: session.refresh_token
+                });
+            }
+        };
+        getSession();
+    }, [user]); // Re-fetch if user changes
+
+    // Helper to generate auth-appended URL
+    const getAuthUrl = (subdomain) => {
+        const host = window.location.hostname;
+        const isLocalhost = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
+
+        let hash = "";
+        if (isLocalhost && sessionTokens) {
+            hash = `#access_token=${sessionTokens.access_token}&refresh_token=${sessionTokens.refresh_token}`;
+        }
+
+        return getSubdomainUrl(subdomain, hash);
+    };
+
     return (
         <header
             className={`
@@ -136,7 +164,7 @@ const Navbar = ({ alwaysScrolled = false }) => {
 
                                     {role === "creator" && (
                                         <a
-                                            href={getSubdomainUrl("creator")}
+                                            href={getAuthUrl("creator")}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-xl"
                                         >
                                             <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white italic">C</div>
@@ -146,7 +174,7 @@ const Navbar = ({ alwaysScrolled = false }) => {
 
                                     {role === "developer" && (
                                         <a
-                                            href={getSubdomainUrl("dev")}
+                                            href={getAuthUrl("dev")}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-xl"
                                         >
                                             <div className="w-5 h-5 rounded bg-slate-900 flex items-center justify-center text-[10px] font-bold text-white italic">D</div>

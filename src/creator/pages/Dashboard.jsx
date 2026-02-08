@@ -18,6 +18,8 @@ const CreatorDashboard = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showControlModal, setShowControlModal] = useState(false);
 
+    const [isVerified, setIsVerified] = useState(true); // Default true to prevent flash
+
     useEffect(() => {
         if (user?.id) {
             fetchDashboardData();
@@ -27,6 +29,21 @@ const CreatorDashboard = () => {
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
+            // 0. Check Verification Status first
+            const { data: creatorData, error: creatorError } = await supabase
+                .from('creators')
+                .select('verified')
+                .eq('id', user.id)
+                .single();
+
+            const verified = creatorData?.verified ?? false;
+            setIsVerified(verified);
+
+            if (!verified) {
+                setLoading(false);
+                return; // Stop fetching if not verified
+            }
+
             // 1. Fetch Events
             const { data: eventsData, error: eventsError } = await supabase
                 .from('events')
@@ -72,6 +89,34 @@ const CreatorDashboard = () => {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+
+    if (!isVerified) {
+        return (
+            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center space-y-6 animate-in fade-in duration-700">
+                <div className="w-24 h-24 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-orange-500/20">
+                    <HiShieldCheck size={48} />
+                </div>
+                <div className="max-w-md space-y-2">
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">Akun Dalam Peninjauan</h2>
+                    <p className="text-slate-500 font-medium text-lg">
+                        Terima kasih telah mendaftar! Tim kami sedang memverifikasi profil Anda.
+                    </p>
+                    <p className="text-slate-400 text-sm">
+                        Proses ini biasanya memakan waktu 1x24 jam. Anda akan menerima notifikasi email setelah akun aktif.
+                    </p>
+                </div>
+                <div className="pt-4">
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all text-xs uppercase tracking-widest"
+                    >
+                        Refresh Status
+                    </button>
+                </div>
             </div>
         );
     }

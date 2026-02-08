@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Search, Ticket } from "lucide-react";
 import { FiSearch } from "react-icons/fi";
 import { supabase } from "../../lib/supabaseClient";
-import EventCard from "./EventCard";
+import EventCard from "./EventCard.jsx";
 import useAuthStore from "../../auth/useAuthStore";
 
 export default function EventSection({ searchTerm = "" }) {

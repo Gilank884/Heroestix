@@ -51,21 +51,32 @@ export default function CreatorCash() {
     const fetchFinancials = async () => {
         setLoading(true);
         try {
-            // 1. Fetch History & Calculate Balance
-            const { data: balanceData, error: balanceError } = await supabase
+            // 1. Fetch History (Limit to recent 1000 for display - Supabase default max)
+            const { data: historyData, error: historyError } = await supabase
                 .from('creator_balances')
                 .select('*')
                 .eq('creator_id', user.id)
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(1000);
 
-            if (balanceError) throw balanceError;
+            if (historyError) throw historyError;
+            setHistory(historyData || []);
 
-            const total = balanceData.reduce((acc, curr) => {
-                return curr.type === 'credit' ? acc + Number(curr.amount) : acc - Number(curr.amount);
-            }, 0);
+            // 2. Fetch Global Financials via Edge Function
+            // This ensures we get the Total Balance across ALL records, not just the limited ones
+            const { data: financialData, error: financialError } = await supabase.functions.invoke('get-creator-financials');
 
-            setBalance(total);
-            setHistory(balanceData || []);
+            if (financialError) {
+                console.error("Financial Edge Function Error:", financialError);
+                // Fallback: Calculate from limited history (better than nothing, but user should be warned if history > 50)
+                const total = (historyData || []).reduce((acc, curr) => {
+                    return curr.type === 'credit' ? acc + Number(curr.amount) : acc - Number(curr.amount);
+                }, 0);
+                setBalance(total);
+            } else {
+                setBalance(financialData.balance || 0);
+                // We could also set total income/withdrawn here if we had state for it
+            }
 
             // 2. Fetch Withdrawal Requests
             const { data: requestData, error: requestError } = await supabase
