@@ -108,10 +108,10 @@ export default function PaymentProcessing() {
 
                             <div className="space-y-3 pt-4">
                                 <button
-                                    onClick={() => navigate("/")}
+                                    onClick={() => navigate(orderId ? `/transaction-detail/${orderId}` : "/")}
                                     className="w-full py-4 bg-[#1b3bb6] hover:bg-[#16319c] text-white rounded-xl font-bold shadow-lg shadow-blue-100 transition-all"
                                 >
-                                    Kembali ke Beranda
+                                    {orderId ? "Lihat Detail Tiket" : "Kembali ke Beranda"}
                                 </button>
                                 {/* Optional: Add button to view ticket detail if order_id is available */}
                                 {/* <button onClick={() => navigate(`/transaction-detail/${orderId}`)} ... >Lihat Tiket</button> */}

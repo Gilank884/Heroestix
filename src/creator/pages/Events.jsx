@@ -13,14 +13,12 @@ import {
     LayoutGrid,
     List as ListIcon
 } from 'lucide-react';
-import CreateEventModal from '../components/CreateEventModal';
 
 const Events = () => {
     const { user } = useAuthStore();
     const navigate = useNavigate();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showCreateModal, setShowCreateModal] = useState(false);
     const [activeTab, setActiveTab] = useState('upcoming'); // upcoming, past, archived
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -98,7 +96,7 @@ const Events = () => {
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-[#1a202c]">Daftar Event</h1>
                 <button
-                    onClick={() => setShowCreateModal(true)}
+                    onClick={() => navigate('/events/create')}
                     className="bg-[#1a36c7] text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-[#152ba3] transition-all shadow-md active:scale-95"
                 >
                     <Plus size={18} />
@@ -197,13 +195,6 @@ const Events = () => {
                 )}
             </div>
 
-            <CreateEventModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                creatorId={user?.id}
-                onRefresh={fetchEvents}
-                navigate={navigate}
-            />
         </div>
     );
 };

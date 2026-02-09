@@ -1,21 +1,78 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { HiUser, HiMail, HiChevronDown } from "react-icons/hi";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Copy } from "lucide-react";
 import { FaMale, FaFemale } from "react-icons/fa";
 import { RxCheckCircled } from "react-icons/rx";
 
 export default function BuyerDetails({
     user,
-    visitorData,
-    setVisitorData,
+    ticketHolders,
+    setTicketHolders,
     ticketTypes,
     selectedTickets,
     eventData,
     event,
     termsAgreed,
-    setTermsAgreed
+    setTermsAgreed,
+    showValidationErrors
 }) {
+
+    const updateHolder = (index, field, value) => {
+        setTicketHolders(prev => {
+            const newHolders = [...prev];
+            newHolders[index] = {
+                ...newHolders[index],
+                [field]: value
+            };
+            // If updating custom_responses
+            if (field === 'custom_responses') {
+                // value is already the object or we handle it differently
+            }
+            return newHolders;
+        });
+    };
+
+    const updateCustomResponse = (index, label, value) => {
+        setTicketHolders(prev => {
+            const newHolders = [...prev];
+            newHolders[index] = {
+                ...newHolders[index],
+                custom_responses: {
+                    ...newHolders[index].custom_responses,
+                    [label]: value
+                }
+            };
+            return newHolders;
+        });
+    };
+
+    const copyBuyerData = (index) => {
+        if (!user) return;
+        updateHolder(index, 'full_name', user.full_name || "");
+        updateHolder(index, 'email', user.email || "");
+    };
+
+    const copyPreviousData = (index) => {
+        if (index === 0) return;
+        setTicketHolders(prev => {
+            const newHolders = [...prev];
+            const prevHolder = newHolders[index - 1];
+            newHolders[index] = {
+                ...newHolders[index],
+                full_name: prevHolder.full_name,
+                email: prevHolder.email,
+                phone: prevHolder.phone,
+                gender: prevHolder.gender,
+                birth_day: prevHolder.birth_day,
+                birth_month: prevHolder.birth_month,
+                birth_year: prevHolder.birth_year,
+                // Do not copy custom responses for now unless requested
+            };
+            return newHolders;
+        });
+    };
+
     return (
         <div className="space-y-8">
             {/* STEP 1: BUYER DETAILS */}
@@ -44,37 +101,53 @@ export default function BuyerDetails({
                 </div>
             </div>
 
-            {/* VISITOR DETAILS FORM */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-50 bg-slate-50/30">
-                    <div>
-                        <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                            Pengunjung <span className="text-[#1a36c7]">1</span>
-                        </h2>
-                        <div className="flex items-center gap-2 mt-1.5 text-slate-400">
-                            <HiUser size={12} className="text-green-500" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">Data Pemegang Tiket</span>
+            {/* VISITOR DETAILS FORMS LOOP */}
+            {ticketHolders.map((holder, index) => (
+                <div key={holder.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
+                    <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-50 bg-slate-50/30">
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
+                                Pengunjung <span className="text-[#1a36c7]">{index + 1}</span>
+                            </h2>
+                            <div className="flex items-center gap-2 mt-1.5 text-slate-400">
+                                <HiUser size={12} className="text-green-500" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest">Ticket: {holder.ticketName}</span>
+                            </div>
+                        </div>
+
+                        {/* Copy Buttons */}
+                        <div className="flex gap-2">
+                            {index === 0 && user && (
+                                <button
+                                    onClick={() => copyBuyerData(index)}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-colors"
+                                >
+                                    <Copy size={12} />
+                                    Isi data saya
+                                </button>
+                            )}
+                            {index > 0 && (
+                                <button
+                                    onClick={() => copyPreviousData(index)}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-200 transition-colors"
+                                >
+                                    <Copy size={12} />
+                                    Salin data sebelumnya
+                                </button>
+                            )}
                         </div>
                     </div>
-                </div>
 
-                <div className="p-8 space-y-6">
-                    <div className="space-y-4">
-                        <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kategori Tiket</p>
-                            <p className="font-bold text-slate-800">
-                                {ticketTypes?.find(tt => selectedTickets?.[tt.id] > 0)?.name || "Tiket Terpilih"}
-                            </p>
-                        </div>
-
+                    <div className="p-8 space-y-6">
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700">Nama Lengkap</label>
                             <input
                                 type="text"
-                                value={visitorData.full_name}
-                                onChange={e => setVisitorData({ ...visitorData, full_name: e.target.value })}
+                                value={holder.full_name}
+                                onChange={e => updateHolder(index, 'full_name', e.target.value)}
                                 placeholder="Masukkan nama lengkap"
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${showValidationErrors && !holder.full_name ? 'border-red-500 bg-red-50' : 'border-slate-200'
+                                    }`}
                             />
                         </div>
 
@@ -82,10 +155,11 @@ export default function BuyerDetails({
                             <label className="text-sm font-bold text-slate-700">Email</label>
                             <input
                                 type="email"
-                                value={visitorData.email}
-                                onChange={e => setVisitorData({ ...visitorData, email: e.target.value })}
+                                value={holder.email}
+                                onChange={e => updateHolder(index, 'email', e.target.value)}
                                 placeholder="Masukkan email"
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${showValidationErrors && !holder.email ? 'border-red-500 bg-red-50' : 'border-slate-200'
+                                    }`}
                             />
                         </div>
 
@@ -94,8 +168,8 @@ export default function BuyerDetails({
                             <div className="grid grid-cols-3 gap-3">
                                 <div className="relative">
                                     <select
-                                        value={visitorData.birth_day}
-                                        onChange={e => setVisitorData({ ...visitorData, birth_day: e.target.value })}
+                                        value={holder.birth_day}
+                                        onChange={e => updateHolder(index, 'birth_day', e.target.value)}
                                         className="w-full appearance-none px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700"
                                     >
                                         {[...Array(31)].map((_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
@@ -104,8 +178,8 @@ export default function BuyerDetails({
                                 </div>
                                 <div className="relative">
                                     <select
-                                        value={visitorData.birth_month}
-                                        onChange={e => setVisitorData({ ...visitorData, birth_month: e.target.value })}
+                                        value={holder.birth_month}
+                                        onChange={e => updateHolder(index, 'birth_month', e.target.value)}
                                         className="w-full appearance-none px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700"
                                     >
                                         {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => <option key={m} value={m}>{m}</option>)}
@@ -114,8 +188,8 @@ export default function BuyerDetails({
                                 </div>
                                 <div className="relative">
                                     <select
-                                        value={visitorData.birth_year}
-                                        onChange={e => setVisitorData({ ...visitorData, birth_year: e.target.value })}
+                                        value={holder.birth_year}
+                                        onChange={e => updateHolder(index, 'birth_year', e.target.value)}
                                         className="w-full appearance-none px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700"
                                     >
                                         {[...Array(60)].map((_, i) => <option key={2023 - i} value={2023 - i}>{2023 - i}</option>)}
@@ -129,26 +203,26 @@ export default function BuyerDetails({
                             <label className="text-sm font-bold text-slate-700">Jenis Kelamin</label>
                             <div className="grid grid-cols-2 gap-4">
                                 <button
-                                    onClick={() => setVisitorData({ ...visitorData, gender: "Laki - Laki" })}
-                                    className={`flex items-center justify-between px-6 py-4 rounded-xl border-2 transition-all group font-bold ${visitorData.gender === "Laki - Laki" ? 'border-blue-600 bg-blue-50' : 'border-slate-100 hover:border-blue-100 hover:bg-blue-50/30'}`}
+                                    onClick={() => updateHolder(index, 'gender', "Laki - Laki")}
+                                    className={`flex items-center justify-between px-6 py-4 rounded-xl border-2 transition-all group font-bold ${holder.gender === "Laki - Laki" ? 'border-blue-600 bg-blue-50' : 'border-slate-100 hover:border-blue-100 hover:bg-blue-50/30'}`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded-full border-2 ${visitorData.gender === "Laki - Laki" ? 'border-blue-500 bg-blue-500' : 'border-slate-300 group-hover:border-blue-500'}`}>
-                                            {visitorData.gender === "Laki - Laki" && <div className="w-1.5 h-1.5 bg-white rounded-full m-auto mt-1" />}
+                                        <div className={`w-5 h-5 rounded-full border-2 ${holder.gender === "Laki - Laki" ? 'border-blue-500 bg-blue-500' : 'border-slate-300 group-hover:border-blue-500'}`}>
+                                            {holder.gender === "Laki - Laki" && <div className="w-1.5 h-1.5 bg-white rounded-full m-auto mt-1" />}
                                         </div>
-                                        <span className={visitorData.gender === "Laki - Laki" ? 'text-blue-700' : 'text-slate-700'}>Laki - Laki</span>
+                                        <span className={holder.gender === "Laki - Laki" ? 'text-blue-700' : 'text-slate-700'}>Laki - Laki</span>
                                     </div>
                                     <FaMale className="text-blue-500" />
                                 </button>
                                 <button
-                                    onClick={() => setVisitorData({ ...visitorData, gender: "Perempuan" })}
-                                    className={`flex items-center justify-between px-6 py-4 rounded-xl border-2 transition-all group font-bold ${visitorData.gender === "Perempuan" ? 'border-pink-600 bg-pink-50' : 'border-slate-100 hover:border-pink-100 hover:bg-pink-50/30'}`}
+                                    onClick={() => updateHolder(index, 'gender', "Perempuan")}
+                                    className={`flex items-center justify-between px-6 py-4 rounded-xl border-2 transition-all group font-bold ${holder.gender === "Perempuan" ? 'border-pink-600 bg-pink-50' : 'border-slate-100 hover:border-pink-100 hover:bg-pink-50/30'}`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded-full border-2 ${visitorData.gender === "Perempuan" ? 'border-pink-500 bg-pink-500' : 'border-slate-300 group-hover:border-pink-500'}`}>
-                                            {visitorData.gender === "Perempuan" && <div className="w-1.5 h-1.5 bg-white rounded-full m-auto mt-1" />}
+                                        <div className={`w-5 h-5 rounded-full border-2 ${holder.gender === "Perempuan" ? 'border-pink-500 bg-pink-500' : 'border-slate-300 group-hover:border-pink-500'}`}>
+                                            {holder.gender === "Perempuan" && <div className="w-1.5 h-1.5 bg-white rounded-full m-auto mt-1" />}
                                         </div>
-                                        <span className={visitorData.gender === "Perempuan" ? 'text-pink-700' : 'text-slate-700'}>Perempuan</span>
+                                        <span className={holder.gender === "Perempuan" ? 'text-pink-700' : 'text-slate-700'}>Perempuan</span>
                                     </div>
                                     <FaFemale className="text-pink-500" />
                                 </button>
@@ -165,10 +239,11 @@ export default function BuyerDetails({
                                 </div>
                                 <input
                                     type="tel"
-                                    value={visitorData.phone}
-                                    onChange={e => setVisitorData({ ...visitorData, phone: e.target.value })}
+                                    value={holder.phone}
+                                    onChange={e => updateHolder(index, 'phone', e.target.value)}
                                     placeholder="Masukkan nomor telepon"
-                                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${showValidationErrors && !holder.phone ? 'border-red-500 bg-red-50' : 'border-slate-200'
+                                        }`}
                                 />
                             </div>
                         </div>
@@ -208,14 +283,8 @@ export default function BuyerDetails({
                                                 <input
                                                     type="text"
                                                     required
-                                                    value={visitorData.custom_responses?.[field.label] || ""}
-                                                    onChange={e => setVisitorData({
-                                                        ...visitorData,
-                                                        custom_responses: {
-                                                            ...visitorData.custom_responses,
-                                                            [field.label]: e.target.value
-                                                        }
-                                                    })}
+                                                    value={holder.custom_responses?.[field.label] || ""}
+                                                    onChange={e => updateCustomResponse(index, field.label, e.target.value)}
                                                     placeholder={`Masukkan ${field.label.toLowerCase()}`}
                                                     className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all font-bold text-slate-700 bg-slate-50/30 placeholder:text-slate-300 shadow-sm"
                                                 />
@@ -225,20 +294,22 @@ export default function BuyerDetails({
                                 </div>
                             );
                         })()}
-
-
-
-                        {/* Terms Checkbox */}
-                        <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer" onClick={() => setTermsAgreed(!termsAgreed)}>
-                            <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${termsAgreed ? 'bg-blue-600 border-blue-600' : 'border-slate-300 bg-white'}`}>
-                                {termsAgreed && <RxCheckCircled className="text-white text-xs" />}
-                            </div>
-                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                I agree to the <Link to="/terms-of-service" target="_blank" className="text-blue-600 font-bold hover:underline">Terms and Conditions</Link> and <Link to="/privacy" target="_blank" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link> applicable at Heroestix.
-                            </p>
-                        </div>
                     </div>
                 </div>
+            ))}
+
+            {/* Terms Checkbox */}
+            <div
+                className={`flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border cursor-pointer transition-all ${showValidationErrors && !termsAgreed ? 'border-red-500 bg-red-50 animate-shake' : 'border-slate-100'
+                    }`}
+                onClick={() => setTermsAgreed(!termsAgreed)}
+            >
+                <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${termsAgreed ? 'bg-blue-600 border-blue-600' : 'border-slate-300 bg-white'}`}>
+                    {termsAgreed && <RxCheckCircled className="text-white text-xs" />}
+                </div>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                    I agree to the <Link target="_blank" to="/terms" className="text-blue-600 font-bold hover:underline">Terms and Conditions</Link> and <Link target="_blank" to="/privacy" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link> applicable at Heroestix.
+                </p>
             </div>
         </div>
     );

@@ -10,9 +10,7 @@ import {
     HiChevronRight,
     HiOutlineMail,
     HiOutlineCalendar,
-    HiOutlineShieldCheck,
-    HiTrash,
-    HiExclamation
+    HiOutlineShieldCheck
 } from "react-icons/hi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -25,10 +23,9 @@ const Profile = () => {
 
     const [orders, setOrders] = useState([]);
     const [tickets, setTickets] = useState([]);
-    const [transactions, setTransactions] = useState([]);
     const [loadingData, setLoadingData] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deleting, setDeleting] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+
 
     useEffect(() => {
         const getUser = async () => {
@@ -90,6 +87,7 @@ const Profile = () => {
                 order.tickets?.forEach(ticket => {
                     allTickets.push({
                         ...ticket,
+                        order_id: order.id,
                         order_status: order.status,
                         order_date: order.created_at
                     });
@@ -121,35 +119,7 @@ const Profile = () => {
         if (!error) navigate("/");
     };
 
-    const handleDeleteAccount = async () => {
-        setDeleting(true);
-        try {
-            // 1. Delete user from auth.users via RPC
-            const { error: rpcError } = await supabase.rpc('delete_user_auth');
 
-            if (rpcError) {
-                console.error("RPC deletion failed:", rpcError);
-                alert("Gagal menghapus data otentikasi (RPC Error). Silakan pastikan Anda telah menjalankan kode SQL di Dashboard Supabase untuk mengaktifkan fitur ini.");
-
-                // Fallback: just delete the profile record
-                await supabase
-                    .from("profiles")
-                    .delete()
-                    .eq("id", user.id);
-            }
-
-            // 2. Log out
-            await supabase.auth.signOut();
-            alert("Proses penghapusan akun selesai. Jika RPC berhasil, Anda dapat mendaftar ulang.");
-            navigate("/");
-        } catch (error) {
-            console.error("Error deleting account:", error);
-            alert("Gagal menghapus akun. Silakan coba lagi nanti.");
-        } finally {
-            setDeleting(false);
-            setShowDeleteModal(false);
-        }
-    };
 
     const rupiah = (value) => {
         return new Intl.NumberFormat("id-ID", {
@@ -300,40 +270,7 @@ const Profile = () => {
                                             />
                                         </div>
 
-                                        <div className="mt-12 bg-blue-600 rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
-                                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16" />
-                                            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-                                                <div className="text-center md:text-left">
-                                                    <h3 className="font-bold text-lg">Keamanan Identitas</h3>
-                                                    <p className="text-sm text-blue-100 mt-1">Gunakan verifikasi dua langkah untuk perlindungan maksimal.</p>
-                                                </div>
-                                                <button className="px-6 py-3 bg-white text-blue-600 rounded-xl font-bold text-sm shadow-lg shadow-blue-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                                                    Aktifkan 2FA
-                                                </button>
-                                            </div>
-                                        </div>
 
-                                        {/* DANGER ZONE */}
-                                        <div className="mt-12 border-t border-slate-100 pt-10">
-                                            <div className="flex items-center gap-3 mb-6">
-                                                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
-                                                    <HiExclamation size={20} />
-                                                </div>
-                                                <h3 className="text-lg font-bold text-slate-900">Zona Bahaya</h3>
-                                            </div>
-                                            <div className="bg-red-50 border border-red-100 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                                                <div>
-                                                    <p className="text-sm font-bold text-red-900">Hapus Akun Permanen</p>
-                                                    <p className="text-xs text-red-600/70 mt-1 font-medium">Seluruh data tiket, transaksi, dan akun Anda akan dihapus permanen.</p>
-                                                </div>
-                                                <button
-                                                    onClick={() => setShowDeleteModal(true)}
-                                                    className="px-6 py-2.5 bg-red-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-red-200 hover:bg-red-700 transition-all whitespace-nowrap"
-                                                >
-                                                    Hapus Akun
-                                                </button>
-                                            </div>
-                                        </div>
                                     </motion.div>
                                 )}
 
@@ -345,31 +282,64 @@ const Profile = () => {
                                         exit={{ opacity: 0, x: -20 }}
                                         className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 md:p-10 h-full min-h-[500px]"
                                     >
-                                        <div className="mb-10">
-                                            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Tiket Saya</h2>
-                                            <p className="text-sm text-slate-400 mt-1 font-medium">Tiket aktif untuk event yang akan datang.</p>
+                                        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                            <div>
+                                                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Tiket Saya</h2>
+                                                <p className="text-sm text-slate-400 mt-1 font-medium">Tiket aktif untuk event yang akan datang.</p>
+                                            </div>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Cari event atau tiket..."
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                    className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full md:w-64 transition-all"
+                                                />
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                </svg>
+                                            </div>
                                         </div>
 
-                                        {tickets.length > 0 ? (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                                {tickets.map(ticket => (
-                                                    <div key={ticket.id} className="bg-slate-50 border border-slate-100 rounded-2xl p-5 hover:border-blue-600/30 transition-all group">
-                                                        <div className="flex flex-col gap-4">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="px-2.5 py-1 bg-white border border-slate-200 text-[10px] font-bold text-slate-500 rounded-md uppercase">
-                                                                    {ticket.ticket_types?.name}
-                                                                </span>
-                                                                <span className={`text-[10px] font-bold uppercase ${ticket.order_status === 'paid' ? 'text-green-600' : 'text-orange-500'}`}>
-                                                                    {ticket.order_status}
-                                                                </span>
+                                        {tickets.filter(ticket =>
+                                            ticket.ticket_types?.events?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            ticket.ticket_types?.name.toLowerCase().includes(searchTerm.toLowerCase())
+                                        ).length > 0 ? (
+                                            <div className="space-y-3">
+                                                {tickets.filter(ticket =>
+                                                    ticket.ticket_types?.events?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                    ticket.ticket_types?.name.toLowerCase().includes(searchTerm.toLowerCase())
+                                                ).map(ticket => (
+                                                    <div
+                                                        key={ticket.id}
+                                                        onClick={() => navigate(`/transaction-detail/${ticket.order_id}`)}
+                                                        className="flex items-center justify-between p-4 bg-slate-50/50 border border-slate-100 rounded-xl hover:border-slate-200 hover:bg-slate-50 transition-all cursor-pointer group"
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+                                                                <HiTicket size={24} />
                                                             </div>
-                                                            <div>
-                                                                <h3 className="font-bold text-slate-900 text-sm line-clamp-1">{ticket.ticket_types?.events?.title}</h3>
-                                                                <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{ticket.ticket_types?.events?.event_date}</p>
+                                                            <div className="min-w-0">
+                                                                <h3 className="font-bold text-slate-900 text-sm truncate pr-4">{ticket.ticket_types?.events?.title}</h3>
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <span className="px-2 py-0.5 bg-white border border-slate-200 text-[10px] font-bold text-slate-500 rounded uppercase">
+                                                                        {ticket.ticket_types?.name}
+                                                                    </span>
+                                                                    <span className="text-[11px] text-slate-400 font-medium truncate">
+                                                                        • {ticket.ticket_types?.events?.event_date}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                            <div className="pt-3 border-t border-slate-200/50 flex items-center justify-between">
-                                                                <p className="text-[10px] font-mono text-slate-400">{ticket.qr_code}</p>
-                                                                <button className="text-[10px] font-bold text-blue-600 uppercase hover:underline">Detail E-Tiket</button>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <span className={`inline-block px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${ticket.order_status === 'paid'
+                                                                ? 'bg-green-50 text-green-600 border-green-100'
+                                                                : 'bg-orange-50 text-orange-600 border-orange-100'
+                                                                }`}>
+                                                                {ticket.order_status}
+                                                            </span>
+                                                            <div className="mt-1.5 text-slate-300 group-hover:text-blue-600 transition-colors">
+                                                                <HiChevronRight size={16} className="ml-auto" />
                                                             </div>
                                                         </div>
                                                     </div>
@@ -449,59 +419,7 @@ const Profile = () => {
                 </div>
             </div>
 
-            {/* DELETE ACCOUNT MODAL */}
-            <AnimatePresence>
-                {showDeleteModal && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => !deleting && setShowDeleteModal(false)}
-                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="w-full max-w-[400px] bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10"
-                        >
-                            <div className="p-8 text-center text-slate-900">
-                                <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-6">
-                                    <HiTrash size={32} />
-                                </div>
-                                <h3 className="text-xl font-bold tracking-tight mb-2">Hapus Akun Permanen?</h3>
-                                <p className="text-sm text-slate-500 font-medium mb-8 leading-relaxed">
-                                    Tindakan ini tidak dapat dibatalkan. Seluruh riwayat tiket dan transaksi Anda akan hilang selamanya.
-                                </p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        disabled={deleting}
-                                        onClick={() => setShowDeleteModal(false)}
-                                        className="py-3.5 px-4 bg-slate-100 text-slate-900 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-all disabled:opacity-50"
-                                    >
-                                        Batal
-                                    </button>
-                                    <button
-                                        disabled={deleting}
-                                        onClick={handleDeleteAccount}
-                                        className="py-3.5 px-4 bg-red-600 text-white rounded-2xl font-bold text-sm hover:bg-red-700 transition-all shadow-lg shadow-red-200 disabled:opacity-50 flex items-center justify-center gap-2"
-                                    >
-                                        {deleting ? (
-                                            <>
-                                                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                                <span>Menghapus...</span>
-                                            </>
-                                        ) : (
-                                            "Ya, Hapus"
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+
         </div>
     );
 };

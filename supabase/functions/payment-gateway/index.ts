@@ -67,8 +67,8 @@ serve(async (req) => {
                         email: customer_email || "guest@example.com",
                         mobile_number: customer_phone || undefined
                     },
-                    success_redirect_url: `http://localhost:3000/payment/processing?status=success&order_id=${order_id}`, // Update with prod URL later
-                    failure_redirect_url: `http://localhost:3000/payment/processing?status=failed&order_id=${order_id}`
+                    success_redirect_url: `http://heroestix.com/payment/processing?status=success&order_id=${order_id}`, // Update with prod URL later
+                    failure_redirect_url: `http://heroestix.com/payment/processing?status=failed&order_id=${order_id}`
                 }),
             });
 

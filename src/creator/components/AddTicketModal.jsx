@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { HiX } from 'react-icons/hi';
 import { Ticket, Calendar, Info, CircleDollarSign } from 'lucide-react';
 
 const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
     const [loading, setLoading] = useState(false);
+    const [taxValue, setTaxValue] = useState(0);
     const [ticketData, setTicketData] = useState({
         name: '',
         price: '',
@@ -16,6 +17,37 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
         end_date: '',
     });
 
+    useEffect(() => {
+        const fetchEventTax = async () => {
+            if (!eventId) return;
+            const { data, error } = await supabase
+                .from('event_taxes')
+                .select('value')
+                .eq('event_id', eventId)
+                .maybeSingle();
+
+            if (data) {
+                setTaxValue(parseFloat(data.value) || 0);
+            }
+        };
+        fetchEventTax();
+    }, [eventId]);
+
+    const calculateNet = (gross) => {
+        const val = parseInt(gross) || 0;
+        if (val === 0) return '';
+        const net = Math.round(val * (1 + taxValue / 100) + 8500);
+        return net.toString();
+    };
+
+    const handleGrossChange = (val) => {
+        setTicketData({
+            ...ticketData,
+            price_gross: val,
+            price_net: calculateNet(val)
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -26,7 +58,7 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                 .insert({
                     ...ticketData,
                     event_id: eventId,
-                    price: parseInt(ticketData.price_gross || ticketData.price),
+                    price: parseInt(ticketData.price_gross),
                     price_net: parseInt(ticketData.price_net),
                     price_gross: parseInt(ticketData.price_gross),
                     quota: parseInt(ticketData.quota),
@@ -88,33 +120,18 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
-                                    <CircleDollarSign size={12} /> Harga Net (Sebelum Pajak)
-                                </label>
-                                <input
-                                    required
-                                    type="number"
-                                    value={ticketData.price_net}
-                                    onChange={e => setTicketData({ ...ticketData, price_net: e.target.value })}
-                                    placeholder="Contoh: 150000"
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
-                                    <CircleDollarSign size={12} /> Harga Gross (Setelah Pajak)
-                                </label>
-                                <input
-                                    required
-                                    type="number"
-                                    value={ticketData.price_gross}
-                                    onChange={e => setTicketData({ ...ticketData, price_gross: e.target.value })}
-                                    placeholder="Contoh: 165000"
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all"
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
+                                <CircleDollarSign size={12} /> Harga Tiket
+                            </label>
+                            <input
+                                required
+                                type="number"
+                                value={ticketData.price_gross}
+                                onChange={e => handleGrossChange(e.target.value)}
+                                placeholder="Contoh: 150000"
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all"
+                            />
                         </div>
 
                         <div className="space-y-2">

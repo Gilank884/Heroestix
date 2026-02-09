@@ -225,6 +225,12 @@ const BecomeCreator = () => {
                             >
                                 Daftar Sekarang
                             </a>
+                            <a
+                                href={getSubdomainUrl("creator", "/masuk")}
+                                className="px-8 py-4 bg-white border-2 border-slate-900 text-slate-900 rounded-xl font-bold tracking-wide transition-all hover:bg-slate-50 hover:scale-105 text-center"
+                            >
+                                Masuk Portal
+                            </a>
                         </motion.div>
                     </div>
                 </div>

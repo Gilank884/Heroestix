@@ -3,10 +3,11 @@ import useAuthStore from '../../auth/useAuthStore';
 import { supabase } from '../../lib/supabaseClient';
 import { HiPlus, HiCalendar, HiTicket, HiTrendingUp, HiQrcode, HiShieldCheck, HiCash } from 'react-icons/hi';
 
-import CreateEventModal from '../components/CreateEventModal';
+import { useNavigate } from 'react-router-dom';
 import TicketControlModal from '../components/TicketControlModal';
 
 const CreatorDashboard = () => {
+    const navigate = useNavigate();
     const { user } = useAuthStore();
     const [events, setEvents] = useState([]);
     const [stats, setStats] = useState({
@@ -15,7 +16,6 @@ const CreatorDashboard = () => {
         totalQuota: 0
     });
     const [loading, setLoading] = useState(true);
-    const [showCreateModal, setShowCreateModal] = useState(false);
     const [showControlModal, setShowControlModal] = useState(false);
 
     const [isVerified, setIsVerified] = useState(true); // Default true to prevent flash
@@ -141,13 +141,6 @@ const CreatorDashboard = () => {
                         <HiQrcode size={20} />
                         Scan Ticket QR
                     </button>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95"
-                    >
-                        <HiPlus size={20} />
-                        Deploy New Event
-                    </button>
                 </div>
             </div>
 
@@ -257,12 +250,6 @@ const CreatorDashboard = () => {
                                     <tr>
                                         <td colSpan="5" className="py-12 text-center">
                                             <p className="text-slate-400 font-bold text-sm">No operations deployed yet.</p>
-                                            <button
-                                                onClick={() => setShowCreateModal(true)}
-                                                className="text-cyan-600 hover:text-cyan-700 font-black text-xs uppercase tracking-widest mt-2"
-                                            >
-                                                Initialize First Event
-                                            </button>
                                         </td>
                                     </tr>
                                 )}
@@ -273,12 +260,6 @@ const CreatorDashboard = () => {
             </div>
 
             {/* Modals */}
-            <CreateEventModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                creatorId={user?.id}
-                onRefresh={fetchDashboardData}
-            />
             <TicketControlModal
                 isOpen={showControlModal}
                 onClose={() => setShowControlModal(false)}

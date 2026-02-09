@@ -22,30 +22,49 @@ export default function Checkout() {
     const [loading, setLoading] = useState(false);
     const [ticketTypes, setTicketTypes] = useState([]);
     const [eventData, setEventData] = useState(null);
+    const [eventTax, setEventTax] = useState(null);
     const [termsAgreed, setTermsAgreed] = useState(false);
+    const [showValidationErrors, setShowValidationErrors] = useState(false);
 
-    // Form states for first visitor
-    const [visitorData, setVisitorData] = useState({
-        full_name: user?.full_name || "",
-        email: user?.email || "",
-        phone: "",
-        birth_day: "1",
-        birth_month: "Januari",
-        birth_year: "2000",
-        gender: "Laki - Laki",
-        notes: "",
-        custom_responses: {}
-    });
 
+    // State for multiple ticket holders
+    const [ticketHolders, setTicketHolders] = useState([]);
+
+    // Initialize ticket holders based on selected tickets
     useEffect(() => {
-        if (sameAsBuyer) {
-            setVisitorData(prev => ({
-                ...prev,
-                full_name: user?.full_name || "",
-                email: user?.email || ""
-            }));
+        if (selectedTickets && ticketTypes.length > 0) {
+            const holders = [];
+            Object.entries(selectedTickets).forEach(([typeId, count]) => {
+                const type = ticketTypes.find(t => t.id === typeId);
+                for (let i = 0; i < count; i++) {
+                    holders.push({
+                        id: `${typeId}-${i}`, // Unique ID for key
+                        ticketTypeId: typeId,
+                        ticketName: type?.name || "Ticket",
+                        index: i + 1,
+                        full_name: i === 0 && holders.length === 0 ? (user?.full_name || "") : "", // Pre-fill first one if empty
+                        email: i === 0 && holders.length === 0 ? (user?.email || "") : "",
+                        phone: "",
+                        birth_day: "1",
+                        birth_month: "Januari",
+                        birth_year: "2000",
+                        gender: "Laki - Laki",
+                        notes: "",
+                        custom_responses: {}
+                    });
+                }
+            });
+            // Only set if empty (initial load) to avoid overwriting user input on re-renders if dependencies change unpredictably
+            // However, we need to be careful. For now, simple initialization if length doesn't match total count.
+            setTicketHolders(prev => {
+                if (prev.length === 0) return holders;
+                return prev;
+            });
         }
-    }, [sameAsBuyer, user]);
+    }, [selectedTickets, ticketTypes, user]);
+
+    // Update first holder if "Same as Buyer" is toggled (Logic moved to BuyerDetails or handled here)
+    // We'll handle "Copy Buyer Data" in the UI components for flexibility.
 
     useEffect(() => {
         if (!event) {
@@ -80,21 +99,43 @@ export default function Checkout() {
             }
         };
 
+        const fetchEventTax = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("event_taxes")
+                    .select("*")
+                    .eq("event_id", id)
+                    .maybeSingle();
+                if (error) throw error;
+                setEventTax(data);
+            } catch (error) {
+                console.error("Error fetching event tax:", error);
+            }
+        };
+
         fetchTicketTypes();
         fetchEventData();
+        fetchEventTax();
         window.scrollTo(0, 0);
     }, [id, navigate]);
 
     if (!event) return null;
 
-    const internetFee = 8500;
+    const platformFee = 8500;
 
-    // Step 2 Validation: Check if all required fields are filled
-    const isNextDisabled = !termsAgreed || !visitorData.full_name || !visitorData.email || !visitorData.phone;
+    // Calculate Tax Amount
+    const taxAmount = eventTax ? (
+        eventTax.is_included
+            ? 0 // Tax is already in the price
+            : Math.round((totalAmount * (parseFloat(eventTax.value) || 0)) / 100)
+    ) : 0;
+
+    // Step 2 Validation: Check if all required fields are filled for ALL holders
+    const isNextDisabled = !termsAgreed || ticketHolders.some(h => !h.full_name || !h.email || !h.phone);
 
     const handleCreateOrder = async () => {
-        if (!visitorData.full_name || !visitorData.email || !visitorData.phone) {
-            alert("Harap lengkapi data pengunjung utama.");
+        if (isNextDisabled) {
+            alert("Harap lengkapi data semua pengunjung.");
             return;
         }
 
@@ -119,7 +160,7 @@ export default function Checkout() {
                 .from("orders")
                 .insert({
                     user_id: currentUser.id,
-                    total: totalAmount + internetFee,
+                    total: totalAmount + platformFee + taxAmount,
                     status: "pending",
                     booking_code: bookingCode
                 })
@@ -128,24 +169,32 @@ export default function Checkout() {
 
             if (orderError) throw orderError;
 
-            // 2. Create Tickets for each type and quantity
-            const ticketsToCreate = [];
-            Object.entries(selectedTickets).forEach(([typeId, count]) => {
-                for (let i = 0; i < count; i++) {
-                    ticketsToCreate.push({
-                        order_id: order.id,
-                        ticket_type_id: typeId,
-                        qr_code: `QR-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-                        status: "unused",
-                        full_name: visitorData.full_name,
-                        email: visitorData.email,
-                        phone: visitorData.phone,
-                        gender: visitorData.gender,
-                        birth_date: `${visitorData.birth_day} ${visitorData.birth_month} ${visitorData.birth_year}`,
-                        notes: visitorData.notes,
-                        custom_responses: visitorData.custom_responses
-                    });
-                }
+            // 2. Create Tickets for each type and quantity using SPECIFIC holder data
+            const ticketsToCreate = ticketHolders.map(holder => {
+                // Generate Custom QR Code: HRT + 5 Random + First/Last Event Char
+                const prefix = "HRT";
+                const randomChars = [...Array(5)].map(() => Math.random().toString(36)[2]).join('').toUpperCase();
+
+                const eventTitle = event?.title || eventData?.title || "EVENT";
+                const cleanTitle = eventTitle.trim();
+                const firstChar = cleanTitle.charAt(0).toUpperCase();
+                const lastChar = cleanTitle.charAt(cleanTitle.length - 1).toUpperCase();
+
+                const customQrCode = `${prefix}${randomChars}${firstChar}${lastChar}`;
+
+                return {
+                    order_id: order.id,
+                    ticket_type_id: holder.ticketTypeId,
+                    qr_code: customQrCode,
+                    status: "unused",
+                    full_name: holder.full_name,
+                    email: holder.email,
+                    phone: holder.phone,
+                    gender: holder.gender,
+                    birth_date: `${holder.birth_day} ${holder.birth_month} ${holder.birth_year}`,
+                    notes: holder.notes,
+                    custom_responses: holder.custom_responses
+                };
             });
 
             const { error: ticketError } = await supabase
@@ -168,10 +217,10 @@ export default function Checkout() {
                     body: JSON.stringify({
                         action: 'initiate',
                         order_id: order.id,
-                        amount: totalAmount + internetFee,
-                        customer_email: visitorData.email,
-                        customer_name: visitorData.full_name,
-                        customer_phone: visitorData.phone
+                        amount: totalAmount + platformFee,
+                        customer_email: ticketHolders[0].email, // Use primary contact
+                        customer_name: ticketHolders[0].full_name,
+                        customer_phone: ticketHolders[0].phone
                     }),
                 }
             );
@@ -197,7 +246,14 @@ export default function Checkout() {
 
     const handleNextStep = () => {
         if (isNextDisabled) {
-            alert("Harap lengkapi data dan setujui syarat & ketentuan.");
+            setShowValidationErrors(true);
+
+            // More specific error message
+            if (!termsAgreed) {
+                alert("Harap setujui Syarat & Ketentuan untuk melanjutkan.");
+            } else {
+                alert("Harap lengkapi data pengunjung (Nama, Email, dan No. HP).");
+            }
             return;
         }
         setCurrentStep(2);
@@ -235,22 +291,25 @@ export default function Checkout() {
                             {currentStep === 1 ? (
                                 <BuyerDetails
                                     user={user}
-                                    visitorData={visitorData}
-                                    setVisitorData={setVisitorData}
+                                    ticketHolders={ticketHolders}
+                                    setTicketHolders={setTicketHolders}
                                     ticketTypes={ticketTypes}
                                     selectedTickets={selectedTickets}
                                     eventData={eventData}
                                     event={event}
                                     termsAgreed={termsAgreed}
                                     setTermsAgreed={setTermsAgreed}
+                                    showValidationErrors={showValidationErrors}
                                 />
                             ) : (
                                 <OrderConfirmation
-                                    visitorData={visitorData}
+                                    ticketHolders={ticketHolders}
                                     selectedTickets={selectedTickets}
                                     ticketTypes={ticketTypes}
                                     totalAmount={totalAmount}
-                                    internetFee={internetFee}
+                                    platformFee={platformFee}
+                                    taxAmount={taxAmount}
+                                    eventTax={eventTax}
                                 />
                             )}
                         </div>
@@ -262,13 +321,15 @@ export default function Checkout() {
                                 selectedTickets={selectedTickets}
                                 ticketTypes={ticketTypes}
                                 totalAmount={totalAmount}
-                                internetFee={internetFee}
+                                platformFee={platformFee}
+                                taxAmount={taxAmount}
+                                eventTax={eventTax}
                                 currentStep={currentStep}
                                 onNext={handleNextStep}
                                 onPrev={handlePrevStep}
                                 onPay={handleCreateOrder}
                                 loading={loading}
-                                isNextDisabled={isNextDisabled}
+                                isNextDisabled={false} // Enable button to allow validation check on click
                             />
                         </div>
                     </div>

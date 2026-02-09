@@ -30,8 +30,8 @@ serve(async (req) => {
         external_id: `order-${Date.now()}`,
         amount: amount,
         description: "Payment from React + Supabase",
-        success_redirect_url: "http://localhost:3000/payment/processing?status=success", // You might want to make this dynamic or env based
-        failure_redirect_url: "http://localhost:3000/payment/processing?status=failed"
+        success_redirect_url: "http://heroestix.com/payment/processing?status=success", // You might want to make this dynamic or env based
+        failure_redirect_url: "http://heroestix.com/payment/processing?status=failed"
       }),
     });
 

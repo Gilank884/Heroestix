@@ -37,6 +37,16 @@ const CreatorRegister = () => {
     const [otpCode, setOtpCode] = useState("");
     // const [userId, setUserId] = useState(null); // No longer needed
 
+    useEffect(() => {
+        const checkExistingSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.email) {
+                setForm(prev => ({ ...prev, email: session.user.email }));
+            }
+        };
+        checkExistingSession();
+    }, []);
+
     const handleChange = (e) => {
         const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
         setForm({
@@ -106,6 +116,7 @@ const CreatorRegister = () => {
             }
 
             // 2. Create user in auth.users first (this triggers profile creation)
+            let authUser = null;
             const { data: authData, error: signUpError } = await supabase.auth.signUp({
                 email: form.email,
                 password: form.password,
@@ -119,13 +130,24 @@ const CreatorRegister = () => {
                 }
             });
 
-            if (signUpError) throw signUpError;
-
-            if (!authData.user) {
-                throw new Error("Failed to create user");
+            if (signUpError) {
+                // If user already exists, check if we have a current session
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session && session.user.email === form.email) {
+                    console.log("Using existing active session for registration upgrade");
+                    authUser = session.user;
+                } else {
+                    throw signUpError;
+                }
+            } else {
+                authUser = authData.user;
             }
 
-            console.log("User created in auth.users:", authData.user.id);
+            if (!authUser) {
+                throw new Error("Failed to identify user for registration");
+            }
+
+            console.log("Target User ID for Creator Profile:", authUser.id);
 
             // 2b. Ensure Profile Exists (Fix for 'profiles' FK constraint)
             let resultSession = authData.session;
@@ -145,8 +167,10 @@ const CreatorRegister = () => {
             }
 
             const { error: profileUpsertError } = await supabase.from('profiles').upsert({
-                id: authData.user.id,
-                full_name: form.brand_name
+                id: authUser.id,
+                full_name: form.brand_name,
+                email: form.email,
+                role: 'creator'
             }, { onConflict: 'id' });
 
             if (profileUpsertError) {
@@ -170,7 +194,7 @@ const CreatorRegister = () => {
             // No Edge Function. Data will be reviewed by admin in dashboard.
 
             const { error: profileError } = await supabase.from("creators").insert({
-                id: authData.user.id,
+                id: authUser.id,
                 brand_name: form.brand_name,
                 description: form.description,
                 address: form.address,
@@ -190,8 +214,9 @@ const CreatorRegister = () => {
             console.log("Profile created successfully via client.");
 
             // Success
-            alert("Registrasi berhasil! Akun Anda sedang menunggu verifikasi admin.");
-            window.location.href = "/creator/dashboard";
+            // alert("Registrasi berhasil! Akun Anda sedang menunggu verifikasi admin.");
+            // window.location.href = "/creator/dashboard";
+            setStep(3);
 
         } catch (err) {
             console.error("Registration Error:", err);
@@ -224,6 +249,9 @@ const CreatorRegister = () => {
                             {/* Step 2 Indicator */}
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 2 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white text-slate-400 border border-slate-200'}`}>2</div>
 
+                            {/* Step 3 Indicator */}
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= 3 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white text-slate-400 border border-slate-200'}`}>3</div>
+
 
                         </div>
 
@@ -231,10 +259,12 @@ const CreatorRegister = () => {
                             <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
                                 {step === 1 && "Informasi Dasar"}
                                 {step === 2 && "Profil Creator"}
+                                {step === 3 && "Menunggu Verifikasi"}
                             </h2>
                             <p className="text-sm text-slate-500 font-medium">
                                 {step === 1 && "Lengkapi data akun untuk memulai."}
                                 {step === 2 && "Beritahu audiens tentang organizer kamu."}
+                                {step === 3 && "Pendaftaran Berhasil Dikirim"}
                             </p>
                         </div>
                     </div>
@@ -453,12 +483,16 @@ const CreatorRegister = () => {
                                 </div>
 
                                 {/* Terms Checkbox */}
-                                <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer" onClick={() => setForm({ ...form, termsAgreed: !form.termsAgreed })}>
+                                <div
+                                    className={`flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border cursor-pointer transition-all ${errorMsg && !form.termsAgreed ? 'border-red-300 bg-red-50 animate-shake' : 'border-slate-100'
+                                        }`}
+                                    onClick={() => setForm({ ...form, termsAgreed: !form.termsAgreed })}
+                                >
                                     <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${form.termsAgreed ? 'bg-blue-600 border-blue-600' : 'border-slate-300 bg-white'}`}>
                                         {form.termsAgreed && <RxCheckCircled className="text-white text-xs" />}
                                     </div>
                                     <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                        I agree to the <Link target="_blank" to="/terms-of-service" className="text-blue-600 font-bold hover:underline">Terms and Conditions</Link> and <Link target="_blank" to="/privacy" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link> applicable at Heroestix.
+                                        I agree to the <Link target="_blank" to="/terms" className="text-blue-600 font-bold hover:underline">Terms and Conditions</Link> and <Link target="_blank" to="/privacy" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link> applicable at Heroestix.
                                     </p>
                                 </div>
 
@@ -479,6 +513,29 @@ const CreatorRegister = () => {
                                     </button>
                                 </div>
                             </form>
+                        )}
+
+                        {step === 3 && (
+                            <div className="text-center py-8">
+                                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <RxCheckCircled size={40} />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">Terima Kasih!</h3>
+                                <p className="text-slate-500 mb-8 leading-relaxed max-w-md mx-auto">
+                                    Data pendaftaran Anda sebagai Creator telah kami terima.
+                                    <br />
+                                    Mohon tunggu proses verifikasi maksimal <strong>1x24 jam</strong>.
+                                    <br />
+                                    Kami akan menghubungi Anda melalui WhatsApp atau Email jika akun telah aktif.
+                                </p>
+
+                                <Link
+                                    to="/"
+                                    className="inline-flex items-center justify-center px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
+                                >
+                                    Kembali ke Beranda
+                                </Link>
+                            </div>
                         )}
 
 

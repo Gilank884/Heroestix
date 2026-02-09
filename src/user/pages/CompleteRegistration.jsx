@@ -63,23 +63,27 @@ const CompleteRegistration = () => {
         }
 
         try {
+            const intendedRole = localStorage.getItem("auth_role") || 'user';
+
             // Create Profile
             const { error } = await supabase.from("profiles").upsert({
                 id: userId,
                 email: userEmail,
                 full_name: form.nama,
-                role: 'user', // Default role. If they came from "Daftar Creator" logic with Google, we might need to handle that. 
-                // But the requirement says "Daftar User via Google". 
-                // Let's stick to 'user' for now as per this specific flow.
+                role: intendedRole,
                 tanggal_lahir: form.tanggal_lahir
             });
 
             if (error) throw error;
 
             // Success
-            // We can now redirect to home or dashboard
-            // Force reload to trigger App.jsx checks again which will now find the profile
-            window.location.href = "/";
+            localStorage.removeItem("auth_role");
+            localStorage.setItem("auth_mode", "login"); // Trigger redirection logic in App.jsx
+
+            const { getSubdomainUrl } = await import("../../lib/navigation");
+            const targetSub = intendedRole === "creator" ? "creator" : (intendedRole === "developer" ? "dev" : null);
+
+            window.location.href = getSubdomainUrl(targetSub, "/");
 
         } catch (err) {
             console.error("Profile Creation Error:", err);
@@ -143,12 +147,16 @@ const CompleteRegistration = () => {
                             </div>
 
                             {/* Terms Checkbox */}
-                            <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer" onClick={() => setForm({ ...form, termsAgreed: !form.termsAgreed })}>
+                            <div
+                                className={`flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border cursor-pointer transition-all ${errorMsg && !form.termsAgreed ? 'border-red-300 bg-red-50 animate-shake' : 'border-slate-100'
+                                    }`}
+                                onClick={() => setForm({ ...form, termsAgreed: !form.termsAgreed })}
+                            >
                                 <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${form.termsAgreed ? 'bg-blue-600 border-blue-600' : 'border-slate-300 bg-white'}`}>
                                     {form.termsAgreed && <RxCheckCircled className="text-white text-xs" />}
                                 </div>
                                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                    I agree to the <Link target="_blank" to="/terms-of-service" className="text-blue-600 font-bold hover:underline">Terms and Conditions</Link> and <Link target="_blank" to="/privacy" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link> applicable at Heroestix.
+                                    I agree to the <Link target="_blank" to="/terms" className="text-blue-600 font-bold hover:underline">Terms and Conditions</Link> and <Link target="_blank" to="/privacy" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link> applicable at Heroestix.
                                 </p>
                             </div>
 

@@ -18,53 +18,15 @@ const Masuk = ({ role = "user" }) => {
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState(urlError === "unregistered" ? "Akun anda belum registrasi. Silahkan daftar terlebih dahulu." : "");
     const { user: storeUser, isAuthenticated } = useAuthStore();
-    const [existingUser, setExistingUser] = useState(null);
-    const [existingProfile, setExistingProfile] = useState(null);
-    const [existingSession, setExistingSession] = useState(null);
 
     React.useEffect(() => {
-        const checkExistingSession = async () => {
-            console.log("Checking session in Masuk component...");
-            const { data: { session } } = await supabase.auth.getSession();
-            const currentUser = session?.user || storeUser;
-
-            if (currentUser) {
-                console.log("Session found for:", currentUser.email);
-                const { data: profile } = await supabase
-                    .from("profiles")
-                    .select("*")
-                    .eq("id", currentUser.id)
-                    .single();
-
-                if (profile) {
-                    console.log("Profile found:", profile.full_name, "Role:", profile.role);
-                    setExistingUser(currentUser);
-                    setExistingProfile(profile);
-                    setExistingSession(session);
-                } else {
-                    console.warn("Profile not found for authenticated user.");
-                }
-            } else {
-                console.log("No session or user found.");
-                setExistingUser(null);
-                setExistingProfile(null);
-                setExistingSession(session);
-            }
-        };
-
-        checkExistingSession();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log("Auth event in Masuk:", event);
-            if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
-                checkExistingSession();
-            }
-        });
-
-        return () => {
-            if (authListener?.subscription) authListener.subscription.unsubscribe();
-        };
-    }, [isAuthenticated, storeUser, role]);
+        if (isAuthenticated && storeUser) {
+            console.log("User is already authenticated, triggering redirection check...");
+            // We just need to trigger a reload or navigate to root, App.jsx will handle the rest
+            // But to be safe on subdomains, let's just go to root
+            navigate("/");
+        }
+    }, [isAuthenticated, storeUser, navigate]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -100,63 +62,37 @@ const Masuk = ({ role = "user" }) => {
                 return;
             }
 
-            const profileRole = profile.role;
-            console.log("Profile found with role:", profileRole);
+            const profileRole = profile?.role;
             const host = window.location.hostname;
             const isLocalhost = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
-            const baseDomain = getBaseDomain();
-            const isBaseDomain = host === baseDomain;
+
+            // Role Context Check
+            if (role === "creator" && profileRole !== "creator") {
+                setErrorMsg("Akun Anda terdeteksi sebagai User biasa. Silakan daftar sebagai Creator untuk mengakses portal ini.");
+                setLoading(false);
+                return;
+            }
+
+            if (role === "developer" && profileRole !== "developer") {
+                setErrorMsg("Akun Anda tidak memiliki akses Developer.");
+                setLoading(false);
+                return;
+            }
 
             if (profileRole === "creator") {
-                if (host.startsWith("dev.") || !host.startsWith("creator.")) {
-                    console.log("Redirecting creator to subdomain...");
-                    window.location.href = getSubdomainUrl("creator", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
-                } else {
-                    console.log("Redirecting creator to dashboard on current domain");
-                    navigate("/");
-                }
+                console.log("Redirecting creator to portal...");
+                window.location.href = getSubdomainUrl("creator", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
             } else if (profileRole === "developer") {
-                if (host.startsWith("creator.") || !host.startsWith("dev.")) {
-                    console.log("Redirecting developer to subdomain...");
-                    window.location.href = getSubdomainUrl("dev", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
-                } else {
-                    console.log("Redirecting developer to dashboard on current domain");
-                    navigate("/");
-                }
-            } else if (profileRole === "user" && (host.startsWith("creator.") || host.startsWith("dev."))) {
-                console.log("User role on internal subdomain detected, redirecting to base domain...");
-                window.location.href = getSubdomainUrl(null);
+                console.log("Redirecting developer to portal...");
+                window.location.href = getSubdomainUrl("dev", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
             } else {
-                console.log("Login sequence finished, navigating home.");
-                navigate("/");
+                console.log("User role detected, ensuring base domain...");
+                window.location.href = getSubdomainUrl(null, isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
             }
         }
         setLoading(false);
     };
 
-    const handleContinueAs = () => {
-        if (!existingProfile || !existingSession) return;
-
-        const host = window.location.hostname;
-        const isLocalhost = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
-
-        if (existingProfile.role === "creator") {
-            if (host.startsWith("dev.") || !host.startsWith("creator.")) {
-                window.location.href = getSubdomainUrl("creator", isLocalhost ? `#access_token=${existingSession.access_token}&refresh_token=${existingSession.refresh_token}` : "");
-            } else {
-                navigate("/");
-            }
-        } else if (existingProfile.role === "developer") {
-            if (host.startsWith("creator.") || !host.startsWith("dev.")) {
-                window.location.href = getSubdomainUrl("dev", isLocalhost ? `#access_token=${existingSession.access_token}&refresh_token=${existingSession.refresh_token}` : "");
-            } else {
-                navigate("/");
-            }
-        } else {
-            // If normal user, redirect to base domain
-            window.location.href = getSubdomainUrl(null);
-        }
-    };
 
     const handleGoogleLogin = async () => {
         console.log("Google Login clicked. Role context:", role);
@@ -281,28 +217,7 @@ const Masuk = ({ role = "user" }) => {
                 </div>
 
                 <div className="mt-8 text-center space-y-4">
-                    {(existingUser || isAuthenticated) && (
-                        <div className="mb-4 animate-in slide-in-from-bottom-4 duration-500">
-                            <button
-                                onClick={handleContinueAs}
-                                className="w-full bg-[#1b3bb6] text-white py-4 rounded-2xl font-black text-sm hover:bg-[#16319c] transition-all shadow-xl shadow-blue-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
-                            >
-                                Masuk Dengan Akun Ini ({existingProfile?.full_name || storeUser?.user_metadata?.full_name || storeUser?.email})
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setExistingUser(null);
-                                    supabase.auth.signOut();
-                                    window.location.reload();
-                                }}
-                                className="mt-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-colors"
-                            >
-                                Gunakan Akun Lain
-                            </button>
-                        </div>
-                    )}
-
-                    {(!isInternalPortal && !existingUser && !isAuthenticated) ? (
+                    {!isInternalPortal ? (
                         <p className="text-sm text-slate-500 font-bold">
                             Belum punya akun?{" "}
                             <Link

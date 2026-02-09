@@ -38,7 +38,7 @@ export default function TermsOfService() {
                             <li><strong>Pengguna:</strong> Pengguna adalah individu atau pihak yang membeli tiket, mengakses, atau menggunakan layanan dan Konten Kreatif yang tersedia dalam Heroestix.</li>
                             <li><strong>Konten Kreatif:</strong> Konten Kreatif adalah segala bentuk layanan digital baik berupa teks, gambar, video, audio, maupun kombinasi yang disediakan Creator kepada Pengguna.</li>
                             <li><strong>E-Ticket:</strong> E-Ticket adalah tiket digital yang diterbitkan melalui sistem Heroestix sebagai bukti akses layanan atau acara.</li>
-                            <li><strong>Internet Fee:</strong> Internet Fee adalah biaya tambahan yang timbul dari penggunaan sistem digital, payment gateway, jaringan internet, atau layanan pihak ketiga.</li>
+                            <li><strong>Platform Fee:</strong> Platform Fee adalah biaya tambahan yang timbul dari penggunaan sistem digital, payment gateway, jaringan internet, atau layanan pihak ketiga.</li>
                             <li><strong>Pajak:</strong> Pajak adalah kewajiban perpajakan sesuai peraturan perundang-undangan Republik Indonesia.</li>
                         </ul>
                     </div>
@@ -140,7 +140,7 @@ export default function TermsOfService() {
                         Semua transaksi di Heroestix dilakukan melalui sistem pembayaran digital yang tersedia di platform. Transaksi dianggap sah setelah pembayaran berhasil diverifikasi oleh sistem Heroestix.
                     </p>
                     <p>
-                        Setiap transaksi dapat dikenakan Internet Fee yang timbul dari penggunaan sistem digital, payment gateway, jaringan internet, atau layanan pihak ketiga. Selain itu, transaksi juga dapat dikenakan Pajak sesuai peraturan perpajakan yang berlaku di Republik Indonesia.
+                        Setiap transaksi dapat dikenakan Platform Fee yang timbul dari penggunaan sistem digital, payment gateway, jaringan internet, atau layanan pihak ketiga. Selain itu, transaksi juga dapat dikenakan Pajak sesuai peraturan perpajakan yang berlaku di Republik Indonesia.
                     </p>
                     <p>
                         E-Ticket diterbitkan secara digital dengan kode unik sebagai bukti kepemilikan tiket atau akses ke layanan dan acara yang disediakan Creator. Pengguna bertanggung jawab untuk menjaga keamanan dan kerahasiaan E-Ticket.

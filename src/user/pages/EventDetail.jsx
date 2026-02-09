@@ -286,11 +286,11 @@ export default function EventDetail() {
 
                         {/* LEFT COLUMN: BANNER & DESCRIPTION */}
                         <div className="lg:col-span-7 space-y-8">
-                            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100">
+                            <div className="bg-white rounded-2xl overflow-hidden shadow-xl shadow-slate-200/60 border border-slate-100 group">
                                 <img
                                     src={event.image || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop"}
                                     alt={event.title}
-                                    className="w-full h-auto object-cover aspect-[4/3] lg:aspect-auto"
+                                    className="w-full h-auto object-cover aspect-[4/3] lg:aspect-auto transition-transform duration-700 group-hover:scale-105"
                                 />
                             </div>
 
@@ -306,63 +306,96 @@ export default function EventDetail() {
                         {/* RIGHT COLUMN: INFO CARDS */}
                         <div className="lg:col-span-5 space-y-4">
                             {/* EVENT MAIN INFO CARD */}
-                            <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm space-y-6">
-                                <h1 className="text-lg md:text-xl font-extrabold text-[#111827] leading-tight">
+                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6 hover:shadow-md transition-shadow">
+                                <h1 className="text-xl md:text-2xl font-black text-slate-900 leading-tight tracking-tight">
                                     {event.title}
                                 </h1>
 
                                 {event.category && (
                                     <div className="flex flex-wrap gap-2">
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-wider border border-blue-100 shadow-sm">
+                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[10px] font-black uppercase tracking-wider border border-blue-100/50 shadow-sm">
                                             <Tag size={10} />
                                             {getCategoryName(event.category)}
                                         </div>
                                         {event.sub_category && (
-                                            <div className="inline-flex items-center px-2.5 py-1 bg-slate-50 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-slate-100">
+                                            <div className="inline-flex items-center px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-[10px] font-bold uppercase tracking-wider border border-slate-100">
                                                 {getSubCategoryName(event.category, event.sub_category)}
                                             </div>
                                         )}
                                     </div>
                                 )}
 
-                                <div className="space-y-4">
-                                    <div className="flex items-start gap-3">
-                                        <Calendar size={18} className="text-slate-400 mt-0.5" />
-                                        <p className="text-sm font-bold text-slate-700">{event.date}</p>
+                                <div className="space-y-5">
+                                    <div className="flex items-start gap-4 group">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                            <Calendar size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">Tanggal</p>
+                                            <p className="text-sm font-bold text-slate-900">{event.date}</p>
+                                        </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
-                                        <Clock size={18} className="text-slate-400 mt-0.5" />
-                                        <p className="text-sm font-bold text-slate-700">{event.event_time?.substring(0, 5) || "10:00"} WIB</p>
+                                    <div className="flex items-start gap-4 group">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                            <Clock size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">Waktu</p>
+                                            <p className="text-sm font-bold text-slate-900">{event.event_time?.substring(0, 5) || "10:00"} WIB</p>
+                                        </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
-                                        <MapPin size={18} className="text-slate-400 mt-0.5" />
+                                    <div className="flex items-start gap-4 group">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                            <MapPin size={20} />
+                                        </div>
                                         <div className="space-y-1">
-                                            <p className="text-sm font-bold text-slate-700 leading-tight">{event.location}</p>
-                                            <button className="text-blue-600 text-xs font-bold hover:underline flex items-center gap-1">
-                                                Petunjuk Arah
-                                            </button>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">Lokasi</p>
+                                            <p className="text-sm font-bold text-slate-900 leading-snug">{event.location}</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="pt-6 border-t border-slate-100">
-                                    <p className="text-[12px] font-medium text-slate-400 mb-1">Dibuat Oleh</p>
-                                    <p className="text-sm font-bold text-slate-900">{event.creators?.brand_name || "Official Organizer"}</p>
+                                <div className="pt-6 border-t border-slate-100 flex items-center gap-3">
+                                    {event.creators?.image_url ? (
+                                        <img src={event.creators.image_url} alt="" className="w-8 h-8 rounded-full bg-slate-100" />
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><User size={14} /></div>
+                                    )}
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Creator</p>
+                                        <p className="text-xs font-bold text-slate-900">{event.creators?.brand_name || "Official Organizer"}</p>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* PRICE & PURCHASE CARD */}
-                            <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm space-y-6">
+                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-slate-500">Mulai Dari</span>
-                                    <span className="text-xl font-extrabold text-slate-900">{rupiah(event.price)}</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Ticket Start From</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl font-bold text-slate-900">{rupiah(event.price)}</span>
+                                            {hasInactiveTickets && (
+                                                <span className="text-[10px] px-2 py-0.5 bg-red-50 text-red-600 rounded-full font-bold border border-red-100">Terbatas</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                        <Ticket size={20} />
+                                    </div>
                                 </div>
+
                                 <button
                                     onClick={handleBuyNow}
-                                    className="w-full bg-[#1b3bb6] hover:bg-[#16319c] text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/10 active:scale-[0.98]"
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                                 >
-                                    Beli Sekarang
+                                    Beli Tiket
+                                    <ChevronLeft size={16} className="rotate-180" />
                                 </button>
+
+                                <p className="text-center text-[10px] font-medium text-slate-400">
+                                    Transaksi Aman & Terpercaya
+                                </p>
                             </div>
 
 

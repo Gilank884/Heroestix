@@ -15,7 +15,9 @@ export default function OrderSummary({
     selectedTickets,
     ticketTypes,
     totalAmount,
-    internetFee,
+    platformFee,
+    taxAmount,
+    eventTax,
     currentStep,
     onNext,
     onPrev,
@@ -23,7 +25,7 @@ export default function OrderSummary({
     loading,
     isNextDisabled
 }) {
-    const finalTotal = currentStep === 1 ? totalAmount : totalAmount + internetFee;
+    const finalTotal = currentStep === 1 ? totalAmount : totalAmount + platformFee + taxAmount;
 
     return (
         <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6 sticky top-28">
@@ -68,10 +70,18 @@ export default function OrderSummary({
                     <span className="text-slate-900">{rupiah(totalAmount)}</span>
                 </div>
                 {currentStep === 2 && (
-                    <div className="flex items-center justify-between text-sm font-bold">
-                        <span className="text-slate-600">Internet Fee</span>
-                        <span className="text-slate-900">{rupiah(internetFee)}</span>
-                    </div>
+                    <>
+                        {eventTax && parseFloat(eventTax.value) > 0 && (
+                            <div className="flex items-center justify-between text-sm font-bold">
+                                <span className="text-slate-600">Pajak Hiburan ({eventTax.value}%)</span>
+                                <span className="text-slate-900">{rupiah(taxAmount)}</span>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between text-sm font-bold">
+                            <span className="text-slate-600">Platform Fee</span>
+                            <span className="text-slate-900">{rupiah(platformFee)}</span>
+                        </div>
+                    </>
                 )}
             </div>
 

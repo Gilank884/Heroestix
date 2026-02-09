@@ -148,56 +148,67 @@ export default function TransactionDetail() {
                                 </div>
                             </div>
 
-                            {/* DETAIL PENGUNJUNG / TIKET */}
-                            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden text-left">
-                                <div className="p-5 border-b border-slate-50 flex items-center justify-between">
-                                    <h3 className="font-black text-slate-800">Detail Tiket</h3>
-                                    <button
-                                        onClick={() => setIsVisitorOpen(!isVisitorOpen)}
-                                        className="text-slate-400 hover:text-slate-600 transition-colors"
-                                    >
-                                        <HiChevronDown size={24} className={`transition-transform duration-300 ${isVisitorOpen ? 'rotate-180' : ''}`} />
-                                    </button>
-                                </div>
-                                {isVisitorOpen && (
-                                    <div className="divide-y divide-slate-50">
-                                        {order.tickets?.map((ticket, idx) => (
-                                            <div key={ticket.id} className="p-6 space-y-4">
-                                                <div className="flex items-center justify-between">
-                                                    <p className="font-bold text-slate-700">Tiket {idx + 1}</p>
-                                                    <span className="px-3 py-1 bg-slate-50 rounded-lg text-[10px] font-black uppercase text-[#b1451a] border border-[#b1451a]/10">
-                                                        {ticket.ticket_types?.name}
+                            {/* DETAIL PENGUNJUNG / TIKET (REDESIGNED) */}
+                            <div className="space-y-6">
+                                <h3 className="font-black text-slate-800 text-lg px-2">E-Tiket Anda ({order.tickets?.length})</h3>
+
+                                {order.tickets?.map((ticket, idx) => (
+                                    <div key={ticket.id} className="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 relative group transition-all hover:shadow-xl">
+                                        {/* Ticket Header (Blue Top) */}
+                                        <div className="bg-[#1b3bb6] p-6 text-white relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16" />
+                                            <div className="relative z-10 flex justify-between items-start">
+                                                <div>
+                                                    <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-1">Tiket {idx + 1}</p>
+                                                    <h3 className="text-2xl font-black">{ticket.ticket_types?.name}</h3>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-white/20 backdrop-blur-sm`}>
+                                                        {ticket.status}
                                                     </span>
                                                 </div>
-                                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-                                                    <div>
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Status Tiket</p>
-                                                        <p className="text-sm font-bold text-slate-700 uppercase">{ticket.status}</p>
+                                            </div>
+                                        </div>
 
-                                                        <div className="mt-4 p-2 bg-white border border-slate-100 rounded-xl w-fit">
-                                                            {ticket.qr_code ? (
-                                                                <QRCode
-                                                                    size={100}
-                                                                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                                                                    value={ticket.qr_code}
-                                                                    viewBox={`0 0 256 256`}
-                                                                />
-                                                            ) : (
-                                                                <div className="w-24 h-24 bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 font-bold">
-                                                                    NO QR
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                        {/* QR Code Section (Center & Large) */}
+                                        <div className="p-8 flex flex-col items-center justify-center bg-white relative">
+                                            <div className="p-1 rounded-2xl border-2 border-slate-100 shadow-sm bg-white">
+                                                {ticket.qr_code ? (
+                                                    <QRCode
+                                                        size={200}
+                                                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                                        value={ticket.qr_code}
+                                                        viewBox={`0 0 256 256`}
+                                                    />
+                                                ) : (
+                                                    <div className="w-48 h-48 bg-slate-50 flex items-center justify-center text-slate-400 font-bold rounded-xl">
+                                                        NO QR
                                                     </div>
-                                                    <div className="lg:col-span-2">
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">PayLoad / ID / Barcode</p>
-                                                        <p className="text-sm font-mono text-slate-500 break-all">{ticket.qr_code}</p>
-                                                    </div>
+                                                )}
+                                            </div>
+                                            <p className="mt-4 text-xs font-mono text-slate-400 font-bold tracking-widest">{ticket.qr_code}</p>
+
+                                            {/* Cutout Lines (Visual Effect) */}
+                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-[#fbffff] rounded-r-full" />
+                                            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-[#fbffff] rounded-l-full" />
+                                            <div className="absolute left-4 right-4 top-1/2 border-t-2 border-dashed border-slate-100 -z-10" />
+                                        </div>
+
+                                        {/* Visitor Detail Footer */}
+                                        <div className="bg-slate-50 p-6 border-t border-slate-100">
+                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nama Pengunjung</p>
+                                                    <p className="font-bold text-slate-800 line-clamp-1">{ticket.full_name || "-"}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email</p>
+                                                    <p className="font-bold text-slate-800 line-clamp-1">{ticket.email || "-"}</p>
                                                 </div>
                                             </div>
-                                        ))}
+                                        </div>
                                     </div>
-                                )}
+                                ))}
                             </div>
 
                         </div>

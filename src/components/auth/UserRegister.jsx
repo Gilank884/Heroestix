@@ -219,12 +219,16 @@ const UserRegister = () => {
                             </div>
 
                             {/* Terms Checkbox */}
-                            <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer" onClick={() => setForm({ ...form, termsAgreed: !form.termsAgreed })}>
+                            <div
+                                className={`flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border cursor-pointer transition-all ${errorMsg && !form.termsAgreed ? 'border-red-300 bg-red-50 animate-shake' : 'border-slate-100'
+                                    }`}
+                                onClick={() => setForm({ ...form, termsAgreed: !form.termsAgreed })}
+                            >
                                 <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${form.termsAgreed ? 'bg-blue-600 border-blue-600' : 'border-slate-300 bg-white'}`}>
                                     {form.termsAgreed && <RxCheckCircled className="text-white text-xs" />}
                                 </div>
                                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                    I agree to the <Link target="_blank" to="/terms-of-service" className="text-blue-600 font-bold hover:underline">Terms and Conditions</Link> and <Link target="_blank" to="/privacy" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link> applicable at Heroestix.
+                                    I agree to the <Link target="_blank" to="/terms" className="text-blue-600 font-bold hover:underline">Terms and Conditions</Link> and <Link target="_blank" to="/privacy" className="text-blue-600 font-bold hover:underline">Privacy Policy</Link> applicable at Heroestix.
                                 </p>
                             </div>
 

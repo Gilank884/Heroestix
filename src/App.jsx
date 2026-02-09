@@ -46,12 +46,14 @@ import EventValidationStats from "./creator/pages/EventValidationStats";
 import EventCheckIn from "./creator/pages/EventCheckIn";
 import EventCash from "./creator/pages/EventCash";
 import AdditionalForm from "./creator/pages/AdditionalForm";
+import CreateEvent from "./creator/pages/CreateEvent";
 import CreatorProfile from "./creator/pages/Profile";
 
 // Dev Pages
 import DevDashboard from "./dev/pages/Dashboard";
 import DevCash from "./dev/pages/Cash";
 import DevCreators from "./dev/pages/Creators";
+import DevCreatorDetail from "./dev/pages/CreatorDetail";
 import DevEvents from "./dev/pages/Events";
 
 
@@ -104,23 +106,27 @@ export default function App() {
             console.log("Session restored successfully from hash.");
             // Clean hash without leaving a '#'
             window.history.replaceState(null, null, window.location.pathname + window.location.search);
+            return true; // Signal success
           } else {
             console.error("Error restoring session from hash:", error.message);
-            setChecking(false);
           }
-        } else {
-          setChecking(false);
         }
       }
+      return false;
     };
-    restoreSession();
 
 
 
     const checkRedirect = async (session) => {
       if (session?.user) {
         console.log("Active session found for user:", session.user.id, "email:", session.user.email);
-        setChecking(true);
+
+        // Only set checking to true if we don't already have a valid session in store
+        // This prevents flicker on tab return/navigation
+        const { isAuthenticated } = useAuthStore.getState();
+        if (!isAuthenticated) {
+          setChecking(true);
+        }
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("role")
@@ -128,6 +134,7 @@ export default function App() {
           .single();
 
         const authMode = localStorage.getItem("auth_mode");
+        const isExplicitAuth = !!authMode;
         console.log("Current auth_mode from localStorage:", authMode);
 
         if (!profile) {
@@ -143,7 +150,7 @@ export default function App() {
             if (isGoogleProvider) {
               // Check if we are already on the completion page to avoid infinite loop
               if (window.location.pathname !== "/complete-registration") {
-                window.location.href = "/complete-registration";
+                window.location.href = getSubdomainUrl(null, "/complete-registration");
               }
               setChecking(false); // Stop checking, let them fill the form
               return;
@@ -183,32 +190,48 @@ export default function App() {
           const isDevSub = host.startsWith("dev.");
 
           // 🔄 CROSS-SUBDOMAIN REDIRECTION LOGIC
-          // Rule: Only redirect if on the WRONG subdomain, OR if explicitly logging in/registering
-          const shouldForceRedirect = authMode === "login" || authMode === "register";
-
-          // If on completion page but profile exists, redirect out
-          if (window.location.pathname === "/complete-registration") {
-            window.location.href = "/";
-            return;
-          }
+          // Rule: Redirect if on the WRONG subdomain
+          // Note: we check authMode to see if this is an explicit login/register action
+          const isAuthPath = window.location.pathname === "/masuk" || window.location.pathname === "/daftar";
 
           if (role === "creator") {
-            if (isDevSub || (shouldForceRedirect && !isCreatorSub)) {
+            // If on dev sub OR (on base sub AND (isExplicitAuth OR visiting root OR auth paths))
+            if (isDevSub || (!isCreatorSub && (isExplicitAuth || window.location.pathname === "/" || isAuthPath))) {
+              console.log("Redirecting creator to creator portal...");
               window.location.href = getSubdomainUrl("creator", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
               return;
             }
+            // If already on creator portal but on auth path, send to dashboard
+            if (isCreatorSub && isAuthPath) {
+              window.location.href = "/";
+              return;
+            }
           } else if (role === "developer") {
-            if (isCreatorSub || (shouldForceRedirect && !isDevSub)) {
+            if (isCreatorSub || (!isDevSub && (isExplicitAuth || window.location.pathname === "/" || isAuthPath))) {
+              console.log("Redirecting developer to dev portal...");
               window.location.href = getSubdomainUrl("dev", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
               return;
             }
+            if (isDevSub && isAuthPath) {
+              window.location.href = "/";
+              return;
+            }
           } else if (role === "user") {
-            if (isCreatorSub || isDevSub) {
+            // Users should not be on internal subdomains except for registration completion
+            const isCompletionPath = window.location.pathname === "/complete-registration";
+            if ((isCreatorSub || isDevSub) && !isCompletionPath && !isAuthPath) {
+              console.log("User detected on internal subdomain, redirecting to home portal...");
               window.location.href = getSubdomainUrl(null);
+              return;
+            }
+            // If on base domain and on auth path while already logged in
+            if (isBaseDomain && isAuthPath) {
+              window.location.href = "/";
               return;
             }
           }
         }
+        setChecking(false);
       } else {
         // No session
         logout();
@@ -216,18 +239,25 @@ export default function App() {
       }
     };
 
-    // 1. Initial Check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      checkRedirect(session);
-    });
-
-    // 2. Listen for changes
+    // 1. Listen for changes FIRST (to catch INITIAL_SESSION or sign-ins)
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      // Only re-check if session actually changes or explicitly signs in/out
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+      console.log("Auth State Change:", event);
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
         checkRedirect(session);
       }
     });
+
+    // 2. Initial Hash Sync & Session Check
+    const initAuth = async () => {
+      const restored = await restoreSession();
+      if (!restored) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) checkRedirect(session);
+        else setChecking(false);
+      }
+    };
+
+    initAuth();
 
     return () => {
       if (authListener && authListener.subscription) {
@@ -273,6 +303,7 @@ export default function App() {
                     <Routes>
                       <Route path="/" element={<CreatorDashboard />} />
                       <Route path="/events" element={<Events />} />
+                      <Route path="/events/create" element={<CreateEvent />} />
                       <Route path="/tickets" element={<Tickets />} />
                       <Route path="/scan" element={<Scan />} />
                       <Route path="/staff" element={<div className="p-10 font-bold text-2xl text-gray-800">Staff Management (Work in Progress)</div>} />
@@ -309,6 +340,7 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<DevDashboard />} />
                   <Route path="/creators" element={<DevCreators />} />
+                  <Route path="/creators/:id" element={<DevCreatorDetail />} />
                   <Route path="/events" element={<DevEvents />} />
                   <Route path="/cash" element={<DevCash />} />
                   <Route path="*" element={<Navigate to="/" />} />
