@@ -217,7 +217,7 @@ export default function Checkout() {
                     body: JSON.stringify({
                         action: 'initiate',
                         order_id: order.id,
-                        amount: totalAmount + platformFee,
+                        amount: totalAmount + platformFee + taxAmount,
                         customer_email: ticketHolders[0].email, // Use primary contact
                         customer_name: ticketHolders[0].full_name,
                         customer_phone: ticketHolders[0].phone

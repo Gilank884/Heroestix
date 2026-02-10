@@ -38,7 +38,7 @@ import Tickets from "./creator/pages/Tickets";
 import Scan from "./creator/pages/Scan";
 import TicketCategories from "./creator/pages/TicketCategories";
 import Visitors from "./creator/pages/Visitors";
-import SalesReport from "./creator/pages/SalesReport";
+import Overview from "./creator/pages/Overview";
 import Withdrawals from "./creator/pages/Withdrawals";
 import EventSalesReport from "./creator/pages/EventSalesReport";
 import EventWithdrawals from "./creator/pages/EventWithdrawals";
@@ -308,7 +308,7 @@ export default function App() {
                       <Route path="/scan" element={<Scan />} />
                       <Route path="/staff" element={<div className="p-10 font-bold text-2xl text-gray-800">Staff Management (Work in Progress)</div>} />
                       <Route path="/vouchers" element={<div className="p-10 font-bold text-2xl text-gray-800">Voucher & Promotions (Work in Progress)</div>} />
-                      <Route path="/sales-report" element={<SalesReport />} />
+                      <Route path="/sales-report" element={<Overview />} />
                       <Route path="/withdrawals" element={<Withdrawals />} />
                       <Route path="/reports" element={<div className="p-10 font-bold text-2xl text-gray-800">Data Recap & Reports (Work in Progress)</div>} />
                       <Route path="/security/password" element={<div className="p-10 font-bold text-2xl text-gray-800">Change Password (Work in Progress)</div>} />

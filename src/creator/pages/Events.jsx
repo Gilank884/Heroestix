@@ -94,10 +94,10 @@ const Events = () => {
         <div className="space-y-6 max-w-6xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-[#1a202c]">Daftar Event</h1>
+                <h1 className="text-2xl font-medium text-[#1a202c]">Daftar Event</h1>
                 <button
                     onClick={() => navigate('/events/create')}
-                    className="bg-[#1a36c7] text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-[#152ba3] transition-all shadow-md active:scale-95"
+                    className="bg-[#1a36c7] text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 hover:bg-[#152ba3] transition-all shadow-md active:scale-95"
                 >
                     <Plus size={18} />
                     Buat Event
@@ -110,7 +110,7 @@ const Events = () => {
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-6 py-4 text-sm font-bold transition-all relative
+                        className={`px-6 py-4 text-sm font-medium transition-all relative
                             ${activeTab === tab.id ? 'text-[#1a36c7]' : 'text-gray-400 hover:text-gray-600'}
                         `}
                     >
@@ -146,7 +146,7 @@ const Events = () => {
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                             <div className="absolute top-2 left-2">
-                                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm bg-white text-gray-700`}>
+                                <span className={`px-2.5 py-1 rounded-md text-[10px] font-medium uppercase tracking-wider shadow-sm bg-white text-gray-700`}>
                                     {ev.status === 'active' ? 'Publish' : ev.status}
                                 </span>
                             </div>
@@ -154,7 +154,7 @@ const Events = () => {
 
                         {/* Details */}
                         <div className="flex-1 min-w-0 space-y-3">
-                            <h3 className="text-lg font-bold text-[#1a202c] truncate group-hover:text-[#1a36c7] transition-colors">
+                            <h3 className="text-lg font-medium text-[#1a202c] truncate group-hover:text-[#1a36c7] transition-colors">
                                 {ev.title}
                             </h3>
 
@@ -178,7 +178,7 @@ const Events = () => {
                         <div className="w-full md:w-auto flex-shrink-0">
                             <Link
                                 to={`/manage/event/${ev.id}`}
-                                className="w-full md:w-auto px-6 py-2.5 bg-[#f0f4ff] text-[#1a36c7] rounded-lg text-sm font-bold hover:bg-[#1a36c7] hover:text-white transition-all text-center inline-block"
+                                className="w-full md:w-auto px-6 py-2.5 bg-[#f0f4ff] text-[#1a36c7] rounded-lg text-sm font-medium hover:bg-[#1a36c7] hover:text-white transition-all text-center inline-block"
                             >
                                 Kelola Event
                             </Link>
@@ -189,7 +189,7 @@ const Events = () => {
                         <div className="w-16 h-16 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Calendar size={32} />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900">Belum ada event</h3>
+                        <h3 className="text-lg font-medium text-gray-900">Belum ada event</h3>
                         <p className="text-gray-400 text-sm mt-1">Coba sesuaikan filter atau cari event lain.</p>
                     </div>
                 )}

@@ -78,14 +78,14 @@ export default function EventSalesReport() {
                     if (error) throw error;
 
                     const sales = (balanceData || []).filter(item => item.type === 'credit');
-                    const totalRevenue = sales.reduce((acc, curr) => acc + Number(curr.amount), 0);
-
-                    setStats({
-                        totalRevenue,
-                        ticketsSold: sales.length,
-                        netRevenue: totalRevenue // Adjust if platform fee deduction happens at this level
-                    });
-                    setHistory(sales || []);
+                    if (sales.length > 0) {
+                        const adjustedTotalRevenue = sales.reduce((acc, curr) => acc + (Number(curr.amount) - 8500), 0);
+                        setStats({
+                            totalRevenue: adjustedTotalRevenue,
+                            ticketsSold: sales.length
+                        });
+                        setHistory(sales || []);
+                    }
                 }
             }
         } catch (error) {
@@ -102,114 +102,114 @@ export default function EventSalesReport() {
     if (loading && !eventData) {
         return (
             <div className="p-20 flex flex-col items-center justify-center gap-4">
-                <div className="w-12 h-12 border-[3px] border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Mengaudit Penjualan Event...</span>
+                <div className="w-10 h-10 border-[3px] border-slate-100 border-t-blue-600 rounded-full animate-spin" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Memproses Laporan...</span>
             </div>
         );
     }
 
     return (
-        <div className="p-8 max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Laporan Event</span>
-                    </div>
-                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+        <div className="max-w-6xl mx-auto space-y-12 pb-20 animate-in fade-in duration-700">
+            {/* Minimalist Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-100 pb-8">
+                <div className="space-y-2">
+                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
                         Laporan Penjualan
                     </h2>
-                    <p className="text-slate-500 text-sm">Rincian performa keuangan untuk event <span className="text-slate-900 font-semibold">{eventData?.title}</span></p>
+                    <p className="text-slate-500 font-medium">
+                        Rincian performa keuangan untuk event <span className="text-slate-900 font-semibold">{eventData?.title}</span>
+                    </p>
+                </div>
+                <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                    <Calendar size={14} className="text-slate-400" />
+                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Event Report</span>
                 </div>
             </div>
 
-            {/* Metric Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                        <TrendingUp size={20} />
+            {/* Metric Cards - Minimalist Style */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
+                    <div className="space-y-2">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Tiket Terjual</p>
+                        <div className="flex items-baseline gap-2">
+                            <h4 className="text-4xl font-bold text-slate-900 tracking-tight">{stats.ticketsSold}</h4>
+                            <span className="text-sm font-semibold text-slate-400">Inventory</span>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Pendapatan</p>
-                        <h4 className="text-2xl font-bold text-slate-900">{rupiah(stats.totalRevenue)}</h4>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
-                        <BarChart3 size={20} />
-                    </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pendapatan Bersih</p>
-                        <h4 className="text-2xl font-bold text-slate-900">{rupiah(stats.netRevenue)}</h4>
+                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                        <Ticket size={28} strokeWidth={1.5} />
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600">
-                        <Ticket size={20} />
+                <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
+                    <div className="space-y-2">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Total Pendapatan</p>
+                        <h4 className="text-4xl font-bold text-slate-900 tracking-tight">{rupiah(stats.totalRevenue)}</h4>
                     </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tiket Terjual</p>
-                        <h4 className="text-2xl font-bold text-slate-900">{stats.ticketsSold} <span className="text-sm text-slate-400 font-medium ml-1">Tiket</span></h4>
+                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                        <TrendingUp size={28} strokeWidth={1.5} />
                     </div>
                 </div>
             </div>
 
-            {/* Transactions */}
-            <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Transactions Section */}
+            <div className="space-y-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-1 h-5 bg-indigo-600 rounded-full" />
-                        <h3 className="text-lg font-bold text-slate-900">Riwayat Penjualan</h3>
+                        <div className="w-1 h-6 bg-blue-600 rounded-full" />
+                        <h3 className="text-xl font-bold text-slate-900">Riwayat Penjualan</h3>
                     </div>
-                    <div className="relative min-w-[300px]">
-                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <div className="relative group w-full md:w-80">
+                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <input
                             type="text"
                             placeholder="Cari transaksi..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-11 pr-4 text-sm font-medium text-slate-700 outline-none focus:border-indigo-500 transition-all"
+                            className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-sm font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
                         />
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-slate-50 border-b border-slate-100">
+                            <thead className="bg-slate-50 border-b border-slate-200">
                                 <tr>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Keterangan</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tanggal</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Nominal</th>
+                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Keterangan</th>
+                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tanggal</th>
+                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Nominal</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-100">
                                 {filteredHistory.length > 0 ? filteredHistory.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4">
+                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-50 text-indigo-600 border border-indigo-100">
-                                                    <ArrowDownLeft size={14} />
+                                                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-50 text-slate-400 border border-slate-100 group-hover:bg-blue-100 group-hover:text-blue-600 group-hover:border-blue-200 transition-colors">
+                                                    <ArrowDownLeft size={18} />
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-slate-800 text-sm leading-tight">{item.description}</p>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">ID: {item.ticket_id?.substring(0, 8)}</p>
+                                                    <p className="font-semibold text-slate-800 tracking-tight">{item.description}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">ID: {item.ticket_id?.substring(0, 8)}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-slate-500 text-sm font-medium">{new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                        <td className="px-8 py-6">
+                                            <span className="text-slate-500 text-xs font-semibold">{new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <p className="font-bold text-indigo-600 tabular-nums">+{rupiah(item.amount)}</p>
+                                        <td className="px-8 py-6 text-right">
+                                            <p className="font-bold text-slate-900 tabular-nums">+{rupiah(Number(item.amount) - 8500)}</p>
                                         </td>
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan="3" className="px-6 py-12 text-center text-slate-400 font-medium text-sm">Belum ada data penjualan</td>
+                                        <td colSpan="3" className="px-8 py-20 text-center">
+                                            <div className="flex flex-col items-center gap-3 opacity-40">
+                                                <Search size={32} className="text-slate-300" />
+                                                <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Belum ada data penjualan</p>
+                                            </div>
+                                        </td>
                                     </tr>
                                 )}
                             </tbody>

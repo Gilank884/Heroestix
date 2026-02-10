@@ -6,9 +6,7 @@ import { HiOutlineDuplicate, HiChevronDown } from "react-icons/hi";
 import { supabase } from "../../lib/supabaseClient";
 import { QRCode } from "react-qr-code";
 
-import topEvents from "../../data/TopEvent";
-import newEvents from "../../data/NewEvent";
-import recommendedEvents from "../../data/RecommendedEvent";
+// Unused imports causing 404s removed
 
 const rupiah = (value) => {
     if (typeof value !== "number" || isNaN(value)) return "-";

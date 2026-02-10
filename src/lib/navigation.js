@@ -1,5 +1,9 @@
 export const getBaseDomain = () => {
     const host = window.location.hostname;
+    // In development, always use the current hostname (handles localhost, 127.0.0.1, or local IP)
+    if (import.meta.env.DEV) {
+        return host;
+    }
     if (host === "localhost" || host === "127.0.0.1") return host;
     if (host.endsWith(".localhost")) return "localhost";
     // Change this to your actual production domain
