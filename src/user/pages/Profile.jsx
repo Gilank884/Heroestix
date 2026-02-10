@@ -261,7 +261,7 @@ const Profile = () => {
                                             <InfoField
                                                 icon={<HiOutlineCalendar size={18} />}
                                                 label="Tanggal Lahir"
-                                                value={user?.user_metadata?.tanggal_lahir || "-"}
+                                                value={profile?.tanggal_lahir || user?.user_metadata?.tanggal_lahir || "-"}
                                             />
                                             <InfoField
                                                 icon={<HiOutlineShieldCheck size={18} />}

@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 
+import useAuthStore from "../../auth/useAuthStore";
+
 const rupiah = (value) => {
     if (typeof value !== "number" || isNaN(value)) return "-";
     return new Intl.NumberFormat("id-ID", {
@@ -24,13 +26,51 @@ const rupiah = (value) => {
     }).format(value);
 };
 
+// Login Prompt Modal Component
+const LoginPromptModal = ({ isOpen, onClose, onLogin }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                <div className="p-8 text-center">
+                    <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Info size={40} />
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Login Diperlukan</h3>
+                    <p className="text-slate-500 font-medium leading-relaxed mb-8">
+                        Silakan masuk ke akun Heroestix Anda terlebih dahulu untuk melanjutkan proses pembelian tiket.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            onClick={onClose}
+                            className="w-full py-3.5 rounded-2xl font-bold text-slate-500 border border-slate-200 hover:bg-slate-50 transition-all active:scale-[0.98]"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={onLogin}
+                            className="w-full py-3.5 rounded-2xl font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-[0.98] transition-all"
+                        >
+                            Masuk Sekarang
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export default function SelectTicket() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { isAuthenticated } = useAuthStore();
     const [event, setEvent] = useState(null);
     const [ticketTypes, setTicketTypes] = useState([]);
     const [selectedTickets, setSelectedTickets] = useState({}); // { ticketTypeId: count }
     const [loading, setLoading] = useState(true);
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
     useEffect(() => {
         fetchEventAndTickets();
@@ -86,6 +126,14 @@ export default function SelectTicket() {
         });
     };
 
+    const handleContinue = () => {
+        if (!isAuthenticated) {
+            setShowLoginModal(true);
+            return;
+        }
+        navigate(`/checkout/${event.id}`, { state: { selectedTickets, totalAmount, event } });
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-white uppercase font-bold tracking-widest text-slate-300">
@@ -101,6 +149,15 @@ export default function SelectTicket() {
     return (
         <div className="bg-slate-50/30 min-h-screen font-sans text-slate-900">
             <Navbar alwaysScrolled={true} />
+
+            <LoginPromptModal
+                isOpen={showLoginModal}
+                onClose={() => setShowLoginModal(false)}
+                onLogin={() => {
+                    localStorage.setItem("auth_mode", "login");
+                    navigate("/masuk");
+                }}
+            />
 
             <div className="pt-32 pb-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -289,7 +346,7 @@ export default function SelectTicket() {
 
                                         <button
                                             disabled={totalItems === 0}
-                                            onClick={() => navigate(`/checkout/${event.id}`, { state: { selectedTickets, totalAmount, event } })}
+                                            onClick={handleContinue}
                                             className={`w-full py-3.5 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2 ${totalItems > 0 ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-[0.98]' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
                                         >
                                             Lanjut Pembayaran

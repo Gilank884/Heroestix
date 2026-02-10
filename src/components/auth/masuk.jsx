@@ -17,16 +17,10 @@ const Masuk = ({ role = "user" }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState(urlError === "unregistered" ? "Akun anda belum registrasi. Silahkan daftar terlebih dahulu." : "");
-    const { user: storeUser, isAuthenticated } = useAuthStore();
+    const { user: storeUser, isAuthenticated, login, isChecking } = useAuthStore();
 
-    React.useEffect(() => {
-        if (isAuthenticated && storeUser) {
-            console.log("User is already authenticated, triggering redirection check...");
-            // We just need to trigger a reload or navigate to root, App.jsx will handle the rest
-            // But to be safe on subdomains, let's just go to root
-            navigate("/");
-        }
-    }, [isAuthenticated, storeUser, navigate]);
+    // Redirection is now handled by App.jsx or the Guards. 
+    // We removed the auto-navigate useEffect to prevent recursion loops.
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -35,59 +29,60 @@ const Masuk = ({ role = "user" }) => {
         console.log("Attempting manual login for email:", email);
         localStorage.setItem("auth_mode", "login");
 
-        const { data: authData, error } = await supabase.auth.signInWithPassword({
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
 
-        if (error) {
-            console.error("Login error:", error.message);
-            setErrorMsg(error.message);
+        if (authError) {
+            console.error("Login error:", authError.message);
+            setErrorMsg(authError.message);
             setLoading(false);
             return;
         }
 
         if (authData.user) {
             console.log("Logged in successfully. Fetching profile for user:", authData.user.id);
-            const { data: profile, error: profileError } = await supabase
+            const { data: profile, error: profileErr } = await supabase
                 .from("profiles")
                 .select("role")
                 .eq("id", authData.user.id)
                 .single();
 
-            if (profileError) {
-                console.error("Error fetching profile after login:", profileError.message);
+            const profileRole = profile?.role || "user";
+            console.log(`[Masuk] Login successful. User ID: ${authData.user.id}, Detected Role from DB: ${profileRole}`);
+
+            if (profileErr) {
+                console.error("Error fetching profile after login:", profileErr.message);
                 navigate("/");
                 setLoading(false);
                 return;
             }
 
-            const profileRole = profile?.role;
             const host = window.location.hostname;
             const isLocalhost = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
 
-            // Role Context Check
-            if (role === "creator" && profileRole !== "creator") {
-                setErrorMsg("Akun Anda terdeteksi sebagai User biasa. Silakan daftar sebagai Creator untuk mengakses portal ini.");
-                setLoading(false);
-                return;
-            }
+            // SYNC STORE LOCALLY FIRST
+            login(authData.user, authData.session.access_token, profileRole);
 
-            if (role === "developer" && profileRole !== "developer") {
-                setErrorMsg("Akun Anda tidak memiliki akses Developer.");
-                setLoading(false);
-                return;
-            }
-
+            // Redirection is now handled centrally by App.jsx or explicitly here ONLY if it's a cross-subdomain bridge
             if (profileRole === "creator") {
-                console.log("Redirecting creator to portal...");
-                window.location.href = getSubdomainUrl("creator", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
+                const target = getSubdomainUrl("creator", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
+                console.log(`[Masuk] Creator login detected. Redirecting to: ${target}`);
+                window.location.href = target;
             } else if (profileRole === "developer") {
-                console.log("Redirecting developer to portal...");
-                window.location.href = getSubdomainUrl("dev", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
+                const target = getSubdomainUrl("dev", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
+                console.log(`[Masuk] Developer login detected. Redirecting to: ${target}`);
+                window.location.href = target;
             } else {
-                console.log("User role detected, ensuring base domain...");
-                window.location.href = getSubdomainUrl(null, isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
+                const target = getSubdomainUrl(null, isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
+                const targetOrigin = new URL(target).origin;
+                if (window.location.origin !== targetOrigin) {
+                    console.log(`[Masuk] Regular user login. Redirecting to base domain originating from portal: ${target}`);
+                    window.location.href = target;
+                } else {
+                    console.log("[Masuk] Regular user login on base domain. App.jsx will handle navigation.");
+                }
             }
         }
         setLoading(false);
@@ -109,7 +104,7 @@ const Masuk = ({ role = "user" }) => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: window.location.origin + "/",
+                redirectTo: "https://heroestix.com/",
             },
         });
 

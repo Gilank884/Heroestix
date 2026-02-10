@@ -63,14 +63,19 @@ const CompleteRegistration = () => {
         }
 
         try {
-            const intendedRole = localStorage.getItem("auth_role") || 'user';
+            // Fetch current profile to avoid downgrading role
+            const { data: existingProfile } = await supabase.from("profiles").select("role").eq("id", userId).single();
+            const currentRole = existingProfile?.role || 'user';
+
+            // Only upgrade to creator/dev, never downgrade from them to user.
+            const finalRole = (currentRole === 'creator' || currentRole === 'developer') ? currentRole : intendedRole;
 
             // Create Profile
             const { error } = await supabase.from("profiles").upsert({
                 id: userId,
                 email: userEmail,
                 full_name: form.nama,
-                role: intendedRole,
+                role: finalRole,
                 tanggal_lahir: form.tanggal_lahir
             });
 

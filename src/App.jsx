@@ -119,121 +119,145 @@ export default function App() {
 
     const checkRedirect = async (session) => {
       if (session?.user) {
-        console.log("Active session found for user:", session.user.id, "email:", session.user.email);
+        console.log("Active session found for user:", session.user.id);
 
-        // Only set checking to true if we don't already have a valid session in store
-        // This prevents flicker on tab return/navigation
         const { isAuthenticated } = useAuthStore.getState();
         if (!isAuthenticated) {
           setChecking(true);
         }
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", session.user.id)
-          .single();
 
-        const authMode = localStorage.getItem("auth_mode");
-        const isExplicitAuth = !!authMode;
-        console.log("Current auth_mode from localStorage:", authMode);
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("role, tanggal_lahir")
+            .eq("id", session.user.id)
+            .single();
 
-        if (!profile) {
-          console.log("Profile not found in database for user:", session.user.id);
-          // If profile doesn't exist and they are registering OR logging in with Google
-          const isGoogleProvider = session.user.app_metadata?.provider === "google";
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.error("[checkRedirect] Error fetching profile:", profileError.message);
+            throw profileError;
+          }
 
-          // MODIFIED: If Google Provider, REDIRECT to Complete Registration instead of Auto-Create
-          if ((authMode === "register" || isGoogleProvider)) {
-            // If manual email register, profile should have been created in UserRegister.jsx, but if not, logic might fall here.
-            // But for Google, we want to force completion.
+          console.log("[checkRedirect] Profile data retrieved:", profile);
 
-            if (isGoogleProvider) {
-              // Check if we are already on the completion page to avoid infinite loop
+          const authMode = localStorage.getItem("auth_mode");
+          const isExplicitAuth = !!authMode;
+
+          if (!profile && !profileError) {
+            const isGoogleProvider = session.user.app_metadata?.provider === "google";
+            if (authMode === "register" || isGoogleProvider) {
+              if (isGoogleProvider) {
+                if (window.location.pathname !== "/complete-registration") {
+                  window.location.href = getSubdomainUrl(null, "/complete-registration");
+                }
+                return;
+              }
+            } else {
+              logout();
+              await supabase.auth.signOut();
+              localStorage.removeItem("auth_mode");
+              window.location.href = window.location.origin + "/masuk?error=unregistered";
+              return;
+            }
+          } else if (profile) {
+            const host = window.location.hostname;
+            const isLocalhost = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
+            const port = window.location.port ? `:${window.location.port}` : "";
+            const baseDomain = getBaseDomain();
+            const isBaseDomain = host === baseDomain;
+            const isCreatorSub = host.startsWith("creator.");
+            const isDevSub = host.startsWith("dev.");
+            const isAuthPath = window.location.pathname === "/masuk" || window.location.pathname === "/daftar";
+
+            const authMode = localStorage.getItem("auth_mode");
+            const isExplicitAuth = !!authMode;
+
+            if (profile.role === "user" && !profile.tanggal_lahir) {
               if (window.location.pathname !== "/complete-registration") {
                 window.location.href = getSubdomainUrl(null, "/complete-registration");
               }
-              setChecking(false); // Stop checking, let them fill the form
               return;
             }
 
-            // Below logic kept for reference or other providers, but strictly for Google we redirect above.
-            // Actually, if it's manual register and NO profile, something went wrong in UserRegister.jsx or it's a legacy flow.
-            // Let's keep the old auto-create as fallback for non-google if needed, although UserRegister handles it now.
-
-            // ... Old Auto Create Logic Removed for Google ...
-          } else {
-            // Unregistered user trying to login (manual email)
-            console.warn("Unregistered user (manual login) attempted. Redirecting to error.");
-            logout();
-            await supabase.auth.signOut();
             localStorage.removeItem("auth_mode");
-            window.location.href = window.location.origin + "/masuk?error=unregistered";
-            return;
+            localStorage.removeItem("auth_role");
+
+            let role = profile.role;
+
+            // NEW: Support for legacy/mismatched roles. 
+            // If the user reports 'user' but they are on a portal subdomain, double check the database.
+            if (role === "user" && (isCreatorSub || isDevSub)) {
+              try {
+                const tableCheck = isCreatorSub ? "creators" : "developers";
+                const { data: hasRecord } = await supabase.from(tableCheck).select("id").eq("id", session.user.id).single();
+                if (hasRecord) {
+                  console.log(`[checkRedirect] Auto-promoting user to ${isCreatorSub ? 'creator' : 'developer'} based on existence in ${tableCheck} table.`);
+                  role = isCreatorSub ? "creator" : "developer";
+                  // Sync the profile role in DB too so it doesn't repeat
+                  await supabase.from("profiles").update({ role }).eq("id", session.user.id);
+                }
+              } catch (e) {
+                console.warn("[checkRedirect] Failed to check for role promotion:", e);
+              }
+            }
+
+            login(session.user, session.access_token, role);
+
+            console.log(`[checkRedirect] Role: ${role}, Subdomain: ${isCreatorSub ? "creator" : (isDevSub ? "dev" : "base")}, Path: ${window.location.pathname}, ExplicitAuth: ${isExplicitAuth}`);
+
+            if (role === "creator") {
+              // Rule: Redirect to portal if (fresh login) OR (on dev sub) OR (on base sub AND trying to access auth paths)
+              const needsPortal = isExplicitAuth || isDevSub || (isBaseDomain && isAuthPath);
+
+              if (needsPortal) {
+                const target = getSubdomainUrl("creator", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
+                const targetOrigin = new URL(target).origin;
+                if (window.location.origin !== targetOrigin) {
+                  console.log("[checkRedirect] Redirecting creator to portal. Reason: " + (isExplicitAuth ? "ExplicitAuth" : (isDevSub ? "isDevSub" : "isAuthPath")));
+                  window.location.href = target;
+                  return;
+                }
+              }
+
+              // If we are on creator sub and somehow hit an auth path, send to dashboard
+              if (isCreatorSub && isAuthPath) {
+                console.log("[checkRedirect] Already on creator sub but on auth path, sending home...");
+                window.location.href = "/";
+                return;
+              }
+            } else if (role === "developer") {
+              const needsPortal = isExplicitAuth || isCreatorSub || (isBaseDomain && isAuthPath);
+
+              if (needsPortal) {
+                const target = getSubdomainUrl("dev", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
+                const targetOrigin = new URL(target).origin;
+                if (window.location.origin !== targetOrigin) {
+                  console.log("[checkRedirect] Redirecting developer to portal. Reason: " + (isExplicitAuth ? "ExplicitAuth" : (isCreatorSub ? "isCreatorSub" : "isAuthPath")));
+                  window.location.href = target;
+                  return;
+                }
+              }
+              if (isDevSub && isAuthPath) {
+                console.log("[checkRedirect] Already on dev sub but on auth path, sending home...");
+                window.location.href = "/";
+                return;
+              }
+            } else if (role === "user") {
+              // Users on auth paths get sent home
+              if (isBaseDomain && isAuthPath) {
+                console.log("[checkRedirect] User on auth path, sending to home...");
+                window.location.href = "/";
+                return;
+              }
+              // NOTE: We removed the aggressive portal-to-baseDomain forced redirect here.
+              // This allows users to land on creator.heroestix.com/ and see a "Become a Creator" UI
+              // rather than being abruptly kicked back to the home page without explanation.
+            }
           }
+        } finally {
+          setChecking(false);
         }
-
-        if (profile) {
-          localStorage.removeItem("auth_mode");
-          localStorage.removeItem("auth_role");
-
-          const role = profile.role;
-
-          // SYNC STORE
-          login(session.user, session.access_token, role);
-
-          const host = window.location.hostname;
-          const isLocalhost = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
-          const port = window.location.port ? `:${window.location.port}` : "";
-          const baseDomain = getBaseDomain();
-          const isBaseDomain = host === baseDomain;
-          const isCreatorSub = host.startsWith("creator.");
-          const isDevSub = host.startsWith("dev.");
-
-          // 🔄 CROSS-SUBDOMAIN REDIRECTION LOGIC
-          // Rule: Redirect if on the WRONG subdomain
-          // Note: we check authMode to see if this is an explicit login/register action
-          const isAuthPath = window.location.pathname === "/masuk" || window.location.pathname === "/daftar";
-
-          if (role === "creator") {
-            // If on dev sub OR (on base sub AND (isExplicitAuth OR visiting root OR auth paths))
-            if (isDevSub || (!isCreatorSub && (isExplicitAuth || window.location.pathname === "/" || isAuthPath))) {
-              console.log("Redirecting creator to creator portal...");
-              window.location.href = getSubdomainUrl("creator", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
-              return;
-            }
-            // If already on creator portal but on auth path, send to dashboard
-            if (isCreatorSub && isAuthPath) {
-              window.location.href = "/";
-              return;
-            }
-          } else if (role === "developer") {
-            if (isCreatorSub || (!isDevSub && (isExplicitAuth || window.location.pathname === "/" || isAuthPath))) {
-              console.log("Redirecting developer to dev portal...");
-              window.location.href = getSubdomainUrl("dev", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
-              return;
-            }
-            if (isDevSub && isAuthPath) {
-              window.location.href = "/";
-              return;
-            }
-          } else if (role === "user") {
-            // Users should not be on internal subdomains except for registration completion
-            const isCompletionPath = window.location.pathname === "/complete-registration";
-            if ((isCreatorSub || isDevSub) && !isCompletionPath && !isAuthPath) {
-              console.log("User detected on internal subdomain, redirecting to home portal...");
-              window.location.href = getSubdomainUrl(null);
-              return;
-            }
-            // If on base domain and on auth path while already logged in
-            if (isBaseDomain && isAuthPath) {
-              window.location.href = "/";
-              return;
-            }
-          }
-        }
-        setChecking(false);
       } else {
-        // No session
         logout();
         setChecking(false);
       }
@@ -251,9 +275,13 @@ export default function App() {
     const initAuth = async () => {
       const restored = await restoreSession();
       if (!restored) {
+        // Redundant with onAuthStateChange INITIAL_SESSION, but good for safety
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) checkRedirect(session);
-        else setChecking(false);
+        if (session) {
+          // checkRedirect(session); // Let the listener handle it to avoid duplicate calls
+        } else {
+          setChecking(false);
+        }
       }
     };
 

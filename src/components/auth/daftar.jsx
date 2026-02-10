@@ -195,7 +195,7 @@ const Daftar = ({ role = "user" }) => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: window.location.origin + "/",
+                redirectTo: "https://heroestix.com/",
             },
         });
         if (error) console.error("Google login error:", error.message);
