@@ -27,7 +27,8 @@ const DevLayout = ({ children }) => {
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
         { name: 'Creators', path: '/creators', icon: Users },
         { name: 'Events', path: '/events', icon: Calendar },
-        { name: 'Cash', path: '/cash', icon: Wallet },
+        { name: 'Cash', path: '/cash', icon: CreditCard },
+        { name: 'Withdrawals', path: '/withdrawals', icon: Wallet },
     ];
 
     return (
@@ -65,8 +66,8 @@ const DevLayout = ({ children }) => {
                                 key={item.name}
                                 to={item.path}
                                 className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative ${isActive
-                                        ? 'bg-blue-50 text-blue-600 font-bold'
-                                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                                    ? 'bg-blue-50 text-blue-600 font-bold'
+                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                                     }`}
                             >
                                 <item.icon

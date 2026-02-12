@@ -17,6 +17,7 @@ import {
     ChevronRight,
     Search
 } from 'lucide-react';
+import VerificationPending from '../components/VerificationPending';
 
 const rupiah = (value) => {
     return new Intl.NumberFormat("id-ID", {
@@ -39,6 +40,7 @@ export default function EventCash() {
     const [withdrawAmount, setWithdrawAmount] = useState('');
     const [creatorInfo, setCreatorInfo] = useState(null);
     const [eventData, setEventData] = useState(null);
+    const [isVerified, setIsVerified] = useState(true);
 
     useEffect(() => {
         if (user?.id && eventId) {
@@ -69,6 +71,17 @@ export default function EventCash() {
     const fetchFinancials = async () => {
         setLoading(true);
         try {
+            // Check Verification
+            const { data: creatorData } = await supabase
+                .from('creators')
+                .select('verified')
+                .eq('id', user.id)
+                .single();
+
+            const verified = creatorData?.verified ?? false;
+            setIsVerified(verified);
+            if (!verified) { setLoading(false); return; }
+
             // 1. Fetch related ticket types for this event
             const { data: ticketTypes, error: ttError } = await supabase
                 .from('ticket_types')
@@ -117,7 +130,7 @@ export default function EventCash() {
             );
 
             // 5. Calculations
-            const sales = balanceData.reduce((acc, curr) => acc + (curr.type === 'credit' ? Number(curr.amount) : 0), 0);
+            const sales = (balanceData || []).reduce((acc, curr) => acc + (curr.type === 'credit' ? (Number(curr.amount) - 8500) : 0), 0);
             const withdrawn = eventWithdrawals.reduce((acc, curr) => acc + (curr.status === 'approved' ? Number(curr.amount) : 0), 0);
 
             setTotalSales(sales);
@@ -187,6 +200,8 @@ export default function EventCash() {
             </div>
         );
     }
+
+    if (!isVerified) return <VerificationPending />;
 
     return (
         <div className="p-8 max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">

@@ -95,8 +95,8 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                 {/* Header */}
                 <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
                     <div>
-                        <h2 className="text-2xl font-black text-slate-900">Tambah <span className="text-[#1a36c7]">Kategori Tiket</span></h2>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Konfigurasi Penjualan Tiket</p>
+                        <h2 className="text-lg font-black text-slate-900">Tambah <span className="text-[#1a36c7]">Kategori Tiket</span></h2>
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mt-1">Konfigurasi Penjualan Tiket</p>
                     </div>
                     <button onClick={onClose} className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors">
                         <HiX size={20} />
@@ -107,7 +107,7 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                     {/* Basic Info */}
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
                                 <Ticket size={12} /> Nama Tiket
                             </label>
                             <input
@@ -116,12 +116,12 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                                 value={ticketData.name}
                                 onChange={e => setTicketData({ ...ticketData, name: e.target.value })}
                                 placeholder="Contoh: Presale 1 - Early Bird"
-                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all"
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-medium text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all text-[13px]"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
                                 <CircleDollarSign size={12} /> Harga Tiket
                             </label>
                             <input
@@ -130,12 +130,12 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                                 value={ticketData.price_gross}
                                 onChange={e => handleGrossChange(e.target.value)}
                                 placeholder="Contoh: 150000"
-                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all"
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-medium text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all text-[13px]"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
                                 <Info size={12} /> Kuota
                             </label>
                             <input
@@ -144,14 +144,14 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                                 value={ticketData.quota}
                                 onChange={e => setTicketData({ ...ticketData, quota: e.target.value })}
                                 placeholder="Contoh: 500"
-                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all"
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-medium text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all text-[13px]"
                             />
                         </div>
                     </div>
 
                     {/* Sales Period */}
                     <div className="bg-slate-50 rounded-3xl p-6 space-y-4">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 pl-1 flex items-center gap-2">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-600 pl-1 flex items-center gap-2">
                             <Calendar size={12} /> Periode Penjualan
                         </label>
                         <div className="grid grid-cols-2 gap-4">
@@ -178,13 +178,13 @@ const AddTicketModal = ({ isOpen, onClose, eventId, onRefresh }) => {
 
                     {/* Description */}
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Deskripsi / Benefit</label>
+                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1">Deskripsi / Benefit</label>
                         <textarea
                             rows="3"
                             value={ticketData.description}
                             onChange={e => setTicketData({ ...ticketData, description: e.target.value })}
                             placeholder="Contoh: Termasuk lunch box dan sertifikat"
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all resize-none font-medium"
+                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-medium text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all resize-none text-[13px]"
                         />
                     </div>
 

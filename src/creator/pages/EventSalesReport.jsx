@@ -11,6 +11,7 @@ import {
     Calendar,
     ArrowLeft
 } from 'lucide-react';
+import VerificationPending from '../components/VerificationPending';
 
 const rupiah = (value) => {
     return new Intl.NumberFormat("id-ID", {
@@ -31,6 +32,7 @@ export default function EventSalesReport() {
         ticketsSold: 0,
         netRevenue: 0
     });
+    const [isVerified, setIsVerified] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
@@ -42,6 +44,17 @@ export default function EventSalesReport() {
     const fetchEventSalesData = async () => {
         setLoading(true);
         try {
+            // Check Verification
+            const { data: creatorData } = await supabase
+                .from('creators')
+                .select('verified')
+                .eq('id', user.id)
+                .single();
+
+            const verified = creatorData?.verified ?? false;
+            setIsVerified(verified);
+            if (!verified) { setLoading(false); return; }
+
             // 1. Fetch Event Details
             const { data: event } = await supabase
                 .from('events')
@@ -107,6 +120,8 @@ export default function EventSalesReport() {
             </div>
         );
     }
+
+    if (!isVerified) return <VerificationPending />;
 
     return (
         <div className="max-w-6xl mx-auto space-y-12 pb-20 animate-in fade-in duration-700">

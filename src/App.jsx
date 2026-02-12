@@ -22,7 +22,6 @@ import CreatorPage from "./user/pages/CreatorPage";
 
 import PrivacyPolicy from "./user/pages/PrivacyPolicy";
 import TermsOfService from "./user/pages/TermsOfService";
-import CompleteRegistration from "./user/pages/CompleteRegistration"; // New Import
 
 // Layouts
 import CreatorLayout from "./creator/layouts/CreatorLayout";
@@ -48,13 +47,16 @@ import EventCash from "./creator/pages/EventCash";
 import AdditionalForm from "./creator/pages/AdditionalForm";
 import CreateEvent from "./creator/pages/CreateEvent";
 import CreatorProfile from "./creator/pages/Profile";
+import RequestWithdrawal from "./creator/pages/RequestWithdrawal";
+import EventRequestWithdrawal from "./creator/pages/EventRequestWithdrawal";
 
 // Dev Pages
 import DevDashboard from "./dev/pages/Dashboard";
-import DevCash from "./dev/pages/Cash";
 import DevCreators from "./dev/pages/Creators";
 import DevCreatorDetail from "./dev/pages/CreatorDetail";
 import DevEvents from "./dev/pages/Events";
+import DevCash from "./dev/pages/Cash";
+import DevWithdrawals from "./dev/pages/Withdrawals";
 
 
 
@@ -144,21 +146,12 @@ export default function App() {
           const isExplicitAuth = !!authMode;
 
           if (!profile && !profileError) {
-            const isGoogleProvider = session.user.app_metadata?.provider === "google";
-            if (authMode === "register" || isGoogleProvider) {
-              if (isGoogleProvider) {
-                if (window.location.pathname !== "/complete-registration") {
-                  window.location.href = getSubdomainUrl(null, "/complete-registration");
-                }
-                return;
-              }
-            } else {
-              logout();
-              await supabase.auth.signOut();
-              localStorage.removeItem("auth_mode");
-              window.location.href = window.location.origin + "/masuk?error=unregistered";
-              return;
-            }
+            // If profile doesn't exist, sign out and send to login to ensure consistency
+            logout();
+            await supabase.auth.signOut();
+            localStorage.removeItem("auth_mode");
+            window.location.href = window.location.origin + "/masuk?error=unregistered";
+            return;
           } else if (profile) {
             const host = window.location.hostname;
             const isLocalhost = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
@@ -172,12 +165,7 @@ export default function App() {
             const authMode = localStorage.getItem("auth_mode");
             const isExplicitAuth = !!authMode;
 
-            if (profile.role === "user" && !profile.tanggal_lahir) {
-              if (window.location.pathname !== "/complete-registration") {
-                window.location.href = getSubdomainUrl(null, "/complete-registration");
-              }
-              return;
-            }
+
 
             localStorage.removeItem("auth_mode");
             localStorage.removeItem("auth_role");
@@ -319,6 +307,7 @@ export default function App() {
                       <Route path="/staff" element={<div className="p-10 font-bold text-2xl text-gray-800">Event Staff (Work in Progress)</div>} />
                       <Route path="/sales-report" element={<EventSalesReport />} />
                       <Route path="/withdrawals" element={<EventWithdrawals />} />
+                      <Route path="/withdrawals/request" element={<EventRequestWithdrawal />} />
                       <Route path="/additional-form" element={<AdditionalForm />} />
                     </Routes>
 
@@ -338,6 +327,7 @@ export default function App() {
                       <Route path="/vouchers" element={<div className="p-10 font-bold text-2xl text-gray-800">Voucher & Promotions (Work in Progress)</div>} />
                       <Route path="/sales-report" element={<Overview />} />
                       <Route path="/withdrawals" element={<Withdrawals />} />
+                      <Route path="/withdrawals/request" element={<RequestWithdrawal />} />
                       <Route path="/reports" element={<div className="p-10 font-bold text-2xl text-gray-800">Data Recap & Reports (Work in Progress)</div>} />
                       <Route path="/security/password" element={<div className="p-10 font-bold text-2xl text-gray-800">Change Password (Work in Progress)</div>} />
                       <Route path="/security/tokens" element={<div className="p-10 font-bold text-2xl text-gray-800">Token Generator (Work in Progress)</div>} />
@@ -371,6 +361,7 @@ export default function App() {
                   <Route path="/creators/:id" element={<DevCreatorDetail />} />
                   <Route path="/events" element={<DevEvents />} />
                   <Route path="/cash" element={<DevCash />} />
+                  <Route path="/withdrawals" element={<DevWithdrawals />} />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </DevLayout>
@@ -406,7 +397,6 @@ export default function App() {
         <Route path="/transaction-detail/:id" element={<TransactionDetail />} />
         <Route path="/become-creator" element={<BecomeCreator />} />
         <Route path="/creator/:id" element={<CreatorPage />} />
-        <Route path="/complete-registration" element={<CompleteRegistration />} /> {/* New Route */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>

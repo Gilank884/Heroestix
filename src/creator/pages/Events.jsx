@@ -13,12 +13,14 @@ import {
     LayoutGrid,
     List as ListIcon
 } from 'lucide-react';
+import VerificationPending from '../components/VerificationPending';
 
 const Events = () => {
     const { user } = useAuthStore();
     const navigate = useNavigate();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isVerified, setIsVerified] = useState(true);
     const [activeTab, setActiveTab] = useState('upcoming'); // upcoming, past, archived
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -31,6 +33,17 @@ const Events = () => {
     const fetchEvents = async () => {
         setLoading(true);
         try {
+            // Check Verification
+            const { data: creatorData } = await supabase
+                .from('creators')
+                .select('verified')
+                .eq('id', user.id)
+                .single();
+
+            const verified = creatorData?.verified ?? false;
+            setIsVerified(verified);
+            if (!verified) { setLoading(false); return; }
+
             const { data, error } = await supabase
                 .from('events')
                 .select(`
@@ -90,16 +103,18 @@ const Events = () => {
         );
     }
 
+    if (!isVerified) return <VerificationPending />;
+
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-medium text-[#1a202c]">Daftar Event</h1>
+                <h1 className="text-lg font-black text-[#1a202c]">Daftar Event</h1>
                 <button
                     onClick={() => navigate('/events/create')}
-                    className="bg-[#1a36c7] text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 hover:bg-[#152ba3] transition-all shadow-md active:scale-95"
+                    className="bg-[#1a36c7] text-white px-6 py-2 rounded-lg font-bold text-[11px] uppercase tracking-wider flex items-center gap-2 hover:bg-[#152ba3] transition-all shadow-md active:scale-95"
                 >
-                    <Plus size={18} />
+                    <Plus size={16} />
                     Buat Event
                 </button>
             </div>
@@ -110,7 +125,7 @@ const Events = () => {
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-6 py-4 text-sm font-medium transition-all relative
+                        className={`px-6 py-4 text-xs font-bold uppercase tracking-wider transition-all relative
                             ${activeTab === tab.id ? 'text-[#1a36c7]' : 'text-gray-400 hover:text-gray-600'}
                         `}
                     >
@@ -130,7 +145,7 @@ const Events = () => {
                     placeholder="Cari event..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all text-sm shadow-sm"
+                    className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1a36c7]/10 focus:border-[#1a36c7] transition-all text-xs font-medium shadow-sm"
                 />
             </div>
 
@@ -153,22 +168,22 @@ const Events = () => {
                         </div>
 
                         {/* Details */}
-                        <div className="flex-1 min-w-0 space-y-3">
-                            <h3 className="text-lg font-medium text-[#1a202c] truncate group-hover:text-[#1a36c7] transition-colors">
+                        <div className="flex-1 min-w-0 space-y-2">
+                            <h3 className="text-[15px] font-medium text-[#1a202c] truncate group-hover:text-[#1a36c7] transition-colors tracking-tight">
                                 {ev.title}
                             </h3>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6">
-                                <div className="flex items-center gap-2 text-gray-500 text-sm">
-                                    <MapPin size={16} className="text-gray-400" />
+                                <div className="flex items-center gap-2 text-gray-500 text-xs font-medium">
+                                    <MapPin size={14} className="text-gray-400" />
                                     <span className="truncate">{ev.location}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-gray-500 text-sm">
-                                    <Calendar size={16} className="text-gray-400" />
+                                <div className="flex items-center gap-2 text-gray-500 text-xs font-medium">
+                                    <Calendar size={14} className="text-gray-400" />
                                     <span>{new Date(ev.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-gray-500 text-sm">
-                                    <Clock size={16} className="text-gray-400" />
+                                <div className="flex items-center gap-2 text-gray-500 text-xs font-medium">
+                                    <Clock size={14} className="text-gray-400" />
                                     <span>{ev.event_time || '00:00'} WIB</span>
                                 </div>
                             </div>
@@ -178,7 +193,7 @@ const Events = () => {
                         <div className="w-full md:w-auto flex-shrink-0">
                             <Link
                                 to={`/manage/event/${ev.id}`}
-                                className="w-full md:w-auto px-6 py-2.5 bg-[#f0f4ff] text-[#1a36c7] rounded-lg text-sm font-medium hover:bg-[#1a36c7] hover:text-white transition-all text-center inline-block"
+                                className="w-full md:w-auto px-6 py-2.5 bg-[#f0f4ff] text-[#1a36c7] rounded-lg text-[11px] font-black uppercase tracking-wider hover:bg-[#1a36c7] hover:text-white transition-all text-center inline-block"
                             >
                                 Kelola Event
                             </Link>

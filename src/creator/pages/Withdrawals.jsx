@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthStore from '../../auth/useAuthStore';
 import {
@@ -13,6 +14,7 @@ import {
     Info,
     AlertCircle
 } from 'lucide-react';
+import VerificationPending from '../components/VerificationPending';
 
 const rupiah = (value) => {
     return new Intl.NumberFormat("id-ID", {
@@ -25,11 +27,11 @@ const rupiah = (value) => {
 export default function Withdrawals() {
     const { user } = useAuthStore();
     const [loading, setLoading] = useState(true);
+    const [isVerified, setIsVerified] = useState(true);
     const [balance, setBalance] = useState(0);
     const [requests, setRequests] = useState([]);
-    const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
-    const [withdrawAmount, setWithdrawAmount] = useState('');
     const [creatorInfo, setCreatorInfo] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (user?.id) {
@@ -50,18 +52,23 @@ export default function Withdrawals() {
     const fetchFinancials = async () => {
         setLoading(true);
         try {
+            // Check Verification
+            const { data: creatorData } = await supabase
+                .from('creators')
+                .select('verified')
+                .eq('id', user.id)
+                .single();
+
+            const verified = creatorData?.verified ?? false;
+            setIsVerified(verified);
+            if (!verified) { setLoading(false); return; }
+
             const { data: balanceData, error: balanceError } = await supabase
                 .from('creator_balances')
                 .select('*')
                 .eq('creator_id', user.id);
 
             if (balanceError) throw balanceError;
-
-            const total = balanceData.reduce((acc, curr) => {
-                return curr.type === 'credit' ? acc + Number(curr.amount) : acc - Number(curr.amount);
-            }, 0);
-
-            setBalance(total);
 
             const { data: requestData, error: requestError } = await supabase
                 .from('withdrawals')
@@ -70,6 +77,18 @@ export default function Withdrawals() {
                 .order('created_at', { ascending: false });
 
             if (requestError) throw requestError;
+
+            // 1. Calculate Total Net Revenue from sales (credits)
+            const netSales = (balanceData || [])
+                .filter(curr => curr.type === 'credit')
+                .reduce((acc, curr) => acc + (Number(curr.amount) - 8500), 0);
+
+            // 2. Calculate Total Already Withdrawn (approved requests)
+            const totalWithdrawn = (requestData || [])
+                .filter(curr => curr.status === 'approved')
+                .reduce((acc, curr) => acc + Number(curr.amount), 0);
+
+            setBalance(netSales - totalWithdrawn);
             setRequests(requestData || []);
 
         } catch (error) {
@@ -79,43 +98,8 @@ export default function Withdrawals() {
         }
     };
 
-    const handleRequestWithdrawal = async (e) => {
-        e.preventDefault();
-        const amount = Number(withdrawAmount);
-
-        if (amount > balance) {
-            alert("Saldo tidak mencukupi.");
-            return;
-        }
-
-        if (amount < 10000) {
-            alert("Nominal minimal penarikan adalah Rp 10.000.");
-            return;
-        }
-
-        const hasPending = requests.some(r => r.status === 'pending');
-        if (hasPending) {
-            alert("Anda masih memiliki pengajuan yang sedang diproses.");
-            return;
-        }
-
-        try {
-            const { error } = await supabase
-                .from('withdrawals')
-                .insert({
-                    creator_id: user.id,
-                    amount: amount,
-                    status: 'pending'
-                });
-
-            if (error) throw error;
-
-            setIsRequestModalOpen(false);
-            setWithdrawAmount('');
-            fetchFinancials();
-        } catch (error) {
-            alert("Error: " + error.message);
-        }
+    const handleRequestWithdrawal = () => {
+        navigate('/withdrawals/request');
     };
 
     if (loading) {
@@ -126,6 +110,8 @@ export default function Withdrawals() {
             </div>
         );
     }
+
+    if (!isVerified) return <VerificationPending />;
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -142,7 +128,7 @@ export default function Withdrawals() {
                     <p className="text-slate-500 font-medium text-sm">Kelola dana Anda dan pantau status pencairan ke rekening bank.</p>
                 </div>
                 <button
-                    onClick={() => setIsRequestModalOpen(true)}
+                    onClick={handleRequestWithdrawal}
                     className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 shadow-xl shadow-blue-500/20 hover:scale-105 hover:bg-blue-700 transition-all active:scale-95 text-sm"
                 >
                     <PlusCircle size={18} />
@@ -162,14 +148,14 @@ export default function Withdrawals() {
                                 <Wallet size={32} className="text-blue-400" />
                             </div>
                             <div>
-                                <p className="text-white/40 font-black text-[10px] uppercase tracking-[0.2em] mb-1">Saldo Tersedia Untuk Dicairkan</p>
-                                <h3 className="text-4xl md:text-5xl font-black tracking-tight tabular-nums">{rupiah(balance)}</h3>
+                                <p className="text-white/40 font-medium text-[10px] uppercase tracking-[0.2em] mb-1">Saldo Tersedia Untuk Dicairkan</p>
+                                <h3 className="text-4xl md:text-5xl font-bold tracking-tight tabular-nums">{rupiah(balance)}</h3>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2 text-white/40">
                             <Info size={14} />
-                            <p className="text-[10px] font-bold uppercase tracking-widest leading-none">Min. Penarikan Rp 10.000 • Dana cair dalam 1-3 hari kerja</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest leading-none">Min. Penarikan Rp 100.000 • Maksimal 3 hari pengerjaan</p>
                         </div>
                     </div>
                 </div>
@@ -256,59 +242,7 @@ export default function Withdrawals() {
                 </div>
             </div>
 
-            {/* Withdrawal Modal */}
-            {isRequestModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsRequestModalOpen(false)} />
-                    <div className="relative bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-8 border-b border-slate-50 bg-slate-50/50">
-                            <h2 className="text-2xl font-black text-slate-900 italic">Tarik <span className="text-blue-600">Saldo</span></h2>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Nominal minimal Rp 10.000</p>
-                        </div>
-
-                        <form onSubmit={handleRequestWithdrawal} className="p-8 space-y-6">
-                            <div className="p-5 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1 leading-none">Saldo Tersedia</p>
-                                    <p className="font-black text-blue-900 text-lg">{rupiah(balance)}</p>
-                                </div>
-                                <Wallet size={24} className="text-blue-400" />
-                            </div>
-
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nominal Penarikan</label>
-                                <div className="relative group/input">
-                                    <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-300 group-focus-within/input:text-blue-600 transition-colors">Rp</span>
-                                    <input
-                                        required
-                                        type="number"
-                                        value={withdrawAmount}
-                                        onChange={(e) => setWithdrawAmount(e.target.value)}
-                                        placeholder="0"
-                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 pl-12 pr-6 font-black text-xl text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all tabular-nums"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="pt-4 flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsRequestModalOpen(false)}
-                                    className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold hover:bg-slate-200 transition-all text-xs uppercase tracking-widest"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 text-xs uppercase tracking-widest"
-                                >
-                                    Tarik Sekarang
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* Withdrawal Modal Removed in favor of dedicated page */}
         </div>
     );
 }

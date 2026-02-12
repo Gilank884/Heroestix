@@ -176,7 +176,7 @@ const CreatorLayout = ({ children }) => {
                 </header>
 
                 <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
-                    <div className="p-6 md:p-10 max-w-7xl mx-auto">
+                    <div className="p-6 md:p-8 max-w-7xl mx-auto">
                         {children}
                     </div>
                 </main>

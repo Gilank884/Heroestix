@@ -12,6 +12,7 @@ import {
     Calendar,
     Sparkles
 } from 'lucide-react';
+import VerificationPending from '../components/VerificationPending';
 
 const rupiah = (value) => {
     return new Intl.NumberFormat("id-ID", {
@@ -26,10 +27,10 @@ export default function Overview() {
     const [loading, setLoading] = useState(true);
     const [history, setHistory] = useState([]);
     const [stats, setStats] = useState({
-        totalRevenue: 0,
-        ticketsSold: 0,
+        totalTickets: 0,
         totalEvents: 0
     });
+    const [isVerified, setIsVerified] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
@@ -41,6 +42,17 @@ export default function Overview() {
     const fetchSalesData = async () => {
         setLoading(true);
         try {
+            // Check Verification
+            const { data: creatorData } = await supabase
+                .from('creators')
+                .select('verified')
+                .eq('id', user.id)
+                .single();
+
+            const verified = creatorData?.verified ?? false;
+            setIsVerified(verified);
+            if (!verified) { setLoading(false); return; }
+
             // 1. Fetch all events for this creator
             const { data: eventsData, error: eventsError } = await supabase
                 .from('events')
@@ -128,10 +140,14 @@ export default function Overview() {
         );
     }
 
+    if (!isVerified) {
+        return <VerificationPending />;
+    }
+
     return (
-        <div className="max-w-6xl mx-auto space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-6xl mx-auto space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Premium Header Section */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 p-12 text-white shadow-2xl shadow-blue-900/10 border border-white/5">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 p-10 text-white shadow-2xl shadow-blue-900/10 border border-white/5">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
                     <div className="space-y-4">
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
@@ -139,7 +155,7 @@ export default function Overview() {
                             <span className="text-[10px] uppercase tracking-[0.2em] text-blue-100">Creator Performance</span>
                         </div>
                         <div>
-                            <h2 className="text-4xl md:text-5xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-blue-200 tracking-tight">
+                            <h2 className="text-3xl md:text-4xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-blue-200 tracking-tight">
                                 Overview Performa
                             </h2>
                             <p className="text-slate-300 font-medium max-w-lg mt-3 text-lg leading-relaxed">
@@ -164,9 +180,9 @@ export default function Overview() {
             </div>
 
             {/* Metric Cards - Premium Style */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Total Event */}
-                <div className="relative bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                <div className="relative bg-white p-7 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                     <div className="relative z-10 space-y-2">
                         <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Total Event Terdaftar</p>
                         <div className="flex items-baseline gap-2">
@@ -181,7 +197,7 @@ export default function Overview() {
                 </div>
 
                 {/* Tiket Terjual */}
-                <div className="relative bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm flex items-center justify-between group hover:border-emerald-200 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                <div className="relative bg-white p-7 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-emerald-200 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                     <div className="relative z-10 space-y-2">
                         <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Total Tiket Terjual</p>
                         <div className="flex items-baseline gap-2">
@@ -196,7 +212,7 @@ export default function Overview() {
                 </div>
 
                 {/* Total Pendapatan */}
-                <div className="relative bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm flex items-center justify-between group hover:border-indigo-200 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                <div className="relative bg-white p-7 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-indigo-200 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                     <div className="relative z-10 space-y-2">
                         <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Total Pendapatan Bersih</p>
                         <h4 className="text-2xl font-medium text-slate-900 tracking-tight">{rupiah(stats.totalRevenue)}</h4>

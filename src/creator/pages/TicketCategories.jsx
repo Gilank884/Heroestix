@@ -92,7 +92,7 @@ const TicketCategories = () => {
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                    <h1 className="text-lg font-black text-slate-900 flex items-center gap-3">
                         Kategori <span className="text-[#1a36c7]">Tiket</span>
                     </h1>
                     <div className="flex items-center gap-2 mt-1.5 text-slate-400">
@@ -102,12 +102,10 @@ const TicketCategories = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 font-bold text-xs uppercase hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
-                        Custom E-tiket
-                    </button>
+
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="px-6 py-2.5 rounded-xl bg-[#1a36c7] text-white font-bold text-xs uppercase hover:bg-[#152ba3] transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                        className="px-6 py-2.5 rounded-xl bg-[#1a36c7] text-white font-bold text-[11px] uppercase hover:bg-[#152ba3] transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
                     >
                         <Plus size={16} /> Tambah Tiket
                     </button>
@@ -138,13 +136,13 @@ const TicketCategories = () => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/50">
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">No</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Tiket</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Harga</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Kuota</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Periode Penjualan</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Aksi</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">No</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Nama Tiket</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Harga</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Kuota</th>
+                                <th className="px-6 py-4 text-[9px] font-black text text-slate-400 uppercase tracking-widest text-center">Status</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Periode Penjualan</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -174,11 +172,11 @@ const TicketCategories = () => {
                                         <span className="text-xs font-black text-slate-300">{index + 1}</span>
                                     </td>
                                     <td className="px-6 py-5">
-                                        <p className="text-sm font-black text-slate-800 tracking-tight">{ticket.name}</p>
+                                        <p className="text-[13px] font-medium text-slate-800 tracking-tight">{ticket.name}</p>
                                         <p className="text-[10px] font-bold text-slate-400 truncate max-w-[200px] mt-0.5">{ticket.description || 'Tidak ada deskripsi'}</p>
                                     </td>
                                     <td className="px-6 py-5 text-right">
-                                        <span className="text-sm font-black text-slate-900">{formatPrice(ticket.price)}</span>
+                                        <span className="text-[13px] font-medium text-slate-900">{formatPrice(ticket.price)}</span>
                                     </td>
                                     <td className="px-6 py-5 text-center">
                                         <div className="inline-flex flex-col items-center">

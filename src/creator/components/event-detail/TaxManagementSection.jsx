@@ -96,7 +96,7 @@ const TaxManagementSection = ({ eventId }) => {
             {/* Form Section */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-                    <h3 className="font-black text-gray-900">Konfigurasi Pajak</h3>
+                    <h3 className="text-sm font-black text-gray-900">Konfigurasi Pajak</h3>
                     {showSuccess && (
                         <div className="flex items-center gap-2 text-green-600 text-xs font-bold animate-in fade-in slide-in-from-right-2">
                             <CheckCircle2 size={14} />
@@ -117,7 +117,7 @@ const TaxManagementSection = ({ eventId }) => {
 
                     <div className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Nama Pajak</label>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1">Nama Pajak</label>
                             <input
                                 type="text"
                                 value={taxData.name}
@@ -128,7 +128,7 @@ const TaxManagementSection = ({ eventId }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Persentase (%)</label>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1">Persentase (%)</label>
                             <div className="relative">
                                 <input
                                     type="number"
@@ -159,7 +159,7 @@ const TaxManagementSection = ({ eventId }) => {
 
             {/* Simulation Section */}
             <div className="space-y-6">
-                <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Simulasi Tampilan Checkout</h4>
+                <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Simulasi Tampilan Checkout</h4>
                 <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm space-y-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-8">
                         <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
@@ -167,22 +167,22 @@ const TaxManagementSection = ({ eventId }) => {
                         </div>
                     </div>
 
-                    <h5 className="text-xl font-black text-slate-900">Rincian Pembayaran</h5>
+                    <h5 className="text-lg font-black text-slate-900">Rincian Pembayaran</h5>
 
                     <div className="space-y-4 pt-4">
                         <div className="flex items-center justify-between py-2">
-                            <span className="text-sm font-bold text-slate-500">Subtotal (1x Tiket)</span>
-                            <span className="text-sm font-black text-slate-900">Rp {subtotalSimulation.toLocaleString('id-ID')}</span>
+                            <span className="text-xs font-bold text-slate-500">Subtotal (1x Tiket)</span>
+                            <span className="text-xs font-black text-slate-900">Rp {subtotalSimulation.toLocaleString('id-ID')}</span>
                         </div>
 
                         {parseFloat(taxData.value) > 0 && (
                             <div className="space-y-4 pt-4 border-t border-slate-50">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <span className="text-sm font-bold text-slate-900">{taxData.name} ({taxData.value}%)</span>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Entertainment Tax</p>
+                                        <span className="text-xs font-bold text-slate-900">{taxData.name} ({taxData.value}%)</span>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Entertainment Tax</p>
                                     </div>
-                                    <span className="text-sm font-black text-slate-900">
+                                    <span className="text-xs font-black text-slate-900">
                                         Rp {taxSimulation.toLocaleString('id-ID')}
                                     </span>
                                 </div>
@@ -190,9 +190,9 @@ const TaxManagementSection = ({ eventId }) => {
                         )}
 
                         <div className="pt-6 border-t-2 border-dashed border-slate-100 flex items-center justify-between mt-4">
-                            <span className="text-lg font-black text-slate-900">Total</span>
+                            <span className="text-sm font-black text-slate-900">Total</span>
                             <div className="text-right">
-                                <span className="text-2xl font-black text-[#1a36c7]">
+                                <span className="text-xl font-black text-[#1a36c7]">
                                     Rp {totalSimulation.toLocaleString('id-ID')}
                                 </span>
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Estimasi Total Harga Tiket</p>

@@ -10,16 +10,19 @@ import {
     ArrowRight,
     TrendingUp
 } from 'lucide-react';
+import VerificationPending from '../components/VerificationPending';
+import useAuthStore from '../../auth/useAuthStore';
 
 export default function EventValidationStats() {
     const { id: eventId } = useParams();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
-        total: 0,
         checkedIn: 0,
         remaining: 0,
         byType: []
     });
+    const { user } = useAuthStore();
+    const [isVerified, setIsVerified] = useState(true);
 
     useEffect(() => {
         if (eventId) {
@@ -30,6 +33,17 @@ export default function EventValidationStats() {
     const fetchStats = async () => {
         setLoading(true);
         try {
+            // Check Verification
+            const { data: creatorData } = await supabase
+                .from('creators')
+                .select('verified')
+                .eq('id', user.id)
+                .single();
+
+            const verified = creatorData?.verified ?? false;
+            setIsVerified(verified);
+            if (!verified) { setLoading(false); return; }
+
             const { data, error } = await supabase
                 .from('tickets')
                 .select(`
@@ -89,6 +103,8 @@ export default function EventValidationStats() {
             </div>
         );
     }
+
+    if (!isVerified) return <VerificationPending />;
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">

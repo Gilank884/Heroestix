@@ -19,8 +19,10 @@ import {
     AlertCircle,
     ChevronRight,
     ShieldCheck,
-    Share2
+    Share2,
+    ShieldAlert
 } from 'lucide-react';
+import VerificationPending from '../components/VerificationPending';
 
 // Custom X (Twitter) icon
 const XIcon = ({ size }) => (
@@ -51,7 +53,8 @@ export default function Profile() {
         facebook_url: '',
         description: '',
         address: '',
-        image_url: ''
+        image_url: '',
+        verified: false
     });
 
     const [newPhotoFile, setNewPhotoFile] = useState(null);
@@ -84,7 +87,8 @@ export default function Profile() {
                     facebook_url: data.facebook_url || '',
                     description: data.description || '',
                     address: data.address || '',
-                    image_url: data.image_url || ''
+                    image_url: data.image_url || '',
+                    verified: data.verified || false
                 });
                 setPhotoPreview(data.image_url || null);
             }
@@ -169,6 +173,8 @@ export default function Profile() {
         );
     }
 
+    if (!form.verified) return <VerificationPending />;
+
     const completionPercentage = [
         form.brand_name,
         form.description,
@@ -214,8 +220,9 @@ export default function Profile() {
                     </div>
 
                     <div className="flex-1 text-center md:text-left space-y-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-medium uppercase tracking-widest">
-                            <ShieldCheck size={12} /> Verified Creator Account
+                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-medium uppercase tracking-widest ${form.verified ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
+                            {form.verified ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
+                            {form.verified ? 'Verified Creator Account' : 'Account Under Review'}
                         </div>
                         <div>
                             <h1 className="text-3xl md:text-4xl font-medium text-slate-900 tracking-tight">

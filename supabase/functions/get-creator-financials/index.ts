@@ -65,7 +65,11 @@ serve(async (req) => {
 
         const totalCredits = allBalances
             .filter(b => b.type === 'credit')
-            .reduce((sum, b) => sum + Number(b.amount), 0);
+            .reduce((sum, b) => {
+                const amount = Number(b.amount);
+                const netAmount = amount > 8500 ? (amount - 8500) : amount;
+                return sum + netAmount;
+            }, 0);
 
         const totalDebits = allBalances
             .filter(b => b.type === 'debit') // withdrawals

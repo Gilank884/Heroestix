@@ -103,7 +103,7 @@ const GeneralInfoManagement = ({ eventId, eventData: initialData, onUpdate }) =>
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-                    <h3 className="font-black text-gray-900">Informasi Umum</h3>
+                    <h3 className="text-sm font-black text-gray-900">Informasi Umum</h3>
                     {showSuccess && (
                         <div className="flex items-center gap-2 text-green-600 text-xs font-bold animate-in fade-in slide-in-from-right-2">
                             <CheckCircle2 size={14} />
@@ -115,7 +115,7 @@ const GeneralInfoManagement = ({ eventId, eventData: initialData, onUpdate }) =>
                 <div className="p-8 space-y-10">
                     {/* Banner Section */}
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Banner Utama</label>
+                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1">Banner Utama</label>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                             <div className="relative group/banner">
                                 <input
@@ -170,13 +170,13 @@ const GeneralInfoManagement = ({ eventId, eventData: initialData, onUpdate }) =>
                     <div className="space-y-6">
                         {/* Title */}
                         <div className="space-y-3">
-                            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nama Event</label>
+                            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nama Event</label>
                             <input
                                 type="text"
                                 maxLength={100}
                                 value={formData.title}
                                 onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all text-lg"
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-medium text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all text-[15px]"
                                 placeholder="Nama Event"
                             />
                         </div>
@@ -184,7 +184,7 @@ const GeneralInfoManagement = ({ eventId, eventData: initialData, onUpdate }) =>
                         {/* Category Row */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-3">
-                                <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Kategori</label>
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Kategori</label>
                                 <div className="relative">
                                     <Tag className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                     <select
@@ -200,7 +200,7 @@ const GeneralInfoManagement = ({ eventId, eventData: initialData, onUpdate }) =>
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Sub Kategori</label>
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Sub Kategori</label>
                                 <div className="relative">
                                     <Tag className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                     <select
@@ -220,14 +220,14 @@ const GeneralInfoManagement = ({ eventId, eventData: initialData, onUpdate }) =>
 
                         {/* Description */}
                         <div className="space-y-3">
-                            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Deskripsi Event</label>
+                            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Deskripsi Event</label>
                             <div className="relative">
                                 <FileText className="absolute left-6 top-6 text-slate-300" size={18} />
                                 <textarea
                                     rows={6}
                                     value={formData.description}
                                     onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-14 pr-6 py-5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all resize-none leading-relaxed"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-14 pr-6 py-5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all resize-none leading-relaxed text-sm"
                                     placeholder="Jelaskan detail event Anda di sini..."
                                 />
                             </div>

@@ -13,6 +13,7 @@ import {
     HiArrowsExpand,
     HiDotsVertical
 } from 'react-icons/hi';
+import VerificationPending from '../components/VerificationPending';
 import {
     AreaChart,
     Area,
@@ -42,7 +43,8 @@ const CreatorDashboard = () => {
     const [stats, setStats] = useState({
         totalEvents: 0,
         totalTickets: 0,
-        totalRevenue: 0
+        totalQuota: 0,
+        fillRate: 0
     });
     const [loading, setLoading] = useState(true);
     const [showControlModal, setShowControlModal] = useState(false);
@@ -82,7 +84,10 @@ const CreatorDashboard = () => {
 
             // Calculate Stats
             let totalSold = 0;
-            let totalRev = balancesData.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+            let totalRev = balancesData.reduce((acc, curr) => {
+                // Subtract platform fee (8500) from each ticket sale credit
+                return acc + (Number(curr.amount) - 8500);
+            }, 0);
 
             eventsData?.forEach(ev => {
                 ev.ticket_types?.forEach(tt => {
@@ -121,22 +126,12 @@ const CreatorDashboard = () => {
         </div>
     );
 
-    if (!isVerified) return (
-        <div className="min-h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
-            <div className="w-24 h-24 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-orange-500/20">
-                <HiShieldCheck size={48} />
-            </div>
-            <div className="max-w-md space-y-2">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight text-balance">Akun Dalam Peninjauan</h2>
-                <p className="text-slate-500 font-medium text-lg">Tim kami sedang memverifikasi profil Anda. Proses ini biasanya memakan waktu 1x24 jam.</p>
-            </div>
-        </div>
-    );
+    if (!isVerified) return <VerificationPending />;
 
     return (
-        <div className="space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Premium Header */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 p-12 text-white shadow-2xl shadow-blue-900/10 border border-white/5">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 p-8 text-white shadow-2xl shadow-blue-900/10 border border-white/5">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
                     <div className="space-y-4">
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
@@ -144,7 +139,7 @@ const CreatorDashboard = () => {
                             <span className="text-[10px] uppercase tracking-[0.2em] text-blue-100">Operation Center</span>
                         </div>
                         <div>
-                            <h2 className="text-4xl md:text-5xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-blue-200 tracking-tight">
+                            <h2 className="text-3xl md:text-4xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-blue-200 tracking-tight">
                                 Core Console
                             </h2>
                             <p className="text-slate-300 max-w-lg mt-3 text-lg leading-relaxed">
@@ -157,7 +152,7 @@ const CreatorDashboard = () => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                     label="Active Operations"
                     value={stats.totalEvents}
@@ -187,7 +182,7 @@ const CreatorDashboard = () => {
             {/* Charts Section */}
             <div className="grid grid-cols-1 gap-8">
                 {/* Sales Performance Chart */}
-                <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
                     <div className="flex items-center justify-between mb-10">
                         <div>
                             <h3 className="text-xl font-medium text-slate-900 tracking-tight">Sales Performance</h3>
@@ -251,7 +246,7 @@ const CreatorDashboard = () => {
             </div>
 
             {/* Operations Table */}
-            <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
+            <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between mb-10">
                     <div>
                         <h3 className="text-2xl font-medium text-slate-900 tracking-tight">Active Operations</h3>
@@ -339,7 +334,7 @@ const StatCard = ({ label, value, unit, icon, color, grow }) => {
     };
 
     return (
-        <div className={`relative bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm flex items-center justify-between group hover:-translate-y-1 transition-all duration-300 overflow-hidden ${colors[color].split(' ').pop()}`}>
+        <div className={`relative bg-white p-7 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:-translate-y-1 transition-all duration-300 overflow-hidden ${colors[color].split(' ').pop()}`}>
             <div className="relative z-10 space-y-2">
                 <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em]">{label}</p>
                 <div className="flex items-baseline gap-2">

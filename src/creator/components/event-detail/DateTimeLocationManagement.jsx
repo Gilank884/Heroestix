@@ -82,7 +82,7 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-                    <h3 className="font-black text-gray-900">Pengaturan Waktu & Lokasi</h3>
+                    <h3 className="text-sm font-black text-gray-900">Pengaturan Waktu & Lokasi</h3>
                     {showSuccess && (
                         <div className="flex items-center gap-2 text-green-600 text-xs font-bold animate-in fade-in slide-in-from-right-2">
                             <CheckCircle2 size={14} />
@@ -95,7 +95,7 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
                     {/* Waktu Section */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Waktu Penyelenggaraan</h4>
+                            <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1">Waktu Penyelenggaraan</h4>
                             <div className="px-3 py-1 bg-blue-50 text-[#1a36c7] rounded-lg text-[9px] font-black uppercase tracking-wider border border-blue-100">
                                 WIB (GMT+7)
                             </div>
@@ -123,7 +123,7 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
                                                 type="date"
                                                 value={formData.event_date}
                                                 onChange={e => setFormData({ ...formData, event_date: e.target.value })}
-                                                className="bg-transparent border-0 font-bold text-slate-900 text-sm focus:outline-none focus:ring-0 w-full p-0"
+                                                className="bg-transparent border-0 font-bold text-slate-900 text-xs focus:outline-none focus:ring-0 w-full p-0"
                                             />
                                         </td>
                                         <td className="px-6 py-4">
@@ -131,7 +131,7 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
                                                 type="time"
                                                 value={formData.event_time}
                                                 onChange={e => setFormData({ ...formData, event_time: e.target.value })}
-                                                className="bg-transparent border-0 font-bold text-slate-900 text-sm focus:outline-none focus:ring-0 w-full p-0"
+                                                className="bg-transparent border-0 font-bold text-slate-900 text-xs focus:outline-none focus:ring-0 w-full p-0"
                                             />
                                         </td>
                                     </tr>
@@ -147,7 +147,7 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
                                                 type="date"
                                                 value={formData.event_end_date}
                                                 onChange={e => setFormData({ ...formData, event_end_date: e.target.value })}
-                                                className="bg-transparent border-0 font-bold text-slate-900 text-sm focus:outline-none focus:ring-0 w-full p-0"
+                                                className="bg-transparent border-0 font-bold text-slate-900 text-xs focus:outline-none focus:ring-0 w-full p-0"
                                             />
                                         </td>
                                         <td className="px-6 py-4">
@@ -155,7 +155,7 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
                                                 type="time"
                                                 value={formData.event_end_time}
                                                 onChange={e => setFormData({ ...formData, event_end_time: e.target.value })}
-                                                className="bg-transparent border-0 font-bold text-slate-900 text-sm focus:outline-none focus:ring-0 w-full p-0"
+                                                className="bg-transparent border-0 font-bold text-slate-900 text-xs focus:outline-none focus:ring-0 w-full p-0"
                                             />
                                         </td>
                                     </tr>
@@ -166,10 +166,10 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
 
                     {/* Lokasi Section */}
                     <div className="space-y-6 pt-4 border-t border-slate-50">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Informasi Lokasi</h4>
+                        <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1">Informasi Lokasi</h4>
 
                         <div className="space-y-3">
-                            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nama Venue</label>
+                            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nama Venue</label>
                             <div className="relative">
                                 <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                 <input
@@ -177,14 +177,14 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
                                     value={formData.location}
                                     onChange={e => setFormData({ ...formData, location: e.target.value })}
                                     placeholder="Contoh: Gedung Serbaguna Utama"
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-14 pr-6 py-4 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-14 pr-6 py-4 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all text-sm"
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-3">
-                                <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Provinsi</label>
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Provinsi</label>
                                 <div className="relative">
                                     <Map className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                     <select
@@ -202,7 +202,7 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
                             </div>
 
                             <div className="space-y-3">
-                                <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Kota / Kabupaten</label>
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Kota / Kabupaten</label>
                                 <div className="relative">
                                     <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                     <select
@@ -222,19 +222,19 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
                         </div>
 
                         <div className="space-y-3">
-                            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Alamat Lengkap</label>
+                            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Alamat Lengkap</label>
                             <textarea
                                 value={formData.detail_address}
                                 onChange={e => setFormData({ ...formData, detail_address: e.target.value })}
                                 placeholder="Nama gedung, nama jalan, nomor, dll."
                                 rows={3}
-                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all resize-none"
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all resize-none text-sm"
                             />
                         </div>
 
                         <div className="space-y-3">
                             <div className="flex items-center justify-between ml-1">
-                                <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Google Maps Link</label>
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Google Maps Link</label>
                                 <span className="text-[9px] font-black text-slate-300 uppercase italic">Opsional</span>
                             </div>
                             <div className="relative">
@@ -244,7 +244,7 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
                                     value={formData.gmaps_link}
                                     onChange={e => setFormData({ ...formData, gmaps_link: e.target.value })}
                                     placeholder="https://maps.app.goo.gl/..."
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-14 pr-6 py-4 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-14 pr-6 py-4 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all text-sm"
                                 />
                             </div>
                         </div>
