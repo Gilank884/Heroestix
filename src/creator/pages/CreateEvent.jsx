@@ -200,6 +200,29 @@ const CreateEvent = () => {
         }
     };
 
+    const formatNumber = (num) => {
+        if (!num && num !== 0) return '';
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    };
+
+    const parseNumber = (str) => {
+        return str.replace(/\./g, '');
+    };
+
+    const handlePriceChange = (e) => {
+        const val = parseNumber(e.target.value);
+        if (/^\d*$/.test(val)) {
+            setTicketData({ ...ticketData, price: val });
+        }
+    };
+
+    const handleQuotaChange = (e) => {
+        const val = parseNumber(e.target.value);
+        if (/^\d*$/.test(val)) {
+            setTicketData({ ...ticketData, quota: val });
+        }
+    };
+
     return (
         <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Top Alert */}
@@ -274,12 +297,12 @@ const CreateEvent = () => {
                                 <div className="space-y-3">
                                     <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Harga Tiket (IDR)</label>
                                     <div className="relative">
-                                        <span className="absolute left-8 top-1/2 -translate-y-1/2 font-black text-slate-400">Rp</span>
+                                        <span className="absolute left-8 top-1/2 -translate-y-1/2 font-bold text-slate-400">Rp</span>
                                         <input
-                                            type="number"
-                                            value={ticketData.price}
-                                            onChange={e => setTicketData({ ...ticketData, price: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-16 pr-8 py-5 font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all"
+                                            type="text"
+                                            value={formatNumber(ticketData.price)}
+                                            onChange={handlePriceChange}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-16 pr-8 py-5 font-medium text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all"
                                             placeholder="0"
                                         />
                                     </div>
@@ -287,10 +310,10 @@ const CreateEvent = () => {
                                 <div className="space-y-3">
                                     <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Sektor / Kuota</label>
                                     <input
-                                        type="number"
-                                        value={ticketData.quota}
-                                        onChange={e => setTicketData({ ...ticketData, quota: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-8 py-5 font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all"
+                                        type="text"
+                                        value={formatNumber(ticketData.quota)}
+                                        onChange={handleQuotaChange}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-8 py-5 font-medium text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 transition-all"
                                         placeholder="0"
                                     />
                                 </div>

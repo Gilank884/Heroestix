@@ -17,8 +17,13 @@ export default function OrderConfirmation({
     totalAmount,
     platformFee,
     taxAmount,
-    eventTax
+    eventTax,
+    appliedVoucher
 }) {
+    const discountAmount = appliedVoucher?.discount_amount || 0;
+    const subtotalAfterDiscount = Math.max(0, totalAmount - discountAmount);
+    const finalTotal = subtotalAfterDiscount + platformFee + taxAmount;
+
     return (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 md:p-8 space-y-8 animate-fade-in-up">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-50 pb-6">
@@ -34,7 +39,6 @@ export default function OrderConfirmation({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Data Pengunjung Summary */}
                 {/* Data Pengunjung Summary */}
                 <div className="space-y-6">
                     <h3 className="font-bold text-slate-700 border-b border-slate-100 pb-2">Informasi Pengunjung</h3>
@@ -78,6 +82,14 @@ export default function OrderConfirmation({
                                 </div>
                             );
                         })}
+
+                        {discountAmount > 0 && (
+                            <div className="flex justify-between items-center text-sm font-bold text-emerald-600 pt-2 border-t border-slate-50">
+                                <span>Diskon ({appliedVoucher.code})</span>
+                                <span>-{rupiah(discountAmount)}</span>
+                            </div>
+                        )}
+
                         {eventTax && parseFloat(eventTax.value) > 0 && (
                             <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-50">
                                 <span className="text-slate-500">Pajak Hiburan ({eventTax.value}%)</span>
@@ -90,7 +102,7 @@ export default function OrderConfirmation({
                         </div>
                         <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                             <span className="font-bold text-slate-800">Total Pembayaran</span>
-                            <span className="text-xl font-black text-blue-600">{rupiah(totalAmount + platformFee + taxAmount)}</span>
+                            <span className="text-xl font-black text-blue-600">{rupiah(finalTotal)}</span>
                         </div>
                     </div>
                 </div>

@@ -49,17 +49,17 @@ const features = [
 
 export default function FeaturesSection() {
     return (
-        <section className="w-full py-16 px-4 md:px-12 bg-white">
-            <div className="max-w-7xl mx-auto rounded-[2.5rem] bg-blue-700 overflow-hidden flex flex-col md:flex-row shadow-2xl">
+        <section className="w-full py-16 px-4 md:px-12 bg-transparent">
+            <div className="max-w-7xl mx-auto rounded-[2.5rem] bg-[#020617] border border-white/5 overflow-hidden flex flex-col md:flex-row shadow-2xl">
                 {/* Left Side - Text Content */}
                 <div className="w-full md:w-5/12 p-10 md:p-16 flex flex-col justify-center text-white relative overflow-hidden">
                     {/* Background decoration */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
 
                     <div className="relative z-10">
                         <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight flex flex-wrap items-center gap-3">
                             Kenapa Harus
-                            <span className="inline-flex items-center gap-3 bg-white/10 px-4 py-2 rounded-2xl border border-white/10 backdrop-blur-sm">
+                            <span className="inline-flex items-center gap-3 bg-white/5 px-4 py-2 rounded-2xl border border-white/10 backdrop-blur-sm">
                                 <img
                                     src="/Logo/Hero.png"
                                     alt="Hero Icon"
@@ -68,28 +68,28 @@ export default function FeaturesSection() {
                                 <span className="text-white">Heroestix ?</span>
                             </span>
                         </h2>
-                        <p className="text-blue-100 text-lg mb-10 leading-relaxed opacity-90">
+                        <p className="text-slate-400 text-lg mb-10 leading-relaxed opacity-90">
                             Kami menyediakan solusi manajemen tiket event yang lengkap, aman, dan mudah digunakan untuk kesuksesan acara Anda.
                         </p>
 
-                        <button className="px-8 py-3 border-2 border-white/30 rounded-2xl hover:bg-white hover:text-blue-700 transition-all duration-300 font-semibold text-sm tracking-wide w-fit">
+                        <button className="px-8 py-3 border-2 border-white/10 rounded-2xl hover:bg-white hover:text-blue-900 transition-all duration-300 font-semibold text-sm tracking-wide w-fit text-slate-300">
                             Pelajari Selengkapnya
                         </button>
                     </div>
                 </div>
 
                 {/* Right Side - Feature Grid */}
-                <div className="w-full md:w-7/12 bg-white/5 p-8 md:p-12">
+                <div className="w-full md:w-7/12 bg-white/[0.02] p-8 md:p-12 border-l border-white/5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {features.map((feature, index) => (
-                            <div key={index} className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 h-full flex flex-col">
-                                <div className={`w-12 h-12 rounded-2xl ${feature.bgColor} flex items-center justify-center mb-5 shrink-0 shadow-sm transition-transform duration-300 group-hover:scale-110`}>
+                            <div key={index} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-6 shadow-sm hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 h-full flex flex-col group">
+                                <div className={`w-12 h-12 rounded-2xl ${feature.bgColor} flex items-center justify-center mb-5 shrink-0 shadow-lg shadow-blue-500/10 transition-transform duration-300 group-hover:scale-110`}>
                                     {feature.icon}
                                 </div>
-                                <h3 className="font-bold text-gray-900 text-lg mb-3">
+                                <h3 className="font-bold text-white text-lg mb-3">
                                     {feature.title}
                                 </h3>
-                                <p className="text-gray-500 text-sm leading-relaxed">
+                                <p className="text-slate-400 text-sm leading-relaxed">
                                     {feature.desc}
                                 </p>
                             </div>

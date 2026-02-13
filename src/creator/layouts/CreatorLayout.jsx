@@ -168,7 +168,7 @@ const CreatorLayout = ({ children }) => {
                 <header className="lg:hidden flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200">
                     <div className="flex items-center gap-3">
                         <Layers size={24} className="text-blue-600" />
-                        <span className="font-black text-xl tracking-tighter text-slate-900 uppercase">Backstage</span>
+                        <span className="font-black text-xl tracking-tighter text-slate-900 uppercase">HeroesTix</span>
                     </div>
                     <button onClick={() => setIsSidebarOpen(true)} className="text-slate-900">
                         <Menu size={24} />

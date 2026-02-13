@@ -5,11 +5,12 @@ import { Resend } from "npm:resend@2.0.0";
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 serve(async (req) => {
     if (req.method === "OPTIONS") {
-        return new Response("ok", { headers: corsHeaders });
+        return new Response("ok", { status: 200, headers: corsHeaders });
     }
 
     try {
@@ -229,7 +230,7 @@ async function processSuccessfulPayment(supabase: any, order_id: string) {
     // 1. Fetch Order Details (to get booking code and user_id)
     const { data: order, error: orderError } = await supabase
         .from("orders")
-        .select("id, booking_code, user_id")
+        .select("id, booking_code, user_id, voucher_id")
         .eq("id", order_id)
         .single();
 
@@ -355,6 +356,18 @@ async function processSuccessfulPayment(supabase: any, order_id: string) {
             if (currentType) {
                 // @ts-ignore
                 await supabase.from('ticket_types').update({ sold: (currentType.sold || 0) + count }).eq('id', typeId);
+            }
+        }
+    }
+    // D. Update Voucher Usage (if any)
+    if (order.voucher_id) {
+        console.log(`[Process] Incrementing usage for Voucher #${order.voucher_id}`);
+        const { error: vRpcError } = await supabase.rpc('increment_voucher_usage', { v_id: order.voucher_id });
+        if (vRpcError) {
+            console.error("Voucher RPC Error, falling back to manual update:", vRpcError);
+            const { data: currentVoucher } = await supabase.from('vouchers').select('used_count').eq('id', order.voucher_id).single();
+            if (currentVoucher) {
+                await supabase.from('vouchers').update({ used_count: (currentVoucher.used_count || 0) + 1 }).eq('id', order.voucher_id);
             }
         }
     }

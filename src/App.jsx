@@ -22,6 +22,7 @@ import CreatorPage from "./user/pages/CreatorPage";
 
 import PrivacyPolicy from "./user/pages/PrivacyPolicy";
 import TermsOfService from "./user/pages/TermsOfService";
+import AcceptInvite from "./pages/AcceptInvite";
 
 // Layouts
 import CreatorLayout from "./creator/layouts/CreatorLayout";
@@ -46,9 +47,12 @@ import EventCheckIn from "./creator/pages/EventCheckIn";
 import EventCash from "./creator/pages/EventCash";
 import AdditionalForm from "./creator/pages/AdditionalForm";
 import CreateEvent from "./creator/pages/CreateEvent";
+import EventVouchers from "./creator/pages/EventVouchers";
+import CreateTicket from "./creator/pages/CreateTicket";
 import CreatorProfile from "./creator/pages/Profile";
 import RequestWithdrawal from "./creator/pages/RequestWithdrawal";
 import EventRequestWithdrawal from "./creator/pages/EventRequestWithdrawal";
+import EventStaff from "./creator/pages/EventStaff";
 
 // Dev Pages
 import DevDashboard from "./dev/pages/Dashboard";
@@ -62,6 +66,7 @@ import DevWithdrawals from "./dev/pages/Withdrawals";
 
 // Guards
 import CreatorGuard from "./guards/CreatorGuard";
+import StaffGuard from "./components/StaffGuard";
 import DevGuard from "./guards/DevGuard";
 import useAuthStore from "./auth/useAuthStore";
 
@@ -289,32 +294,36 @@ export default function App() {
       <Routes>
         <Route path="/masuk" element={<Masuk role="creator" />} />
         <Route path="/daftar" element={<CreatorDaftar />} />
+        <Route path="/accept-invite" element={<AcceptInvite />} />
+
+        {/* Event Management Routes - Protected by StaffGuard (allows both creators and staff tokens) */}
+        <Route path="/manage/event/:id/*" element={
+          <StaffGuard>
+            <EventManagementLayout>
+              <Routes>
+                <Route path="/" element={<CreatorEventDetail />} />
+                <Route path="/ticket-categories" element={<TicketCategories />} />
+                <Route path="/ticket-categories/create" element={<CreateTicket />} />
+                <Route path="/visitors" element={<Visitors />} />
+                <Route path="/check-in-stats" element={<EventValidationStats />} />
+                <Route path="/check-in" element={<EventCheckIn />} />
+                <Route path="/vouchers" element={<EventVouchers />} />
+                <Route path="/staff" element={<EventStaff />} />
+                <Route path="/sales-report" element={<EventSalesReport />} />
+                <Route path="/withdrawals" element={<EventWithdrawals />} />
+                <Route path="/withdrawals/request" element={<EventRequestWithdrawal />} />
+                <Route path="/additional-form" element={<AdditionalForm />} />
+              </Routes>
+            </EventManagementLayout>
+          </StaffGuard>
+        } />
+
+        {/* All Other Creator Routes - Protected by CreatorGuard (requires authentication) */}
         <Route
           path="*"
           element={
             <CreatorGuard>
               <Routes>
-                {/* 1. Event Specific Management (Dedicated Layout) */}
-                <Route path="/manage/event/:id/*" element={
-                  <EventManagementLayout>
-                    <Routes>
-                      <Route path="/" element={<CreatorEventDetail />} />
-                      <Route path="/ticket-categories" element={<TicketCategories />} />
-                      <Route path="/visitors" element={<Visitors />} />
-                      <Route path="/check-in-stats" element={<EventValidationStats />} />
-                      <Route path="/check-in" element={<EventCheckIn />} />
-                      <Route path="/vouchers" element={<div className="p-10 font-bold text-2xl text-gray-800">Event Vouchers (Work in Progress)</div>} />
-                      <Route path="/staff" element={<div className="p-10 font-bold text-2xl text-gray-800">Event Staff (Work in Progress)</div>} />
-                      <Route path="/sales-report" element={<EventSalesReport />} />
-                      <Route path="/withdrawals" element={<EventWithdrawals />} />
-                      <Route path="/withdrawals/request" element={<EventRequestWithdrawal />} />
-                      <Route path="/additional-form" element={<AdditionalForm />} />
-                    </Routes>
-
-                  </EventManagementLayout>
-                } />
-
-                {/* 2. Standard Creator Portal (Main Layout) */}
                 <Route path="*" element={
                   <CreatorLayout>
                     <Routes>
@@ -397,6 +406,8 @@ export default function App() {
         <Route path="/transaction-detail/:id" element={<TransactionDetail />} />
         <Route path="/become-creator" element={<BecomeCreator />} />
         <Route path="/creator/:id" element={<CreatorPage />} />
+        <Route path="/creator/:id" element={<CreatorPage />} />
+        <Route path="/accept-invite" element={<AcceptInvite />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>

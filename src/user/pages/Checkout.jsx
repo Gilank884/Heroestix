@@ -25,6 +25,8 @@ export default function Checkout() {
     const [eventTax, setEventTax] = useState(null);
     const [termsAgreed, setTermsAgreed] = useState(false);
     const [showValidationErrors, setShowValidationErrors] = useState(false);
+    const [appliedVoucher, setAppliedVoucher] = useState(null);
+    const [voucherLoading, setVoucherLoading] = useState(false);
 
 
     // State for multiple ticket holders
@@ -133,6 +135,55 @@ export default function Checkout() {
     // Step 2 Validation: Check if all required fields are filled for ALL holders
     const isNextDisabled = !termsAgreed || ticketHolders.some(h => !h.full_name || !h.email || !h.phone);
 
+    const handleApplyVoucher = async (code) => {
+        if (!code) {
+            setAppliedVoucher(null);
+            return;
+        }
+
+        setVoucherLoading(true);
+        console.log("[Voucher] Applying code:", code, "for event:", id);
+        try {
+            const response = await supabase.functions.invoke('redeem-voucher', {
+                body: {
+                    code: code,
+                    event_id: id,
+                    total_amount: totalAmount
+                }
+            });
+
+            console.log("[Voucher] Full response:", response);
+
+            // Check if the function returned an error
+            if (response.error) {
+                // Try to read the error message from the response body
+                let errorMessage = "Gagal memvalidasi voucher";
+
+                if (response.response) {
+                    try {
+                        const errorBody = await response.response.json();
+                        errorMessage = errorBody.error || errorMessage;
+                    } catch (e) {
+                        console.error("[Voucher] Failed to parse error response:", e);
+                    }
+                }
+
+                console.error("[Voucher] Error:", errorMessage);
+                alert(errorMessage);
+                return;
+            }
+
+            // Success case
+            console.log("[Voucher] Success:", response.data);
+            setAppliedVoucher(response.data);
+        } catch (error) {
+            console.error("[Voucher] Exception:", error);
+            alert(error.message || "Gagal memvalidasi voucher");
+        } finally {
+            setVoucherLoading(false);
+        }
+    };
+
     const handleCreateOrder = async () => {
         if (isNextDisabled) {
             alert("Harap lengkapi data semua pengunjung.");
@@ -153,6 +204,9 @@ export default function Checkout() {
 
         const bookingCode = `HT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
+        const discountAmount = appliedVoucher?.discount_amount || 0;
+        const finalCalculatedTotal = Math.max(0, totalAmount - discountAmount) + platformFee + taxAmount;
+
         setLoading(true);
         try {
             // 1. Create Order
@@ -160,9 +214,11 @@ export default function Checkout() {
                 .from("orders")
                 .insert({
                     user_id: currentUser.id,
-                    total: totalAmount + platformFee + taxAmount,
+                    total: finalCalculatedTotal,
                     status: "pending",
-                    booking_code: bookingCode
+                    booking_code: bookingCode,
+                    voucher_id: appliedVoucher?.voucher_id || null,
+                    discount_amount: discountAmount
                 })
                 .select()
                 .single();
@@ -204,32 +260,24 @@ export default function Checkout() {
             if (ticketError) throw ticketError;
 
             // 3. Call payment-gateway Edge Function to Initiate Transaction
-            // This creates a 'transactions' record which is required for the verification step.
-            // Using fetch to ensure correct Authorization header with Anon Key
-            const res = await fetch(
-                "https://qftuhnkzyegcxfozdfyz.supabase.co/functions/v1/payment-gateway",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                    },
-                    body: JSON.stringify({
-                        action: 'initiate',
-                        order_id: order.id,
-                        amount: totalAmount + platformFee + taxAmount,
-                        customer_email: ticketHolders[0].email, // Use primary contact
-                        customer_name: ticketHolders[0].full_name,
-                        customer_phone: ticketHolders[0].phone
-                    }),
+            console.log("[Order] Initiating order with amount:", finalCalculatedTotal);
+            const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke('payment-gateway', {
+                body: {
+                    action: 'initiate',
+                    order_id: order.id,
+                    amount: finalCalculatedTotal,
+                    customer_email: ticketHolders[0].email, // Use primary contact
+                    customer_name: ticketHolders[0].full_name,
+                    customer_phone: ticketHolders[0].phone
                 }
-            );
+            });
 
-            const gatewayData = await res.json();
-
-            if (!res.ok || gatewayData.error) {
-                throw new Error(gatewayData.error || "Payment gateway error");
+            if (gatewayError) {
+                console.error("[Order] Gateway error:", gatewayError);
+                throw gatewayError;
             }
+
+            console.log("[Order] Gateway success:", gatewayData);
 
             // Redirect to Xendit invoice page
             if (gatewayData?.redirect_url) {
@@ -310,6 +358,7 @@ export default function Checkout() {
                                     platformFee={platformFee}
                                     taxAmount={taxAmount}
                                     eventTax={eventTax}
+                                    appliedVoucher={appliedVoucher}
                                 />
                             )}
                         </div>
@@ -330,6 +379,9 @@ export default function Checkout() {
                                 onPay={handleCreateOrder}
                                 loading={loading}
                                 isNextDisabled={false} // Enable button to allow validation check on click
+                                appliedVoucher={appliedVoucher}
+                                onApplyVoucher={handleApplyVoucher}
+                                voucherLoading={voucherLoading}
                             />
                         </div>
                     </div>

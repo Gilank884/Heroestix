@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import {
     Search,
@@ -13,14 +13,14 @@ import {
     ChevronRight,
     Filter
 } from 'lucide-react';
-import AddTicketModal from '../components/AddTicketModal';
+
 
 const TicketCategories = () => {
     const { id: eventId } = useParams();
+    const navigate = useNavigate();
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const fetchTickets = async () => {
         try {
@@ -104,7 +104,7 @@ const TicketCategories = () => {
                 <div className="flex items-center gap-3">
 
                     <button
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={() => navigate('create')}
                         className="px-6 py-2.5 rounded-xl bg-[#1a36c7] text-white font-bold text-[11px] uppercase hover:bg-[#152ba3] transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
                     >
                         <Plus size={16} /> Tambah Tiket
@@ -240,12 +240,7 @@ const TicketCategories = () => {
                 </div>
             </div>
 
-            <AddTicketModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                eventId={eventId}
-                onRefresh={fetchTickets}
-            />
+
         </div>
     );
 };

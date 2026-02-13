@@ -44,7 +44,8 @@ const Events = () => {
             setIsVerified(verified);
             if (!verified) { setLoading(false); return; }
 
-            const { data, error } = await supabase
+            // 1. Fetch created events
+            const { data: createdEvents, error: createdError } = await supabase
                 .from('events')
                 .select(`
                     *,
@@ -57,8 +58,33 @@ const Events = () => {
                 .eq('creator_id', user.id)
                 .order('event_date', { ascending: true });
 
-            if (error) throw error;
-            setEvents(data || []);
+            if (createdError) throw createdError;
+
+            // 2. Fetch staff events
+            const { data: staffData, error: staffError } = await supabase
+                .from('event_staffs')
+                .select(`
+                    events (
+                        *,
+                        ticket_types (
+                            price,
+                            quota,
+                            sold
+                        )
+                    )
+                `)
+                .eq('staff_id', user.id);
+
+            if (staffError) throw staffError;
+
+            // Flatten staff events
+            const staffEvents = staffData?.map(item => item.events) || [];
+
+            // Combine and Dedup (just in case)
+            const allEvents = [...(createdEvents || []), ...staffEvents].sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
+            const uniqueEvents = Array.from(new Map(allEvents.map(item => [item.id, item])).values());
+
+            setEvents(uniqueEvents);
         } catch (error) {
             console.error('Error fetching events:', error.message);
         } finally {

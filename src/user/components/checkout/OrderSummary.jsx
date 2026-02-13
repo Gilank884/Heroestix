@@ -23,9 +23,24 @@ export default function OrderSummary({
     onPrev,
     onPay,
     loading,
-    isNextDisabled
+    isNextDisabled,
+    appliedVoucher,
+    onApplyVoucher,
+    voucherLoading
 }) {
-    const finalTotal = currentStep === 1 ? totalAmount : totalAmount + platformFee + taxAmount;
+    const discountAmount = appliedVoucher?.discount_amount || 0;
+    const subtotalAfterDiscount = Math.max(0, totalAmount - discountAmount);
+    const finalTotal = currentStep === 1
+        ? subtotalAfterDiscount
+        : subtotalAfterDiscount + platformFee + taxAmount;
+
+    const [voucherCode, setVoucherCode] = React.useState("");
+    const [showVoucherInput, setShowVoucherInput] = React.useState(false);
+
+    const handleApply = () => {
+        if (!voucherCode.trim()) return;
+        onApplyVoucher(voucherCode);
+    };
 
     return (
         <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6 sticky top-28">
@@ -69,6 +84,14 @@ export default function OrderSummary({
                     <span className="text-slate-600">Subtotal</span>
                     <span className="text-slate-900">{rupiah(totalAmount)}</span>
                 </div>
+
+                {discountAmount > 0 && (
+                    <div className="flex items-center justify-between text-sm font-bold text-emerald-600">
+                        <span>Diskon ({appliedVoucher.code})</span>
+                        <span>-{rupiah(discountAmount)}</span>
+                    </div>
+                )}
+
                 {currentStep === 2 && (
                     <>
                         {eventTax && parseFloat(eventTax.value) > 0 && (
@@ -85,9 +108,51 @@ export default function OrderSummary({
                 )}
             </div>
 
-            <div className="bg-blue-50 p-4 rounded-xl flex items-center justify-between gap-2">
-                <p className="text-[13px] font-bold text-slate-700">Punya kode diskon?</p>
-                <button className="text-blue-700 font-bold text-[13px] hover:underline">Tambahkan</button>
+            <div className="bg-blue-50/50 p-4 rounded-xl space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                    <p className="text-[13px] font-bold text-slate-700">Punya kode diskon?</p>
+                    {!showVoucherInput && !appliedVoucher && (
+                        <button
+                            onClick={() => setShowVoucherInput(true)}
+                            className="text-blue-700 font-bold text-[13px] hover:underline"
+                        >
+                            Tambahkan
+                        </button>
+                    )}
+                </div>
+
+                {(showVoucherInput || appliedVoucher) && (
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            placeholder="Ketik kode voucher..."
+                            value={voucherCode}
+                            onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                            disabled={voucherLoading || !!appliedVoucher}
+                            className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold uppercase focus:border-blue-500 outline-none"
+                        />
+                        {appliedVoucher ? (
+                            <button
+                                onClick={() => {
+                                    onApplyVoucher(null);
+                                    setVoucherCode("");
+                                    setShowVoucherInput(false);
+                                }}
+                                className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+                            >
+                                Hapus
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleApply}
+                                disabled={voucherLoading || !voucherCode.trim()}
+                                className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            >
+                                {voucherLoading ? "..." : "Terapkan"}
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
 
             <div className="pt-2 border-t border-slate-100">

@@ -34,3 +34,8 @@ entrypoint = "./functions/create-creator-profile/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/register-creator/index.ts"
+
+[functions.redeem-voucher]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/redeem-voucher/index.ts"

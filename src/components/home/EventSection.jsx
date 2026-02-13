@@ -145,9 +145,9 @@ export default function EventSection({ searchTerm = "" }) {
     }
 
     return (
-        <div className="flex flex-wrap justify-center gap-10">
+        <div className="flex flex-wrap justify-center gap-6">
             {filteredEvents.map((ev) => (
-                <div key={ev.id} className="w-full max-w-[320px]">
+                <div key={ev.id} className="w-full max-w-[240px]">
                     <EventCard {...ev} />
                 </div>
             ))}
