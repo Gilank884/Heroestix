@@ -136,10 +136,10 @@ const Navbar = ({ alwaysScrolled = false, searchTerm, onSearchChange }) => {
                                     href={item.path}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors relative group"
+                                    className="text-sm font-medium text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400 transition-colors relative group"
                                 >
                                     {item.name}
-                                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+                                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 dark:bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
                                 </a>
                             ) : (
                                 <Link
