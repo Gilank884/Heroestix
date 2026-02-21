@@ -131,10 +131,10 @@ const Profile = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
                 <div className="flex flex-col items-center gap-4">
                     <div className="h-12 w-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Memuat Profil...</span>
+                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Memuat Profil...</span>
                 </div>
             </div>
         );
@@ -147,7 +147,7 @@ const Profile = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC]">
+        <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950">
             <Navbar showSearch={false} />
 
             <div className="pt-32 pb-24 px-4 sm:px-6">
@@ -160,10 +160,10 @@ const Profile = () => {
                             animate={{ opacity: 1, y: 0 }}
                             className="lg:col-span-4 xl:col-span-3"
                         >
-                            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden sticky top-28">
-                                <div className="p-8 text-center border-b border-slate-100 bg-slate-50/50">
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden sticky top-28">
+                                <div className="p-8 text-center border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
                                     <div className="relative inline-block mb-4 group/avatar">
-                                        <div className="w-20 h-20 rounded-2xl bg-blue-50 border-2 border-white relative z-10 shadow-sm flex items-center justify-center text-blue-600 overflow-hidden">
+                                        <div className="w-20 h-20 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border-2 border-white dark:border-slate-800 relative z-10 shadow-sm flex items-center justify-center text-blue-600 dark:text-blue-400 overflow-hidden">
                                             {(profile?.avatar_url || user?.user_metadata?.avatar_url) ? (
                                                 <img
                                                     src={profile?.avatar_url || user.user_metadata.avatar_url}
@@ -180,12 +180,12 @@ const Profile = () => {
                                                 style={{ display: (profile?.avatar_url || user?.user_metadata?.avatar_url) ? 'none' : 'block' }}
                                             />
                                         </div>
-                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full z-20" />
+                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full z-20" />
                                     </div>
-                                    <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                                         {profile?.full_name || user?.user_metadata?.nama || user?.user_metadata?.full_name || "Member Heroestix"}
                                     </h2>
-                                    <p className="text-xs text-slate-400 font-semibold mt-1">{user?.email}</p>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1">{user?.email}</p>
                                 </div>
 
                                 <nav className="p-3 space-y-1">
@@ -194,16 +194,16 @@ const Profile = () => {
                                             key={item.id}
                                             onClick={() => setActiveTab(item.id)}
                                             className={`w-full flex items-center gap-3.5 p-3 rounded-xl transition-all duration-200 group/btn ${activeTab === item.id
-                                                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                                                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                                                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20 dark:shadow-blue-900/20"
+                                                : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
                                                 }`}
                                         >
-                                            <div className={`text-xl transition-transform duration-300 group-hover/btn:scale-110 ${activeTab === item.id ? "text-white" : "text-slate-400"
+                                            <div className={`text-xl transition-transform duration-300 group-hover/btn:scale-110 ${activeTab === item.id ? "text-white" : "text-slate-400 dark:text-slate-500"
                                                 }`}>
                                                 {item.icon}
                                             </div>
                                             <div className="text-left">
-                                                <p className={`text-sm font-bold leading-none ${activeTab === item.id ? "text-white" : "text-slate-800"
+                                                <p className={`text-sm font-bold leading-none ${activeTab === item.id ? "text-white" : "text-slate-800 dark:text-slate-200"
                                                     }`}>
                                                     {item.label}
                                                 </p>
@@ -211,11 +211,11 @@ const Profile = () => {
                                         </button>
                                     ))}
 
-                                    <div className="my-3 border-t border-slate-100" />
+                                    <div className="my-3 border-t border-slate-100 dark:border-slate-800" />
 
                                     <button
                                         onClick={handleLogout}
-                                        className="w-full flex items-center gap-3.5 p-3 rounded-xl text-red-500 hover:bg-red-50 transition-all duration-200 group/logout"
+                                        className="w-full flex items-center gap-3.5 p-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 group/logout"
                                     >
                                         <div className="text-xl group-hover/logout:-translate-x-0.5 transition-transform">
                                             <HiLogout />
@@ -235,14 +235,14 @@ const Profile = () => {
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         exit={{ opacity: 0, x: -20 }}
-                                        className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 md:p-10"
+                                        className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-8 md:p-10"
                                     >
                                         <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                             <div>
-                                                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Data Personal</h1>
-                                                <p className="text-sm text-slate-400 mt-1 font-medium">Informasi identitas dan keamanan akun Anda.</p>
+                                                <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Data Personal</h1>
+                                                <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 font-medium">Informasi identitas dan keamanan akun Anda.</p>
                                             </div>
-                                            <button className="px-5 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl font-bold text-xs hover:border-blue-600 hover:text-blue-600 transition-all">
+                                            <button className="px-5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl font-bold text-xs hover:border-blue-600 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all">
                                                 Edit Profil
                                             </button>
                                         </div>
@@ -280,12 +280,12 @@ const Profile = () => {
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         exit={{ opacity: 0, x: -20 }}
-                                        className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 md:p-10 h-full min-h-[500px]"
+                                        className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-8 md:p-10 h-full min-h-[500px]"
                                     >
                                         <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                             <div>
-                                                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Tiket Saya</h2>
-                                                <p className="text-sm text-slate-400 mt-1 font-medium">Tiket aktif untuk event yang akan datang.</p>
+                                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Tiket Saya</h2>
+                                                <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 font-medium">Tiket aktif untuk event yang akan datang.</p>
                                             </div>
                                             <div className="relative">
                                                 <input
@@ -293,9 +293,9 @@ const Profile = () => {
                                                     placeholder="Cari event atau tiket..."
                                                     value={searchTerm}
                                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                                    className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full md:w-64 transition-all"
+                                                    className="pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full md:w-64 transition-all dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                                                 />
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                                 </svg>
                                             </div>
@@ -313,19 +313,19 @@ const Profile = () => {
                                                     <div
                                                         key={ticket.id}
                                                         onClick={() => navigate(`/transaction-detail/${ticket.order_id}`)}
-                                                        className="flex items-center justify-between p-4 bg-slate-50/50 border border-slate-100 rounded-xl hover:border-slate-200 hover:bg-slate-50 transition-all cursor-pointer group"
+                                                        className="flex items-center justify-between p-4 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl hover:border-slate-200 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer group"
                                                     >
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+                                                            <div className="w-12 h-12 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm shrink-0">
                                                                 <HiTicket size={24} />
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <h3 className="font-bold text-slate-900 text-sm truncate pr-4">{ticket.ticket_types?.events?.title}</h3>
+                                                                <h3 className="font-bold text-slate-900 dark:text-white text-sm truncate pr-4">{ticket.ticket_types?.events?.title}</h3>
                                                                 <div className="flex items-center gap-2 mt-1">
-                                                                    <span className="px-2 py-0.5 bg-white border border-slate-200 text-[10px] font-bold text-slate-500 rounded uppercase">
+                                                                    <span className="px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-500 dark:text-slate-400 rounded uppercase">
                                                                         {ticket.ticket_types?.name}
                                                                     </span>
-                                                                    <span className="text-[11px] text-slate-400 font-medium truncate">
+                                                                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate">
                                                                         • {ticket.ticket_types?.events?.event_date}
                                                                     </span>
                                                                 </div>
@@ -333,12 +333,12 @@ const Profile = () => {
                                                         </div>
                                                         <div className="text-right shrink-0">
                                                             <span className={`inline-block px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${ticket.order_status === 'paid'
-                                                                ? 'bg-green-50 text-green-600 border-green-100'
-                                                                : 'bg-orange-50 text-orange-600 border-orange-100'
+                                                                ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-100 dark:border-green-800'
+                                                                : 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-800'
                                                                 }`}>
                                                                 {ticket.order_status}
                                                             </span>
-                                                            <div className="mt-1.5 text-slate-300 group-hover:text-blue-600 transition-colors">
+                                                            <div className="mt-1.5 text-slate-300 dark:text-slate-600 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                                                 <HiChevronRight size={16} className="ml-auto" />
                                                             </div>
                                                         </div>
@@ -347,16 +347,16 @@ const Profile = () => {
                                             </div>
                                         ) : (
                                             <div className="flex flex-col items-center justify-center py-20 text-center">
-                                                <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mb-6">
+                                                <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-300 dark:text-slate-600 mb-6">
                                                     <HiTicket size={40} />
                                                 </div>
-                                                <h3 className="text-lg font-bold text-slate-900 mb-2">Belum Memiliki Tiket</h3>
-                                                <p className="text-sm text-slate-400 max-w-xs mx-auto mb-8 font-medium leading-relaxed">
+                                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Belum Memiliki Tiket</h3>
+                                                <p className="text-sm text-slate-400 dark:text-slate-500 max-w-xs mx-auto mb-8 font-medium leading-relaxed">
                                                     Sepertinya Anda belum memiliki tiket aktif. Mari jelajahi event menarik lainnya.
                                                 </p>
                                                 <button
                                                     onClick={() => navigate("/")}
-                                                    className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                                    className="px-8 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 dark:shadow-blue-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                                                 >
                                                     Jelajahi Event
                                                 </button>
@@ -371,31 +371,31 @@ const Profile = () => {
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         exit={{ opacity: 0, x: -20 }}
-                                        className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 md:p-10 h-full min-h-[500px]"
+                                        className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-8 md:p-10 h-full min-h-[500px]"
                                     >
                                         <div className="mb-10">
-                                            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Riwayat Transaksi</h2>
-                                            <p className="text-sm text-slate-400 mt-1 font-medium">Catatan lengkap seluruh pembelian tiket Anda.</p>
+                                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Riwayat Transaksi</h2>
+                                            <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 font-medium">Catatan lengkap seluruh pembelian tiket Anda.</p>
                                         </div>
 
                                         {transactions.length > 0 ? (
                                             <div className="space-y-3">
                                                 {transactions.map(transaction => (
-                                                    <div key={transaction.id} className="flex items-center justify-between p-4 bg-slate-50/50 border border-slate-100 rounded-xl hover:border-slate-200 transition-all">
+                                                    <div key={transaction.id} className="flex items-center justify-between p-4 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl hover:border-slate-200 dark:hover:border-slate-700 transition-all">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 bg-white border border-slate-100 rounded-lg flex items-center justify-center text-blue-600 shadow-sm">
+                                                            <div className="w-10 h-10 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm">
                                                                 <HiReceiptTax size={20} />
                                                             </div>
                                                             <div>
-                                                                <p className="text-sm font-bold text-slate-900">Order #{transaction.order_id.slice(0, 6).toUpperCase()}</p>
-                                                                <p className="text-[11px] text-slate-400 font-semibold mt-0.5">
+                                                                <p className="text-sm font-bold text-slate-900 dark:text-white">Order #{transaction.order_id.slice(0, 6).toUpperCase()}</p>
+                                                                <p className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
                                                                     {transaction.method} • {new Date(transaction.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                                 </p>
                                                             </div>
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="text-sm font-bold text-slate-900">{rupiah(transaction.amount)}</p>
-                                                            <span className={`text-[10px] font-bold uppercase ${transaction.status === 'success' ? 'text-green-600' : 'text-orange-500'}`}>
+                                                            <p className="text-sm font-bold text-slate-900 dark:text-white">{rupiah(transaction.amount)}</p>
+                                                            <span className={`text-[10px] font-bold uppercase ${transaction.status === 'success' ? 'text-green-600 dark:text-green-400' : 'text-orange-500 dark:text-orange-400'}`}>
                                                                 {transaction.status}
                                                             </span>
                                                         </div>
@@ -404,11 +404,11 @@ const Profile = () => {
                                             </div>
                                         ) : (
                                             <div className="flex flex-col items-center justify-center py-20 text-center">
-                                                <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mb-6">
+                                                <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-300 dark:text-slate-600 mb-6">
                                                     <HiReceiptTax size={40} />
                                                 </div>
-                                                <h3 className="text-lg font-bold text-slate-900 mb-2">Riwayat Kosong</h3>
-                                                <p className="text-sm text-slate-400 font-medium">Anda belum melakukan transaksi pembayaran.</p>
+                                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Riwayat Kosong</h3>
+                                                <p className="text-sm text-slate-400 dark:text-slate-500 font-medium">Anda belum melakukan transaksi pembayaran.</p>
                                             </div>
                                         )}
                                     </motion.div>
@@ -426,12 +426,12 @@ const Profile = () => {
 
 const InfoField = ({ label, value, icon }) => (
     <div className="group/field">
-        <label className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-0.5">
+        <label className="flex items-center gap-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-0.5">
             {icon}
             {label}
         </label>
-        <div className="bg-slate-50/50 rounded-xl px-5 py-3 border border-slate-200 group-hover/field:border-blue-600/30 transition-colors">
-            <span className="text-sm font-bold text-slate-900">
+        <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-xl px-5 py-3 border border-slate-200 dark:border-slate-800 group-hover/field:border-blue-600/30 dark:group-hover/field:border-blue-500/30 transition-colors">
+            <span className="text-sm font-bold text-slate-900 dark:text-white">
                 {value}
             </span>
         </div>

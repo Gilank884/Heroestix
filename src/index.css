@@ -1,6 +1,105 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "DM Sans", system-ui;
+}
+
+@custom-variant dark (&:is(.dark *));
+
+/* Global Typography Override: Enforce DM Sans and Remove all Bold fonts project-wide */
+* {
+  font-family: "DM Sans", system-ui !important;
+  font-weight: 400 !important;
+  font-style: normal;
+}
+
+/* Allow Medium weight for slight hierarchy where needed */
+.font-medium,
+.h-table-thead th,
+.h-table-tr td.font-medium,
+.font-semibold {
+  font-weight: 500 !important;
+}
+
+/* Specifically target common bold tags to ensure they are normalized to Medium */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+b,
+strong,
+th {
+  font-weight: 500 !important;
+}
+
+:root {
+  font-family: "DM Sans", system-ui;
+}
+
 body {
-  font-family: 'Montserrat', sans-serif;
-  font-feature-settings: 'normal';
+  font-family: "DM Sans", system-ui;
+  background-color: #f8fafc;
+  /* Global light grey background */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.dark body {
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+
+html.dark .h-table-container {
+  @apply bg-slate-800 border-slate-700 bg-none;
+}
+
+html.dark .h-table-thead th {
+  @apply text-slate-300 border-slate-700 bg-slate-800;
+}
+
+html.dark .h-table-tr td {
+  @apply border-slate-700 bg-slate-900 text-slate-200;
+}
+
+html.dark .h-table-tr:hover td {
+  @apply bg-slate-800/80;
+}
+
+/* Ensure form elements also use DM Sans */
+button,
+input,
+textarea,
+select {
+  font-family: "DM Sans", system-ui !important;
+}
+
+/* Table Utilities (Grey-Back, White-Front) */
+.h-table-container {
+  @apply bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden;
+}
+
+.h-table {
+  @apply w-full text-left border-collapse;
+}
+
+.h-table-thead th {
+  @apply p-6 text-[10px] font-medium text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/50;
+}
+
+.h-table-tr {
+  @apply transition-all cursor-pointer hover:bg-white;
+}
+
+.h-table-tr td {
+  @apply p-6 border-b border-slate-50 bg-white transition-colors;
+}
+
+.h-table-tr:hover td {
+  @apply bg-slate-50/50;
+}
+
+.h-table-tight td {
+  @apply py-3;
 }

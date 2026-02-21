@@ -98,7 +98,8 @@ const handler = async (req: Request): Promise<Response> => {
       <html>
       <head>
         <style>
-          body { font-family: sans-serif; line-height: 1.6; color: #333; }
+          @import url('https://fonts.googleapis.com/css2?family=Sniglet:wght@400;800&display=swap');
+          body { font-family: 'Sniglet', system-ui; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { text-align: center; margin-bottom: 30px; }
           .event-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }

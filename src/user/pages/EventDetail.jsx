@@ -146,7 +146,7 @@ export default function EventDetail() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white uppercase font-bold tracking-widest text-slate-300">
+            <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900 uppercase tracking-widest text-slate-300 dark:text-slate-600">
                 <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mr-3"></div>
                 Memuat Event...
             </div>
@@ -175,20 +175,20 @@ export default function EventDetail() {
                 label: 'X (Twitter)',
                 icon: <XIcon size={16} />,
                 url: creator.x_url,
-                color: 'text-slate-900',
-                bg: 'bg-slate-900/5',
-                border: 'border-slate-900/20',
-                hover: 'hover:bg-slate-900 hover:text-white hover:border-slate-900'
+                color: 'text-slate-900 dark:text-white',
+                bg: 'bg-slate-900/5 dark:bg-white/5',
+                border: 'border-slate-900/20 dark:border-white/20',
+                hover: 'hover:bg-slate-900 dark:hover:bg-white hover:text-white dark:hover:text-slate-900 hover:border-slate-900 dark:hover:border-white'
             },
             {
                 id: 'tiktok',
                 label: 'TikTok',
                 icon: <TikTokIcon size={16} />,
                 url: creator.tiktok_url,
-                color: 'text-black',
-                bg: 'bg-black/5',
-                border: 'border-black/20',
-                hover: 'hover:bg-black hover:text-white hover:border-black'
+                color: 'text-black dark:text-white',
+                bg: 'bg-black/5 dark:bg-white/5',
+                border: 'border-black/20 dark:border-white/20',
+                hover: 'hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black hover:border-black dark:hover:border-white'
             },
             {
                 id: 'facebook',
@@ -203,14 +203,14 @@ export default function EventDetail() {
         ].filter(s => s.url);
 
         return (
-            <div className="bg-white rounded-xl p-8 border border-slate-100 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
                 <div className="flex flex-col md:flex-row gap-8 items-start">
                     <Link
                         to={`/creator/${creator.id}`}
                         className="flex items-center gap-4 flex-shrink-0 group/creator hover:opacity-80 transition-all"
                     >
                         {creator.image_url ? (
-                            <div className="w-16 h-16 rounded-full border-2 border-blue-100 shadow-sm overflow-hidden flex-shrink-0 group-hover/creator:border-blue-600 transition-colors">
+                            <div className="w-16 h-16 rounded-full border-2 border-blue-100 dark:border-blue-900 shadow-sm overflow-hidden flex-shrink-0 group-hover/creator:border-blue-600 dark:group-hover/creator:border-blue-500 transition-colors">
                                 <img
                                     src={creator.image_url}
                                     alt={creator.brand_name}
@@ -218,13 +218,13 @@ export default function EventDetail() {
                                 />
                             </div>
                         ) : (
-                            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center border border-blue-100 shadow-sm flex-shrink-0 group-hover/creator:border-blue-600 transition-colors">
+                            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center border border-blue-100 dark:border-blue-800 shadow-sm flex-shrink-0 group-hover/creator:border-blue-600 dark:group-hover/creator:border-blue-500 transition-colors">
                                 <Building2 size={28} />
                             </div>
                         )}
                         <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Profil Kreator</p>
-                            <h3 className="text-lg font-extrabold text-[#111827] leading-tight group-hover/creator:text-blue-600 transition-colors">
+                            <p className="text-[10px] text-slate-400 uppercase tracking-widest leading-none mb-1">Profil Kreator</p>
+                            <h3 className="text-lg text-[#111827] dark:text-slate-100 leading-tight group-hover/creator:text-blue-600 dark:group-hover/creator:text-blue-400 transition-colors">
                                 {creator.brand_name || "Official Organizer"}
                             </h3>
                         </div>
@@ -233,14 +233,14 @@ export default function EventDetail() {
                     {/* Middle: Description & Address */}
                     <div className="flex-1 space-y-3">
                         {creator.description && (
-                            <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                            <p className="text-sm text-slate-500 leading-relaxed">
                                 {creator.description}
                             </p>
                         )}
                         {creator.address && (
                             <div className="flex items-start gap-2">
                                 <MapPin size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />
-                                <p className="text-[12px] text-slate-500 font-medium leading-relaxed italic">
+                                <p className="text-[12px] text-slate-500 leading-relaxed italic">
                                     {creator.address}
                                 </p>
                             </div>
@@ -250,7 +250,7 @@ export default function EventDetail() {
                     {/* Right: Social Media */}
                     {socials.length > 0 && (
                         <div className="flex-shrink-0 self-center md:self-start">
-                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3 text-center md:text-left">Social Media</p>
+                            <p className="text-[11px] text-slate-400 uppercase tracking-wider mb-3 text-center md:text-left">Social Media</p>
                             <div className="flex flex-wrap items-center gap-3">
                                 {socials.map(social => (
                                     <a
@@ -259,7 +259,7 @@ export default function EventDetail() {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className={`
-                                            flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border
+                                            flex items-center gap-2 px-4 py-2 rounded-xl text-xs transition-all border
                                             ${social.bg} ${social.color} ${social.border} ${social.hover}
                                             active:scale-95 shadow-sm hover:shadow-md
                                         `}
@@ -277,7 +277,7 @@ export default function EventDetail() {
     };
 
     return (
-        <div className="bg-slate-50/30 min-h-screen font-sans text-slate-900 pb-10">
+        <div className="bg-slate-50/30 dark:bg-slate-950/30 min-h-screen font-sans text-slate-900 dark:text-slate-100 pb-10">
             <Navbar alwaysScrolled={true} />
 
             <main className="pt-32 pb-20">
@@ -286,7 +286,7 @@ export default function EventDetail() {
 
                         {/* LEFT COLUMN: BANNER & DESCRIPTION */}
                         <div className="lg:col-span-7 space-y-8">
-                            <div className="bg-white rounded-2xl overflow-hidden shadow-xl shadow-slate-200/60 border border-slate-100 group">
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-xl shadow-slate-200/60 dark:shadow-slate-900/60 border border-slate-100 dark:border-slate-800 group">
                                 <img
                                     src={event.image || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop"}
                                     alt={event.title}
@@ -295,8 +295,8 @@ export default function EventDetail() {
                             </div>
 
                             <div className="space-y-4 px-2">
-                                <h2 className="text-xl font-bold text-slate-900 transition-all">Deskripsi</h2>
-                                <p className="text-slate-500 leading-relaxed text-sm font-medium line-clamp-2 md:line-clamp-none whitespace-pre-wrap">
+                                <h2 className="text-xl text-slate-900 dark:text-slate-100 transition-all">Deskripsi</h2>
+                                <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm line-clamp-2 md:line-clamp-none whitespace-pre-wrap">
                                     {event.description || "Tidak ada deskripsi tersedia untuk event ini."}
                                 </p>
                             </div>
@@ -306,19 +306,19 @@ export default function EventDetail() {
                         {/* RIGHT COLUMN: INFO CARDS */}
                         <div className="lg:col-span-5 space-y-4">
                             {/* EVENT MAIN INFO CARD */}
-                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6 hover:shadow-md transition-shadow">
-                                <h1 className="text-xl md:text-2xl font-black text-slate-900 leading-tight tracking-tight">
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-6 hover:shadow-md transition-shadow">
+                                <h1 className="text-xl md:text-2xl text-slate-900 dark:text-slate-50 leading-tight tracking-tight">
                                     {event.title}
                                 </h1>
 
                                 {event.category && (
                                     <div className="flex flex-wrap gap-2">
-                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[10px] font-black uppercase tracking-wider border border-blue-100/50 shadow-sm">
+                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-full text-[10px] uppercase tracking-wider border border-blue-100/50 dark:border-blue-800/50 shadow-sm">
                                             <Tag size={10} />
                                             {getCategoryName(event.category)}
                                         </div>
                                         {event.sub_category && (
-                                            <div className="inline-flex items-center px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-[10px] font-bold uppercase tracking-wider border border-slate-100">
+                                            <div className="inline-flex items-center px-3 py-1 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full text-[10px] uppercase tracking-wider border border-slate-100 dark:border-slate-700">
                                                 {getSubCategoryName(event.category, event.sub_category)}
                                             </div>
                                         )}
@@ -327,73 +327,73 @@ export default function EventDetail() {
 
                                 <div className="space-y-5">
                                     <div className="flex items-start gap-4 group">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-600 dark:group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
                                             <Calendar size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">Tanggal</p>
-                                            <p className="text-sm font-bold text-slate-900">{event.date}</p>
+                                            <p className="text-xs text-slate-400 uppercase tracking-wide mb-0.5">Tanggal</p>
+                                            <p className="text-sm text-slate-900 dark:text-slate-100">{event.date}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-4 group">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-600 dark:group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
                                             <Clock size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">Waktu</p>
-                                            <p className="text-sm font-bold text-slate-900">{event.event_time?.substring(0, 5) || "10:00"} WIB</p>
+                                            <p className="text-xs text-slate-400 uppercase tracking-wide mb-0.5">Waktu</p>
+                                            <p className="text-sm text-slate-900 dark:text-slate-100">{event.event_time?.substring(0, 5) || "10:00"} WIB</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-4 group">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-600 dark:group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
                                             <MapPin size={20} />
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">Lokasi</p>
-                                            <p className="text-sm font-bold text-slate-900 leading-snug">{event.location}</p>
+                                            <p className="text-xs text-slate-400 uppercase tracking-wide mb-0.5">Lokasi</p>
+                                            <p className="text-sm text-slate-900 dark:text-slate-100 leading-snug">{event.location}</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="pt-6 border-t border-slate-100 flex items-center gap-3">
+                                <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
                                     {event.creators?.image_url ? (
-                                        <img src={event.creators.image_url} alt="" className="w-8 h-8 rounded-full bg-slate-100" />
+                                        <img src={event.creators.image_url} alt="" className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800" />
                                     ) : (
-                                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><User size={14} /></div>
+                                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400"><User size={14} /></div>
                                     )}
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Creator</p>
-                                        <p className="text-xs font-bold text-slate-900">{event.creators?.brand_name || "Official Organizer"}</p>
+                                        <p className="text-[10px] text-slate-400 uppercase tracking-wider">Creator</p>
+                                        <p className="text-xs text-slate-900 dark:text-slate-100">{event.creators?.brand_name || "Official Organizer"}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* PRICE & PURCHASE CARD */}
-                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
                                 <div className="flex items-center justify-between">
                                     <div className="flex flex-col">
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Ticket Start From</span>
+                                        <span className="text-xs text-slate-400 uppercase tracking-wide mb-1">Ticket Start From</span>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xl font-bold text-slate-900">{rupiah(event.price)}</span>
+                                            <span className="text-xl text-slate-900 dark:text-slate-100">{rupiah(event.price)}</span>
                                             {hasInactiveTickets && (
-                                                <span className="text-[10px] px-2 py-0.5 bg-red-50 text-red-600 rounded-full font-bold border border-red-100">Terbatas</span>
+                                                <span className="text-[10px] px-2 py-0.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full border border-red-100 dark:border-red-900/50">Terbatas</span>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                                         <Ticket size={20} />
                                     </div>
                                 </div>
 
                                 <button
                                     onClick={handleBuyNow}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl text-sm shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                                 >
                                     Beli Tiket
                                     <ChevronLeft size={16} className="rotate-180" />
                                 </button>
 
-                                <p className="text-center text-[10px] font-medium text-slate-400">
+                                <p className="text-center text-[10px] text-slate-400">
                                     Transaksi Aman & Terpercaya
                                 </p>
                             </div>

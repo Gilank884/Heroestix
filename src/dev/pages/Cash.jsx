@@ -115,7 +115,7 @@ export default function Cash() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                 <div className="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Syncing Database Ledger...</p>
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-widest animate-pulse">Syncing Database Ledger...</p>
             </div>
         );
     }
@@ -126,11 +126,11 @@ export default function Cash() {
                 <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-2">
                     <AlertCircle size={32} />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">Gagal Memuat Data</h3>
+                <h3 className="text-lg font-medium text-slate-900">Gagal Memuat Data</h3>
                 <p className="text-sm text-slate-500 max-w-xs">{error}</p>
                 <button
                     onClick={fetchData}
-                    className="mt-4 px-6 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold active:scale-95 transition-all"
+                    className="mt-4 px-6 py-2 bg-slate-900 text-white rounded-xl text-sm font-medium active:scale-95 transition-all"
                 >
                     Coba Lagi
                 </button>
@@ -153,14 +153,14 @@ export default function Cash() {
                 <div>
                     <div className="flex items-center gap-2 mb-2">
                         <div className="w-2 h-2 rounded-full bg-blue-600" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Database Treasury</span>
+                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Live Database Treasury</span>
                     </div>
-                    <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 italic">Platform <span className="text-blue-600 not-italic">Cash</span></h1>
+                    <h1 className="text-4xl font-medium tracking-tight text-slate-900 italic">Platform <span className="text-blue-600 not-italic">Cash</span></h1>
                     <p className="text-slate-500 font-medium text-sm mt-2">Treasury management and creator settlement metrics (Direct Access).</p>
                 </div>
                 <button
                     onClick={fetchData}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all active:scale-95 shadow-sm"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-600 transition-all active:scale-95 shadow-sm"
                 >
                     <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                     Sync Data
@@ -180,8 +180,8 @@ export default function Cash() {
                             <CreditCard size={28} />
                         </div>
                         <div>
-                            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Sudah Dicairkan</p>
-                            <h3 className="text-4xl font-bold tracking-tighter tabular-nums">{rupiah(metrics.disbursed)}</h3>
+                            <p className="text-white/40 text-[10px] font-medium uppercase tracking-widest mb-1">Sudah Dicairkan</p>
+                            <h3 className="text-4xl font-medium tracking-tighter tabular-nums">{rupiah(metrics.disbursed)}</h3>
                         </div>
                     </div>
                 </motion.div>
@@ -197,8 +197,8 @@ export default function Cash() {
                         <Wallet size={28} />
                     </div>
                     <div className="relative z-10">
-                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Belum Dicairkan</p>
-                        <h3 className="text-4xl font-bold text-slate-900 tracking-tighter tabular-nums">{rupiah(pendingDisbursement)}</h3>
+                        <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest mb-1">Belum Dicairkan</p>
+                        <h3 className="text-4xl font-medium text-slate-900 tracking-tighter tabular-nums">{rupiah(pendingDisbursement)}</h3>
                     </div>
                 </motion.div>
             </div>
@@ -211,11 +211,11 @@ export default function Cash() {
                             <ShoppingBag size={20} />
                         </div>
                         <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Gross Revenue</p>
-                            <p className="text-xl font-bold text-slate-700">{rupiah(metrics.totalGross)}</p>
+                            <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Total Gross Revenue</p>
+                            <p className="text-xl font-medium text-slate-700">{rupiah(metrics.totalGross)}</p>
                         </div>
                     </div>
-                    <div className="text-xs font-bold text-slate-300 italic">Database Sum</div>
+                    <div className="text-xs font-medium text-slate-300 italic">Database Sum</div>
                 </div>
                 <div className="bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -223,11 +223,11 @@ export default function Cash() {
                             <TrendingUp size={20} />
                         </div>
                         <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Net Platform</p>
-                            <p className="text-xl font-bold text-slate-700">{rupiah(metrics.totalNet)}</p>
+                            <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Total Net Platform</p>
+                            <p className="text-xl font-medium text-slate-700">{rupiah(metrics.totalNet)}</p>
                         </div>
                     </div>
-                    <div className="text-xs font-bold text-slate-300 italic">Net Aggregated</div>
+                    <div className="text-xs font-medium text-slate-300 italic">Net Aggregated</div>
                 </div>
             </div>
 
@@ -238,7 +238,7 @@ export default function Cash() {
                         <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
                             <Building2 size={20} />
                         </div>
-                        <h3 className="text-lg font-bold text-slate-900 tracking-tight">Creator Settlement Ledger</h3>
+                        <h3 className="text-lg font-medium text-slate-900 tracking-tight">Creator Settlement Ledger</h3>
                     </div>
 
                     <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-100 text-slate-400 focus-within:bg-white focus-within:border-blue-400 focus-within:text-blue-500 transition-all w-full md:w-80 shadow-sm">
@@ -257,10 +257,10 @@ export default function Cash() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/50">
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Creator</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Net Revenue</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Disbursed</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Remaining Balance</th>
+                                <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest">Creator</th>
+                                <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest text-right">Net Revenue</th>
+                                <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest text-right">Disbursed</th>
+                                <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest text-right">Remaining Balance</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -274,11 +274,11 @@ export default function Cash() {
                                 >
                                     <td className="px-8 py-6">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-blue-600 font-bold text-sm shadow-sm">
+                                            <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-blue-600 font-medium text-sm shadow-sm">
                                                 {s.brandName.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-slate-900 text-sm tracking-tight">{s.brandName}</p>
+                                                <p className="font-medium text-slate-900 text-sm tracking-tight">{s.brandName}</p>
                                                 <p className="text-[10px] font-medium text-slate-400 italic">Owner: {s.ownerName}</p>
                                             </div>
                                         </div>
@@ -291,10 +291,10 @@ export default function Cash() {
                                     </td>
                                     <td className="px-8 py-6 text-right">
                                         <div className="flex flex-col items-end">
-                                            <span className="text-sm font-black text-slate-900 tabular-nums">{rupiah(s.revenue - s.disbursed)}</span>
+                                            <span className="text-sm font-medium text-slate-900 tabular-nums">{rupiah(s.revenue - s.disbursed)}</span>
                                             <div className="flex items-center gap-1.5 mt-1">
                                                 <div className={`w-1 h-1 rounded-full ${s.revenue - s.disbursed > 0 ? 'bg-amber-400 animate-pulse' : 'bg-slate-200'}`} />
-                                                <span className={`text-[8px] font-black uppercase tracking-widest ${s.revenue - s.disbursed > 0 ? 'text-amber-600' : 'text-slate-300'}`}>
+                                                <span className={`text-[8px] font-medium uppercase tracking-widest ${s.revenue - s.disbursed > 0 ? 'text-amber-600' : 'text-slate-300'}`}>
                                                     {s.revenue - s.disbursed > 0 ? 'Payable' : 'Cleared'}
                                                 </span>
                                             </div>

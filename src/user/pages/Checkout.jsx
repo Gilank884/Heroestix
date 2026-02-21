@@ -314,7 +314,7 @@ export default function Checkout() {
     };
 
     return (
-        <div className="bg-[#f8fafc] min-h-screen font-sans text-slate-900">
+        <div className="bg-[#f8fafc] dark:bg-slate-950 min-h-screen font-sans text-slate-900 dark:text-slate-100">
             <Navbar alwaysScrolled={true} />
 
             <div className="pt-28 pb-20">
@@ -323,13 +323,13 @@ export default function Checkout() {
                     {/* STEPPER */}
                     <div className="flex items-center justify-center gap-6 mb-12">
                         <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm transition-all duration-500 ${currentStep >= 1 ? 'bg-[#1a36c7] text-white shadow-lg shadow-blue-500/30' : 'bg-slate-200 text-slate-400'}`}>1</div>
-                            <span className={`font-black text-xs uppercase tracking-[0.15em] ${currentStep >= 1 ? 'text-[#1a36c7]' : 'text-slate-400'}`}>Detail Pembeli</span>
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm transition-all duration-500 ${currentStep >= 1 ? 'bg-[#1a36c7] text-white shadow-lg shadow-blue-500/30 dark:shadow-blue-900/40' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`}>1</div>
+                            <span className={`font-black text-xs uppercase tracking-[0.15em] ${currentStep >= 1 ? 'text-[#1a36c7] dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`}>Detail Pembeli</span>
                         </div>
-                        <div className={`w-12 h-[2px] rounded-full transition-all duration-500 ${currentStep >= 2 ? 'bg-[#1a36c7]' : 'bg-slate-200'}`}></div>
+                        <div className={`w-12 h-[2px] rounded-full transition-all duration-500 ${currentStep >= 2 ? 'bg-[#1a36c7]' : 'bg-slate-200 dark:bg-slate-800'}`}></div>
                         <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm transition-all duration-500 ${currentStep >= 2 ? 'bg-[#1a36c7] text-white shadow-lg shadow-blue-500/30' : 'bg-slate-200 text-slate-400'}`}>2</div>
-                            <span className={`font-black text-xs uppercase tracking-[0.15em] ${currentStep >= 2 ? 'text-[#1a36c7]' : 'text-slate-400'}`}>Konfirmasi</span>
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm transition-all duration-500 ${currentStep >= 2 ? 'bg-[#1a36c7] text-white shadow-lg shadow-blue-500/30 dark:shadow-blue-900/40' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`}>2</div>
+                            <span className={`font-black text-xs uppercase tracking-[0.15em] ${currentStep >= 2 ? 'text-[#1a36c7] dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`}>Konfirmasi</span>
                         </div>
                     </div>
 

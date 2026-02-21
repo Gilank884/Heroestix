@@ -83,7 +83,7 @@ const AboutDescription = () => {
     }, []);
 
     return (
-        <section ref={sectionRef} className="py-24 px-6 bg-white overflow-hidden">
+        <section ref={sectionRef} className="py-24 px-6 bg-white dark:bg-[#0f172a] overflow-hidden">
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                 {/* LEFT: CONTENT */}
                 <div ref={contentRef} className="space-y-8">
@@ -93,16 +93,16 @@ const AboutDescription = () => {
                         </span>
                     </div>
 
-                    <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">
+                    <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white leading-tight">
                         Platform Event <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
                             Tanpa Batas.
                         </span>
                     </h2>
 
-                    <div className="space-y-6 text-lg text-slate-600 leading-relaxed font-medium">
+                    <div className="space-y-6 text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                         <p>
-                            <span className="text-slate-900 font-bold">Heroestix</span> adalah jembatan digital yang menghubungkan imajinasi kreator dengan antusiasme penonton.
+                            <span className="text-slate-900 dark:text-white font-bold">Heroestix</span> adalah jembatan digital yang menghubungkan imajinasi kreator dengan antusiasme penonton.
                         </p>
                         <p>
                             Kami bukan sekadar tempat menjual tiket. Kami adalah ekosistem yang dirancang untuk mempermudah setiap langkah dalam manajemen event, mulai dari promosi, penjualan, hingga analisis pasca-acara.
@@ -118,16 +118,15 @@ const AboutDescription = () => {
                         ].map((item, idx) => (
                             <div key={idx} className="flex items-center gap-3">
                                 <CheckCircle2 className="text-blue-500 shrink-0" size={20} />
-                                <span className="text-slate-700 font-semibold text-sm">{item}</span>
+                                <span className="text-slate-700 dark:text-slate-300 font-semibold text-sm">{item}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* RIGHT: IMAGE */}
                 <div ref={imageRef} className="relative">
-                    <div className="absolute -inset-4 bg-gradient-to-tr from-blue-100 to-purple-100 rounded-[2.5rem] -rotate-2"></div>
-                    <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-100 aspect-[4/3] group z-10 bg-white">
+                    <div className="absolute -inset-4 bg-gradient-to-tr from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-[2.5rem] -rotate-2"></div>
+                    <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 aspect-[4/3] group z-10 bg-white dark:bg-slate-900">
                         <img
                             src="/assets/become.png"
                             alt="Become a Heroestix Creator"
@@ -137,28 +136,28 @@ const AboutDescription = () => {
                     </div>
 
                     {/* Floating Card 1: Income (Top Left) */}
-                    <div className="floating-card absolute top-10 -left-6 md:-left-12 bg-white p-4 rounded-2xl shadow-xl z-20 flex items-center gap-4 max-w-[200px] border border-slate-50">
-                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                    <div className="floating-card absolute top-10 -left-6 md:-left-12 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-xl z-20 flex items-center gap-4 max-w-[200px] border border-slate-50 dark:border-slate-700">
+                        <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
                             <HiCurrencyDollar size={20} />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-500 font-medium">Potensi Income</p>
-                            <p className="text-sm font-bold text-slate-900">Unlimited</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Potensi Income</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Unlimited</p>
                         </div>
                     </div>
 
                     {/* Floating Card 2: Analytics (Bottom Right) */}
-                    <div className="floating-card absolute bottom-20 -right-6 md:-right-10 bg-white p-4 rounded-2xl shadow-xl z-20 border border-slate-50">
+                    <div className="floating-card absolute bottom-20 -right-6 md:-right-10 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-xl z-20 border border-slate-50 dark:border-slate-700">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                                 <HiPresentationChartLine size={16} />
                             </div>
-                            <span className="text-xs font-bold text-slate-700">Growth</span>
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Growth</span>
                         </div>
-                        <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="w-[90%] h-full bg-blue-600 rounded-full"></div>
+                        <div className="w-32 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className="w-[90%] h-full bg-blue-600 dark:bg-blue-500 rounded-full"></div>
                         </div>
-                        <p className="text-[10px] text-slate-500 mt-2 font-medium">Audience Reach <span className="text-blue-600 font-bold">90%</span></p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium">Audience Reach <span className="text-blue-600 dark:text-blue-400 font-bold">90%</span></p>
                     </div>
 
                     {/* Floating Card 3: Status (Bottom Left) */}

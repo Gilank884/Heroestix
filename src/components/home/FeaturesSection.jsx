@@ -57,7 +57,7 @@ export default function FeaturesSection() {
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
 
                     <div className="relative z-10">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight flex flex-wrap items-center gap-3">
+                        <h2 className="text-4xl md:text-5xl font-medium mb-6 leading-tight flex flex-wrap items-center gap-3">
                             Kenapa Harus
                             <span className="inline-flex items-center gap-3 bg-white/5 px-4 py-2 rounded-2xl border border-white/10 backdrop-blur-sm">
                                 <img
@@ -72,7 +72,7 @@ export default function FeaturesSection() {
                             Kami menyediakan solusi manajemen tiket event yang lengkap, aman, dan mudah digunakan untuk kesuksesan acara Anda.
                         </p>
 
-                        <button className="px-8 py-3 border-2 border-white/10 rounded-2xl hover:bg-white hover:text-blue-900 transition-all duration-300 font-semibold text-sm tracking-wide w-fit text-slate-300">
+                        <button className="px-8 py-3 border-2 border-white/10 rounded-2xl hover:bg-white hover:text-blue-900 transition-all duration-300 font-medium text-sm tracking-wide w-fit text-slate-300">
                             Pelajari Selengkapnya
                         </button>
                     </div>
@@ -86,7 +86,7 @@ export default function FeaturesSection() {
                                 <div className={`w-12 h-12 rounded-2xl ${feature.bgColor} flex items-center justify-center mb-5 shrink-0 shadow-lg shadow-blue-500/10 transition-transform duration-300 group-hover:scale-110`}>
                                     {feature.icon}
                                 </div>
-                                <h3 className="font-bold text-white text-lg mb-3">
+                                <h3 className="font-medium text-white text-lg mb-3">
                                     {feature.title}
                                 </h3>
                                 <p className="text-slate-400 text-sm leading-relaxed">

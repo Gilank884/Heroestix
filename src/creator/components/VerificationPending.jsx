@@ -8,8 +8,8 @@ const VerificationPending = () => {
                 <HiShieldCheck size={48} />
             </div>
             <div className="max-w-md space-y-2">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight text-balance">Akun Dalam Peninjauan</h2>
-                <p className="text-slate-500 font-medium text-lg">Tim kami sedang memverifikasi profil Anda. Proses ini biasanya memakan waktu 1x24 jam.</p>
+                <h2 className="text-3xl text-slate-900 tracking-tight text-balance">Akun Dalam Peninjauan</h2>
+                <p className="text-slate-500 text-lg">Tim kami sedang memverifikasi profil Anda. Proses ini biasanya memakan waktu 1x24 jam.</p>
             </div>
         </div>
     );

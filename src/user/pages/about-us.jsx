@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 
 export default function AboutUsPage() {
     return (
-        <div className="bg-white min-h-screen">
+        <div className="bg-white dark:bg-[#0f172a] min-h-screen">
             <Navbar />
 
             <main>

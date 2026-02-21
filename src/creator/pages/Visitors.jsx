@@ -179,16 +179,16 @@ const Visitors = () => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/50">
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pengunjung</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori Tiket</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Info Kontak</th>
+                                <th className="px-6 py-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest">Pengunjung</th>
+                                <th className="px-6 py-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest">Kategori Tiket</th>
+                                <th className="px-6 py-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest">Info Kontak</th>
                                 {customColumns.map(col => (
-                                    <th key={col.id || col.label} className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    <th key={col.id || col.label} className="px-6 py-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest">
                                         {col.label}
                                     </th>
                                 ))}
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status Bayar</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status Masuk</th>
+                                <th className="px-6 py-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest text-center">Status Bayar</th>
+                                <th className="px-6 py-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest text-center">Status Masuk</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -206,7 +206,7 @@ const Visitors = () => {
                                                 <UserCircle size={32} />
                                             </div>
                                             <div className="space-y-1">
-                                                <p className="font-black text-slate-900 uppercase tracking-wider">Data Tidak Ditemukan</p>
+                                                <p className="font-medium text-slate-900 uppercase tracking-wider">Data Tidak Ditemukan</p>
                                                 <p className="text-slate-400 text-xs font-medium text-center max-w-xs mx-auto">
                                                     Belum ada pengunjung yang terdaftar atau kriteria pencarian Anda tidak sesuai.
                                                 </p>
@@ -218,40 +218,40 @@ const Visitors = () => {
                                 <tr key={visitor.id} className="hover:bg-slate-50/50 transition-colors group">
                                     <td className="px-6 py-5">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-[#1a36c7]/5 flex items-center justify-center text-[#1a36c7] font-black text-lg">
+                                            <div className="w-10 h-10 rounded-full bg-[#1a36c7]/5 flex items-center justify-center text-[#1a36c7] font-medium text-lg">
                                                 {visitor.full_name?.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="text-sm font-black text-slate-900 tracking-tight">{visitor.full_name}</p>
+                                                <p className="text-sm font-medium text-slate-900 tracking-tight">{visitor.full_name}</p>
                                                 <p className="text-[10px] font-mono text-slate-400">{visitor.qr_code}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-5">
-                                        <div className="inline-flex px-3 py-1 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest">
+                                        <div className="inline-flex px-3 py-1 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-medium uppercase tracking-widest">
                                             {visitor.ticket_types?.name}
                                         </div>
                                     </td>
                                     <td className="px-6 py-5 space-y-1">
-                                        <div className="flex items-center gap-2 text-xs text-slate-600 font-bold">
+                                        <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                                             <Mail size={12} className="text-slate-400" />
                                             {visitor.email || '-'}
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs text-slate-600 font-bold">
+                                        <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                                             <Phone size={12} className="text-slate-400" />
                                             {visitor.phone || '-'}
                                         </div>
                                     </td>
                                     {customColumns.map(col => (
                                         <td key={col.id || col.label} className="px-6 py-5">
-                                            <p className="text-xs font-bold text-slate-700">
+                                            <p className="text-xs font-medium text-slate-700">
                                                 {visitor.custom_responses?.[col.label] || '-'}
                                             </p>
                                         </td>
                                     ))}
                                     <td className="px-6 py-5 text-center">
                                         <div className={`
-                                            inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest
+                                            inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-medium uppercase tracking-widest
                                             ${visitor.orders?.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
                                         `}>
                                             {visitor.orders?.status || 'pending'}
@@ -259,7 +259,7 @@ const Visitors = () => {
                                     </td>
                                     <td className="px-6 py-5 text-center">
                                         <div className={`
-                                            inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest
+                                            inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-medium uppercase tracking-widest
                                             ${visitor.status === 'used' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}
                                         `}>
                                             <div className={`w-1.5 h-1.5 rounded-full ${visitor.status === 'used' ? 'bg-green-600' : 'bg-orange-600'}`} />

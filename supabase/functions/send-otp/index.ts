@@ -64,7 +64,8 @@ const handler = async (req: Request): Promise<Response> => {
             to: [email],
             subject: "Kode Verifikasi Creator Heroestix",
             html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="font-family: 'Sniglet', system-ui; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <style>@import url('https://fonts.googleapis.com/css2?family=Sniglet:wght@400;800&display=swap');</style>
           <h2>Verifikasi Email Anda</h2>
           <p>Halo,</p>
           <p>Terima kasih telah mendaftar sebagai Creator di Heroestix. Gunakan kode OTP di bawah ini untuk memverifikasi email Anda:</p>

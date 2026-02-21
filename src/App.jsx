@@ -332,15 +332,15 @@ export default function App() {
                       <Route path="/events/create" element={<CreateEvent />} />
                       <Route path="/tickets" element={<Tickets />} />
                       <Route path="/scan" element={<Scan />} />
-                      <Route path="/staff" element={<div className="p-10 font-bold text-2xl text-gray-800">Staff Management (Work in Progress)</div>} />
-                      <Route path="/vouchers" element={<div className="p-10 font-bold text-2xl text-gray-800">Voucher & Promotions (Work in Progress)</div>} />
+                      <Route path="/staff" element={<div className="p-10 font-medium text-2xl text-gray-800">Staff Management (Work in Progress)</div>} />
+                      <Route path="/vouchers" element={<div className="p-10 font-medium text-2xl text-gray-800">Voucher & Promotions (Work in Progress)</div>} />
                       <Route path="/sales-report" element={<Overview />} />
                       <Route path="/withdrawals" element={<Withdrawals />} />
                       <Route path="/withdrawals/request" element={<RequestWithdrawal />} />
-                      <Route path="/reports" element={<div className="p-10 font-bold text-2xl text-gray-800">Data Recap & Reports (Work in Progress)</div>} />
-                      <Route path="/security/password" element={<div className="p-10 font-bold text-2xl text-gray-800">Change Password (Work in Progress)</div>} />
-                      <Route path="/security/tokens" element={<div className="p-10 font-bold text-2xl text-gray-800">Token Generator (Work in Progress)</div>} />
-                      <Route path="/tools/bracelet-printing" element={<div className="p-10 font-bold text-2xl text-gray-800">Cetak Tiket Gelang (Work in Progress)</div>} />
+                      <Route path="/reports" element={<div className="p-10 font-medium text-2xl text-gray-800">Data Recap & Reports (Work in Progress)</div>} />
+                      <Route path="/security/password" element={<div className="p-10 font-medium text-2xl text-gray-800">Change Password (Work in Progress)</div>} />
+                      <Route path="/security/tokens" element={<div className="p-10 font-medium text-2xl text-gray-800">Token Generator (Work in Progress)</div>} />
+                      <Route path="/tools/bracelet-printing" element={<div className="p-10 font-medium text-2xl text-gray-800">Cetak Tiket Gelang (Work in Progress)</div>} />
                       <Route path="/profile" element={<CreatorProfile />} />
                       <Route path="*" element={<Navigate to="/" />} />
                     </Routes>

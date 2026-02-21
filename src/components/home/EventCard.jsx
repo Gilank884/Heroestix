@@ -22,11 +22,11 @@ const EventCard = ({ id, image, title, date, location, price, status, variant, c
     // Render "Load More" card variant
     if (variant === "more") {
         return (
-            <div className="bg-slate-900/5 backdrop-blur-md rounded-xl border border-slate-200 flex flex-col items-center justify-center p-8 text-center hover:bg-blue-50/50 hover:border-blue-400 transition-all duration-300 cursor-pointer group shadow-sm">
-                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white shadow-md transition-all duration-500">
-                    <ChevronRight className="text-slate-400 group-hover:text-white" size={24} />
+            <div className="bg-slate-900/5 dark:bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center p-8 text-center hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 cursor-pointer group shadow-sm">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-600 dark:group-hover:bg-blue-500 group-hover:text-white shadow-md transition-all duration-500">
+                    <ChevronRight className="text-slate-400 dark:text-slate-300 group-hover:text-white" size={24} />
                 </div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">See More</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">See More</p>
             </div>
         );
     }
@@ -37,7 +37,7 @@ const EventCard = ({ id, image, title, date, location, price, status, variant, c
     return (
         <Link
             to={`/event/${id}`}
-            className="group block bg-white rounded-lg overflow-hidden border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-500 flex flex-col h-full"
+            className="group block bg-white dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 dark:hover:shadow-blue-900/20 transition-all duration-500 flex flex-col h-full"
         >
             {/* CARD TOP: IMAGE */}
             <div className="relative aspect-[16/9] overflow-hidden">
@@ -50,14 +50,14 @@ const EventCard = ({ id, image, title, date, location, price, status, variant, c
                 {/* Subtle Overlay */}
                 {!isAvailable && (
                     <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
-                        <span className="bg-white/90 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-[0.2em] text-slate-900">Sold Out</span>
+                        <span className="bg-white/90 px-4 py-2 rounded-lg text-xs font-medium uppercase tracking-[0.2em] text-slate-900">Sold Out</span>
                     </div>
                 )}
 
                 {/* Category Badge */}
                 {category && (
                     <div className="absolute top-3 left-3">
-                        <div className="px-2.5 py-1 bg-white/90 backdrop-blur-md text-[#1a36c7] rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm border border-blue-100/50 flex items-center gap-1">
+                        <div className="px-2.5 py-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-[#1a36c7] dark:text-blue-400 rounded-lg text-[9px] font-medium uppercase tracking-wider shadow-sm border border-blue-100/50 dark:border-slate-700/50 flex items-center gap-1">
                             <Tag size={9} />
                             {getCategoryName(category)}
                         </div>
@@ -68,19 +68,19 @@ const EventCard = ({ id, image, title, date, location, price, status, variant, c
             {/* CARD BODY: CONTENT */}
             <div className="p-4 flex-1 flex flex-col justify-start">
                 <div className="space-y-3">
-                    <h3 className="font-extrabold text-[#111827] text-[15px] uppercase leading-tight tracking-tight line-clamp-2">
+                    <h3 className="font-medium text-[#111827] dark:text-slate-100 text-[15px] uppercase leading-tight tracking-tight line-clamp-2">
                         {title}
                     </h3>
 
                     <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-[#374151]">
-                            <Calendar size={14} className="text-blue-600 shrink-0" />
-                            <p className="text-[14px] font-bold">
+                        <div className="flex items-center gap-2 text-[#374151] dark:text-slate-300">
+                            <Calendar size={14} className="text-blue-600 dark:text-blue-400 shrink-0" />
+                            <p className="text-[14px] font-medium">
                                 {date || "Coming Soon"}
                             </p>
                         </div>
-                        <div className="flex items-center gap-2 text-slate-400">
-                            <MapPin size={14} className="text-blue-600 shrink-0" />
+                        <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                            <MapPin size={14} className="text-blue-600 dark:text-blue-400 shrink-0" />
                             <p className="text-[13px] font-medium truncate">
                                 {location || "Venue TBA"}
                             </p>
@@ -90,11 +90,11 @@ const EventCard = ({ id, image, title, date, location, price, status, variant, c
             </div>
 
             {/* CARD FOOTER: PRICE */}
-            <div className="mt-auto px-4 py-3.5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-[13px] font-medium text-slate-500">
+            <div className="mt-auto px-4 py-3.5 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span className="text-[13px] font-medium text-slate-500 dark:text-slate-400">
                     Mulai Dari
                 </span>
-                <span className="text-[15px] font-extrabold text-slate-900">
+                <span className="text-[15px] font-medium text-slate-900 dark:text-white">
                     {price === 0 ? "FREE" : rupiah(price)}
                 </span>
             </div>

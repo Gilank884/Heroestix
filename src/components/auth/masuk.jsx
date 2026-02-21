@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { FcGoogle } from "react-icons/fc";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useNavigate, Link } from "react-router-dom";
 import { getBaseDomain, getSubdomainUrl } from "../../lib/navigation";
@@ -89,51 +88,27 @@ const Masuk = ({ role = "user" }) => {
     };
 
 
-    const handleGoogleLogin = async () => {
-        console.log("Google Login clicked. Role context:", role);
-        if (role !== "user") {
-            console.log("Internal portal context detected. Setting auth_mode to register.");
-            localStorage.setItem("auth_mode", "register");
-            localStorage.setItem("auth_role", role);
-        } else {
-            console.log("User context detected. Setting auth_mode to login.");
-            localStorage.setItem("auth_mode", "login");
-        }
-
-        console.log("Triggering signInWithOAuth Google...");
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: "google",
-            options: {
-                redirectTo: "https://heroestix.com/",
-            },
-        });
-
-        if (error) {
-            console.error("Google login error:", error.message);
-        }
-    };
-
     const isInternalPortal = role === "creator" || role === "developer";
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4 relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 px-4 relative overflow-hidden">
             {/* Background Grid Pattern */}
             <div className="absolute inset-0 z-0">
-                <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
+                <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
             </div>
 
             <div className="w-full max-w-[420px] relative z-10">
-                <div className="bg-white border border-slate-200 rounded-3xl p-8 md:p-10 shadow-sm">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 md:p-10 shadow-sm">
                     {/* Header */}
                     <div className="text-center mb-10">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest mb-6">
-                            <div className="w-1 h-1 rounded-full bg-blue-600 animate-pulse" />
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-medium uppercase tracking-widest mb-6">
+                            <div className="w-1 h-1 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
                             {isInternalPortal ? `${role.toUpperCase()} ACCESS` : "Beli Tiket Event"}
                         </div>
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                        <h1 className="text-2xl font-medium text-slate-900 dark:text-white tracking-tight">
                             {isInternalPortal ? "Masuk Portal" : "Selamat Datang"}
                         </h1>
-                        <p className="text-[13px] text-slate-500 font-medium mt-1">
+                        <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-1">
                             Silakan masuk menggunakan akun Heroestix Anda
                         </p>
                     </div>
@@ -141,28 +116,28 @@ const Masuk = ({ role = "user" }) => {
                     {/* Error */}
                     {errorMsg && (
                         <div className="bg-red-50 border border-red-100 text-red-600 text-[12px] px-4 py-3 rounded-xl mb-8 flex items-center gap-3">
-                            <span className="font-bold">{errorMsg}</span>
+                            <span className="font-medium">{errorMsg}</span>
                         </div>
                     )}
 
                     {/* FORM */}
                     <form onSubmit={handleLogin} className="space-y-5">
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Email</label>
+                            <label className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Email</label>
                             <input
                                 type="email"
                                 placeholder="nama@email.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-medium placeholder:text-slate-400"
+                                className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                             />
                         </div>
 
                         <div className="space-y-1.5">
                             <div className="flex justify-between items-center ml-1">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sandi</label>
-                                <button type="button" className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest">Lupa?</button>
+                                <label className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500">Sandi</label>
+                                <button type="button" className="text-[10px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 uppercase tracking-widest">Lupa?</button>
                             </div>
                             <div className="relative">
                                 <input
@@ -171,7 +146,7 @@ const Masuk = ({ role = "user" }) => {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
-                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-medium placeholder:text-slate-400 pr-12"
+                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 pr-12"
                                 />
                                 <button
                                     type="button"
@@ -185,45 +160,27 @@ const Masuk = ({ role = "user" }) => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50 mt-4 flex items-center justify-center"
+                            className="w-full bg-blue-600 text-white py-4 rounded-2xl font-medium text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50 mt-4 flex items-center justify-center"
                         >
                             {loading ? "Menghubungkan..." : "Masuk Sekarang"}
                         </button>
                     </form>
 
-                    {/* Divider & Google */}
-                    {!isInternalPortal && (
-                        <>
-                            <div className="flex items-center gap-4 my-8">
-                                <div className="flex-1 h-px bg-slate-100" />
-                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Atau</span>
-                                <div className="flex-1 h-px bg-slate-100" />
-                            </div>
-
-                            <button
-                                onClick={handleGoogleLogin}
-                                className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-900 rounded-2xl py-3.5 text-sm font-bold hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
-                            >
-                                <FcGoogle size={20} />
-                                <span>Google</span>
-                            </button>
-                        </>
-                    )}
                 </div>
 
                 <div className="mt-8 text-center space-y-4">
                     {!isInternalPortal ? (
-                        <p className="text-sm text-slate-500 font-bold">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
                             Belum punya akun?{" "}
                             <Link
                                 to="/daftar"
-                                className="text-blue-600 hover:underline underline-offset-4"
+                                className="text-blue-600 dark:text-blue-400 hover:underline underline-offset-4"
                             >
                                 Daftar Sekarang
                             </Link>
                         </p>
                     ) : null}
-                    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-widest">
                         &copy; 2024 Heroestix Ticket.
                     </p>
                 </div>

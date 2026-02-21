@@ -25,7 +25,8 @@ const handler = async (req: Request): Promise<Response> => {
             to: [email],
             subject: `Undangan Menjadi Staff Event: ${eventTitle}`,
             html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="font-family: 'Sniglet', system-ui; max-width: 600px; margin: 0 auto;">
+          <style>@import url('https://fonts.googleapis.com/css2?family=Sniglet:wght@400;800&display=swap');</style>
           <h2>Undangan Staff Event</h2>
           <p>Halo,</p>
           <p>Anda telah diundang untuk menjadi staff pada event <strong>${eventTitle}</strong> di HeroesTix.</p>

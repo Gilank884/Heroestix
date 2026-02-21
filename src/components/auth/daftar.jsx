@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { FcGoogle } from "react-icons/fc";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { getSubdomainUrl } from "../../lib/navigation";
@@ -189,39 +188,27 @@ const Daftar = ({ role = "user" }) => {
         setLoading(false);
     };
 
-    const handleGoogleLogin = async () => {
-        localStorage.setItem("auth_mode", "register");
-        localStorage.setItem("auth_role", role);
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: "google",
-            options: {
-                redirectTo: "https://heroestix.com/",
-            },
-        });
-        if (error) console.error("Google login error:", error.message);
-    };
-
     const isCreator = role === "creator";
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] py-20 px-4 relative overflow-hidden flex items-center justify-center">
+        <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 py-20 px-4 relative overflow-hidden flex items-center justify-center">
             {/* Background Grid Pattern */}
             <div className="absolute inset-0 z-0">
-                <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
+                <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
             </div>
 
             <div className={`w-full ${isCreator ? "max-w-2xl" : "max-w-[420px]"} relative z-10`}>
-                <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
                     {/* Header */}
-                    <div className="p-8 md:p-10 text-center border-b border-slate-50">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest mb-6">
-                            <div className="w-1 h-1 rounded-full bg-blue-600 animate-pulse" />
+                    <div className="p-8 md:p-10 text-center border-b border-slate-50 dark:border-slate-800">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-black uppercase tracking-widest mb-6">
+                            <div className="w-1 h-1 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
                             {isOtpStage ? "EMAIL VERIFICATION" : (isCreator ? "CREATOR REGISTRATION" : "USER REGISTRATION")}
                         </div>
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                             {isOtpStage ? "Verifikasi Email" : (isCreator ? "Mulai Kelola Event" : "Gabung Heroestix")}
                         </h1>
-                        <p className="text-[13px] text-slate-500 font-medium mt-1">
+                        <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-1">
                             {isOtpStage
                                 ? `Masukan kode OTP yang dikirim ke ${form.email}`
                                 : (isCreator ? "Lengkapi detail untuk jadi partner kami" : "Nikmati kemudahan beli tiket konser & event")}
@@ -240,7 +227,7 @@ const Daftar = ({ role = "user" }) => {
                             /* OTP STAGE */
                             <form onSubmit={handleVerifyOtp} className="space-y-8">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Kode OTP 6-Digit</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Kode OTP 6-Digit</label>
                                     <input
                                         type="text"
                                         placeholder="000000"
@@ -248,7 +235,7 @@ const Daftar = ({ role = "user" }) => {
                                         value={otpCode}
                                         onChange={(e) => setOtpCode(e.target.value)}
                                         required
-                                        className="w-full rounded-2xl px-5 py-4 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-2xl tracking-[0.5em] text-center outline-none transition-all font-black placeholder:text-slate-200"
+                                        className="w-full rounded-2xl px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-2xl tracking-[0.5em] text-center outline-none transition-all font-black placeholder:text-slate-200 dark:placeholder:text-slate-600"
                                     />
                                 </div>
                                 <div className="space-y-4">
@@ -264,7 +251,7 @@ const Daftar = ({ role = "user" }) => {
                                             type="button"
                                             onClick={handleResendOtp}
                                             disabled={loading}
-                                            className="text-[11px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest disabled:opacity-50"
+                                            className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 uppercase tracking-widest disabled:opacity-50"
                                         >
                                             Tidak menerima kode? Kirim ulang
                                         </button>
@@ -273,7 +260,7 @@ const Daftar = ({ role = "user" }) => {
                                         <button
                                             type="button"
                                             onClick={() => setIsOtpStage(false)}
-                                            className="text-[11px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest"
+                                            className="text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 uppercase tracking-widest"
                                         >
                                             Ganti Email
                                         </button>
@@ -287,14 +274,14 @@ const Daftar = ({ role = "user" }) => {
                                 <div className="space-y-4">
                                     {isCreator && (
                                         <div className="flex items-center gap-2 mb-2">
-                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">01. Informasi Akun</h3>
-                                            <div className="flex-1 h-px bg-slate-100" />
+                                            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">01. Informasi Akun</h3>
+                                            <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
                                         </div>
                                     )}
 
                                     <div className={`grid grid-cols-1 ${isCreator ? "md:grid-cols-2" : ""} gap-4`}>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Nama Lengkap</label>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Nama Lengkap</label>
                                             <input
                                                 type="text"
                                                 name="nama"
@@ -302,11 +289,11 @@ const Daftar = ({ role = "user" }) => {
                                                 value={form.nama}
                                                 onChange={handleChange}
                                                 required
-                                                className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                                className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Alamat Email</label>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Alamat Email</label>
                                             <input
                                                 type="email"
                                                 name="email"
@@ -314,11 +301,11 @@ const Daftar = ({ role = "user" }) => {
                                                 value={form.email}
                                                 onChange={handleChange}
                                                 required
-                                                className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                                className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Kata Sandi</label>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Kata Sandi</label>
                                             <div className="relative">
                                                 <input
                                                     type={showPassword ? "text" : "password"}
@@ -327,7 +314,7 @@ const Daftar = ({ role = "user" }) => {
                                                     value={form.password}
                                                     onChange={handleChange}
                                                     required
-                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400 pr-12"
+                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-slate-500 pr-12"
                                                 />
                                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
                                                     {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
@@ -335,7 +322,7 @@ const Daftar = ({ role = "user" }) => {
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Konfirmasi</label>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Konfirmasi</label>
                                             <div className="relative">
                                                 <input
                                                     type={showConfirmPassword ? "text" : "password"}
@@ -344,7 +331,7 @@ const Daftar = ({ role = "user" }) => {
                                                     value={form.confirm_password}
                                                     onChange={handleChange}
                                                     required
-                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400 pr-12"
+                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-slate-500 pr-12"
                                                 />
                                                 <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
                                                     {showConfirmPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
@@ -352,14 +339,14 @@ const Daftar = ({ role = "user" }) => {
                                             </div>
                                         </div>
                                         <div className={`space-y-1.5 ${isCreator ? "md:col-span-2" : ""}`}>
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tanggal Lahir</label>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Tanggal Lahir</label>
                                             <input
                                                 type="date"
                                                 name="tanggal_lahir"
                                                 value={form.tanggal_lahir}
                                                 onChange={handleChange}
                                                 required
-                                                className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold text-slate-500"
+                                                className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-bold text-slate-500 dark:text-slate-400"
                                             />
                                         </div>
                                     </div>
@@ -369,12 +356,12 @@ const Daftar = ({ role = "user" }) => {
                                 {isCreator && (
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">02. Detail Bisnis</h3>
-                                            <div className="flex-1 h-px bg-slate-100" />
+                                            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">02. Detail Bisnis</h3>
+                                            <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
                                         </div>
                                         <div className="space-y-4">
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Nama Brand / EO</label>
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Nama Brand / EO</label>
                                                 <input
                                                     type="text"
                                                     name="brand_name"
@@ -382,12 +369,12 @@ const Daftar = ({ role = "user" }) => {
                                                     value={form.brand_name}
                                                     onChange={handleChange}
                                                     required
-                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                                 />
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Bank</label>
+                                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Bank</label>
                                                     <input
                                                         type="text"
                                                         name="bank_name"
@@ -395,11 +382,11 @@ const Daftar = ({ role = "user" }) => {
                                                         value={form.bank_name}
                                                         onChange={handleChange}
                                                         required
-                                                        className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                                        className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">No. Rekening</label>
+                                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">No. Rekening</label>
                                                     <input
                                                         type="text"
                                                         name="bank_account"
@@ -407,13 +394,13 @@ const Daftar = ({ role = "user" }) => {
                                                         value={form.bank_account}
                                                         onChange={handleChange}
                                                         required
-                                                        className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                                        className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                                     />
                                                 </div>
                                             </div>
 
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Deskripsi Kreator</label>
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Deskripsi Kreator</label>
                                                 <textarea
                                                     name="description"
                                                     placeholder="Ceritakan tentang brand atau EO Anda..."
@@ -421,12 +408,12 @@ const Daftar = ({ role = "user" }) => {
                                                     onChange={handleChange}
                                                     required
                                                     rows={3}
-                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                                 />
                                             </div>
 
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Alamat</label>
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Alamat</label>
                                                 <textarea
                                                     name="address"
                                                     placeholder="Alamat lengkap brand atau EO Anda..."
@@ -434,12 +421,12 @@ const Daftar = ({ role = "user" }) => {
                                                     onChange={handleChange}
                                                     required
                                                     rows={3}
-                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 border border-slate-200 focus:border-blue-600 focus:bg-white text-slate-900 text-sm outline-none transition-all font-bold placeholder:text-slate-400"
+                                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                                 />
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Foto Profil / Logo (4x4)</label>
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Foto Profil / Logo (4x4)</label>
                                                 <div className="relative group/photo">
                                                     <input
                                                         type="file"
@@ -453,7 +440,7 @@ const Daftar = ({ role = "user" }) => {
                                                         htmlFor="photo-upload"
                                                         className={`
                                                             relative aspect-square w-32 rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center gap-2
-                                                            ${photoPreview ? 'border-transparent' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-blue-600'}
+                                                            ${photoPreview ? 'border-transparent' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-blue-600 dark:hover:border-blue-500'}
                                                         `}
                                                     >
                                                         {photoPreview ? (
@@ -465,10 +452,10 @@ const Daftar = ({ role = "user" }) => {
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-300 shadow-sm">
+                                                                <div className="w-8 h-8 bg-white dark:bg-slate-700 rounded-lg flex items-center justify-center text-slate-300 dark:text-slate-400 shadow-sm">
                                                                     <Upload size={18} />
                                                                 </div>
-                                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Upload</span>
+                                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Upload</span>
                                                             </>
                                                         )}
                                                     </label>
@@ -478,7 +465,7 @@ const Daftar = ({ role = "user" }) => {
                                     </div>
                                 )}
 
-                                <div className="pt-6 border-t border-slate-50 space-y-4 flex flex-col items-center">
+                                <div className="pt-6 border-t border-slate-50 dark:border-slate-800 space-y-4 flex flex-col items-center">
                                     <button
                                         type="submit"
                                         disabled={loading}
@@ -487,34 +474,16 @@ const Daftar = ({ role = "user" }) => {
                                         {loading ? "Memproses..." : isCreator ? "Daftar Jadi Partner" : "Buat Akun Sekarang"}
                                     </button>
 
-                                    {!isCreator && (
-                                        <>
-                                            <div className="flex items-center gap-4 w-full">
-                                                <div className="flex-1 h-px bg-slate-100" />
-                                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">atau</span>
-                                                <div className="flex-1 h-px bg-slate-100" />
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={handleGoogleLogin}
-                                                className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-900 rounded-2xl py-3.5 text-sm font-bold hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
-                                            >
-                                                <FcGoogle size={20} />
-                                                <span>Lanjut dengan Google</span>
-                                            </button>
-                                        </>
-                                    )}
-
-                                    <p className="text-[13px] text-slate-500 font-bold mt-2">
+                                    <p className="text-[13px] text-slate-500 dark:text-slate-400 font-bold mt-2">
                                         Sudah punya akun?{" "}
-                                        <Link to="/masuk" className="text-blue-600 hover:underline underline-offset-4">Masuk</Link>
+                                        <Link to="/masuk" className="text-blue-600 dark:text-blue-400 hover:underline underline-offset-4">Masuk</Link>
                                     </p>
                                 </div>
                             </form>
                         )}
                     </div>
                 </div>
-                <p className="mt-8 text-center text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em]">
+                <p className="mt-8 text-center text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-[0.2em]">
                     &copy; 2024 Heroestix Ticket &middot; Terms Applied
                 </p>
             </div>

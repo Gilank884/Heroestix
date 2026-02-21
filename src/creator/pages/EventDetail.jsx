@@ -59,14 +59,14 @@ const EventDetail = () => {
         fetchEvent();
     }, [eventId]);
 
-    if (loading) return <div className="p-10 text-center font-bold">Loading...</div>;
+    if (loading) return <div className="p-10 text-center">Loading...</div>;
     if (!isVerified) return <VerificationPending />;
-    if (!event) return <div className="p-10 text-center text-red-500 font-bold">Event not found</div>;
+    if (!event) return <div className="p-10 text-center text-red-500">Event not found</div>;
 
     return (
         <div className="p-8 space-y-6 animate-in fade-in duration-500">
             {/* Page Title */}
-            <h1 className="text-lg font-black text-gray-900">Detail Event</h1>
+            <h1 className="text-lg text-gray-900">Detail Event</h1>
 
             {/* Tabs */}
             <div className="flex items-center gap-8 border-b border-gray-200">
@@ -74,7 +74,7 @@ const EventDetail = () => {
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`pb-4 text-[11px] font-bold transition-all relative
+                        className={`pb-4 text-[11px] transition-all relative
                             ${activeTab === tab ? 'text-[#1a36c7]' : 'text-gray-400 hover:text-gray-600'}
                         `}
                     >

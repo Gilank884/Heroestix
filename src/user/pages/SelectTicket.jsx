@@ -31,21 +31,21 @@ const LoginPromptModal = ({ isOpen, onClose, onLogin }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 border border-slate-100 dark:border-slate-800">
                 <div className="p-8 text-center">
-                    <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-6">
                         <Info size={40} />
                     </div>
-                    <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Login Diperlukan</h3>
-                    <p className="text-slate-500 font-medium leading-relaxed mb-8">
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Login Diperlukan</h3>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8">
                         Silakan masuk ke akun Heroestix Anda terlebih dahulu untuk melanjutkan proses pembelian tiket.
                     </p>
 
                     <div className="grid grid-cols-2 gap-4">
                         <button
                             onClick={onClose}
-                            className="w-full py-3.5 rounded-2xl font-bold text-slate-500 border border-slate-200 hover:bg-slate-50 transition-all active:scale-[0.98]"
+                            className="w-full py-3.5 rounded-2xl font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-[0.98]"
                         >
                             Batal
                         </button>
@@ -136,7 +136,7 @@ export default function SelectTicket() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white uppercase font-bold tracking-widest text-slate-300">
+            <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 uppercase font-bold tracking-widest text-slate-300 dark:text-slate-600">
                 <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mr-3"></div>
                 Memuat Tiket...
             </div>
@@ -147,7 +147,7 @@ export default function SelectTicket() {
     const totalAmount = ticketTypes.reduce((acc, tt) => acc + (selectedTickets[tt.id] || 0) * (tt.price_gross || tt.price), 0);
 
     return (
-        <div className="bg-slate-50/30 min-h-screen font-sans text-slate-900">
+        <div className="bg-[#f8fafc] dark:bg-slate-950 min-h-screen font-sans text-slate-900 dark:text-slate-100">
             <Navbar alwaysScrolled={true} />
 
             <LoginPromptModal
@@ -165,9 +165,9 @@ export default function SelectTicket() {
                     {/* BACK BUTTON */}
                     <button
                         onClick={() => navigate(`/event/${id}`)}
-                        className="mb-8 flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold text-sm transition-colors group"
+                        className="mb-8 flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold text-sm transition-colors group"
                     >
-                        <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center group-hover:border-blue-600 group-hover:text-blue-600 transition-all">
+                        <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center group-hover:border-blue-600 dark:group-hover:border-blue-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-all">
                             <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
                         </div>
                         Kembali ke Detail Event
@@ -178,8 +178,8 @@ export default function SelectTicket() {
                         <div className="lg:col-span-8 space-y-8">
 
                             {/* EVENT HEADER */}
-                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col md:flex-row gap-6 items-start">
-                                <div className="w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden shadow-sm shrink-0">
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-6 items-start">
+                                <div className="w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden shadow-sm shrink-0 bg-slate-100 dark:bg-slate-800">
                                     <img
                                         src={event.image || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop"}
                                         alt={event.title}
@@ -187,38 +187,38 @@ export default function SelectTicket() {
                                     />
                                 </div>
                                 <div className="space-y-4 flex-1">
-                                    <h1 className="text-xl font-bold text-slate-900 leading-tight">
+                                    <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
                                         {event.title}
                                     </h1>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                                                 <Calendar size={16} />
                                             </div>
-                                            <p className="text-sm font-bold text-slate-700">{event.date}</p>
+                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{event.date}</p>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                                                 <Clock size={16} />
                                             </div>
-                                            <p className="text-sm font-bold text-slate-700">{event.event_time?.substring(0, 5) || "10:00"} WIB</p>
+                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{event.event_time?.substring(0, 5) || "10:00"} WIB</p>
                                         </div>
                                         <div className="flex items-center gap-3 sm:col-span-2">
-                                            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                                                 <MapPin size={16} />
                                             </div>
-                                            <p className="text-sm font-bold text-slate-700 w-full truncate">{event.location}</p>
+                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300 w-full truncate">{event.location}</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* TICKET LIST */}
-                            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                        <Ticket size={20} className="text-blue-600" />
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <Ticket size={20} className="text-blue-600 dark:text-blue-400" />
                                         Pilih Kategori Tiket
                                     </h2>
                                 </div>
@@ -246,32 +246,32 @@ export default function SelectTicket() {
                                                     key={tt.id}
                                                     className={`
                                                         relative border rounded-xl p-5 transition-all duration-300
-                                                        ${count > 0 ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200 hover:border-blue-200'}
-                                                        ${!isAvailable && 'opacity-60 bg-slate-50'}
+                                                        ${count > 0 ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10' : 'border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800'}
+                                                        ${!isAvailable && 'opacity-60 bg-slate-50 dark:bg-slate-800/50'}
                                                     `}
                                                 >
                                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                                         <div className="space-y-2 flex-1">
                                                             <div className="flex items-start justify-between">
-                                                                <h3 className="text-lg font-bold text-slate-900">{tt.name}</h3>
+                                                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{tt.name}</h3>
                                                                 {!isAvailable && (
-                                                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-slate-200 text-slate-500 rounded-md">
+                                                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-md">
                                                                         {isSoldOut ? "Habis" : isNotStarted ? "Segera" : "Berakhir"}
                                                                     </span>
                                                                 )}
                                                             </div>
 
                                                             <div className="space-y-0.5">
-                                                                <p className="text-xl font-bold text-blue-600">{rupiah(tt.price_gross || tt.price)}</p>
+                                                                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{rupiah(tt.price_gross || tt.price)}</p>
                                                                 {tt.price_net && (
-                                                                    <p className="text-xs font-medium text-slate-400 italic">
+                                                                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500 italic">
                                                                         Termasuk pajak & biaya admin
                                                                     </p>
                                                                 )}
                                                             </div>
 
                                                             <div className="flex items-center gap-3 pt-2">
-                                                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wide">
+                                                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wide">
                                                                     <Info size={12} />
                                                                     Sisa: {tt.quota - tt.sold}
                                                                 </div>
@@ -285,18 +285,18 @@ export default function SelectTicket() {
 
                                                         {/* COUNTER */}
                                                         {isAvailable && (
-                                                            <div className="flex items-center gap-3 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm self-start md:self-center">
+                                                            <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm self-start md:self-center">
                                                                 <button
                                                                     onClick={() => handleTicketChange(tt.id, -1)}
                                                                     disabled={count === 0}
-                                                                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${count === 0 ? 'text-slate-200' : 'text-slate-500 hover:bg-slate-100 hover:text-red-500'}`}
+                                                                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${count === 0 ? 'text-slate-200 dark:text-slate-700' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-red-500 dark:hover:text-red-400'}`}
                                                                 >
                                                                     <Minus size={16} />
                                                                 </button>
-                                                                <span className="w-8 text-center font-bold text-slate-900 text-lg">{count}</span>
+                                                                <span className="w-8 text-center font-bold text-slate-900 dark:text-white text-lg">{count}</span>
                                                                 <button
                                                                     onClick={() => handleTicketChange(tt.id, 1)}
-                                                                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${totalItems >= 5 ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+                                                                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${totalItems >= 5 ? 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'}`}
                                                                     disabled={totalItems >= 5}
                                                                 >
                                                                     <Plus size={16} />
@@ -315,9 +315,9 @@ export default function SelectTicket() {
                         {/* RIGHT COLUMN: ORDER DETAILS */}
                         <div className="lg:col-span-4">
                             <div className="sticky top-24 space-y-6">
-                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
-                                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 pb-4 border-b border-slate-50">
-                                        <ShoppingBag size={20} className="text-blue-600" />
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
+                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 pb-4 border-b border-slate-50 dark:border-slate-800">
+                                        <ShoppingBag size={20} className="text-blue-600 dark:text-blue-400" />
                                         Ringkasan Pesanan
                                     </h2>
 
@@ -325,29 +325,29 @@ export default function SelectTicket() {
                                         {ticketTypes.map(tt => (selectedTickets[tt.id] || 0) > 0 && (
                                             <div key={tt.id} className="flex items-center justify-between text-sm group animate-fade-in-up">
                                                 <div className="flex flex-col">
-                                                    <span className="text-slate-900 font-bold">{tt.name}</span>
-                                                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{selectedTickets[tt.id]} x {rupiah(tt.price_gross || tt.price)}</span>
+                                                    <span className="text-slate-900 dark:text-white font-bold">{tt.name}</span>
+                                                    <span className="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-wider">{selectedTickets[tt.id]} x {rupiah(tt.price_gross || tt.price)}</span>
                                                 </div>
-                                                <span className="text-slate-900 font-bold">{rupiah(selectedTickets[tt.id] * (tt.price_gross || tt.price))}</span>
+                                                <span className="text-slate-900 dark:text-white font-bold">{rupiah(selectedTickets[tt.id] * (tt.price_gross || tt.price))}</span>
                                             </div>
                                         ))}
                                         {totalItems === 0 && (
-                                            <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                                <p className="text-slate-400 text-xs font-medium">Belum ada tiket dipilih</p>
+                                            <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                                                <p className="text-slate-400 dark:text-slate-500 text-xs font-medium">Belum ada tiket dipilih</p>
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="pt-4 border-t border-slate-100 space-y-4">
+                                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-slate-500">Total Pembayaran</span>
-                                            <span className="text-xl font-bold text-slate-900">{rupiah(totalAmount)}</span>
+                                            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Pembayaran</span>
+                                            <span className="text-xl font-bold text-slate-900 dark:text-white">{rupiah(totalAmount)}</span>
                                         </div>
 
                                         <button
                                             disabled={totalItems === 0}
                                             onClick={handleContinue}
-                                            className={`w-full py-3.5 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2 ${totalItems > 0 ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-[0.98]' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
+                                            className={`w-full py-3.5 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2 ${totalItems > 0 ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-[0.98]' : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed'}`}
                                         >
                                             Lanjut Pembayaran
                                         </button>

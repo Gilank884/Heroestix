@@ -108,7 +108,7 @@ export default function EventSection({ searchTerm = "" }) {
         return (
             <div className="flex flex-wrap justify-center gap-6">
                 {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-slate-200 rounded-xl aspect-[16/20] w-[280px] animate-pulse" />
+                    <div key={i} className="bg-slate-200 dark:bg-slate-800 rounded-xl aspect-[16/20] w-[280px] animate-pulse" />
                 ))}
             </div>
         );
@@ -116,12 +116,12 @@ export default function EventSection({ searchTerm = "" }) {
 
     if (error) {
         return (
-            <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-slate-100">
-                <div className="bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-100">
+            <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
+                <div className="bg-red-50 dark:bg-red-900/20 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-100 dark:border-red-800">
                     <FiSearch size={40} className="text-red-400" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900">Oops! Something went wrong</h3>
-                <p className="text-slate-500 mt-2 font-medium">{error}</p>
+                <h3 className="text-xl font-medium text-slate-900 dark:text-slate-100">Oops! Something went wrong</h3>
+                <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">{error}</p>
                 <button
                     onClick={() => fetchEvents(true)}
                     className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/10"
@@ -134,12 +134,33 @@ export default function EventSection({ searchTerm = "" }) {
 
     if (filteredEvents.length === 0) {
         return (
-            <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-slate-100">
-                <div className="bg-slate-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
-                    <Search size={40} className="text-slate-300" />
+            <div className="w-full flex justify-center py-12">
+                <div className="relative overflow-hidden w-full max-w-lg rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50/30 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100/50 dark:border-blue-900/50 shadow-sm p-10 text-center">
+                    {/* Decorative Background Elements */}
+                    <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-blue-100/50 dark:bg-blue-900/50 rounded-full blur-2xl"></div>
+                    <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-32 h-32 bg-indigo-100/50 dark:bg-indigo-900/50 rounded-full blur-2xl"></div>
+
+                    <div className="relative z-10 flex flex-col items-center">
+                        <div className="w-20 h-20 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center mb-6 border border-slate-100 dark:border-slate-700 transform rotate-[-5deg] transition-transform hover:rotate-0 duration-300">
+                            <FiSearch className="text-blue-500 dark:text-blue-400 w-8 h-8" />
+                        </div>
+
+                        <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight mb-2">
+                            Wah Sepertinya Event Kamu Belum Ada Deh
+                        </h3>
+
+                        <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 max-w-[280px]">
+                            Coba cari dengan kata kunci lain atau lihat event menarik lainnya di bawah ini.
+                        </p>
+
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-slate-900/20 hover:bg-slate-800 dark:hover:bg-slate-100 hover:-translate-y-0.5 transition-all w-full sm:w-auto"
+                        >
+                            Jelajahi Semua Event
+                        </button>
+                    </div>
                 </div>
-                <h3 className="text-xl font-bold text-slate-900">No events found</h3>
-                <p className="text-slate-500 mt-2 font-medium">Try using different keywords or filters</p>
             </div>
         );
     }

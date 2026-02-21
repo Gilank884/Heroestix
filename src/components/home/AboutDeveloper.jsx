@@ -83,7 +83,7 @@ const AboutDeveloper = () => {
     }, []);
 
     return (
-        <section ref={sectionRef} className="py-24 px-6 bg-slate-50 overflow-hidden relative">
+        <section ref={sectionRef} className="py-24 px-6 bg-slate-50 dark:bg-slate-900/50 overflow-hidden relative">
             {/* Background Pattern */}
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
 
@@ -91,77 +91,77 @@ const AboutDeveloper = () => {
 
                 {/* LEFT: IMAGE */}
                 <div ref={imageRef} className="relative order-2 lg:order-1">
-                    <div className="absolute -inset-4 bg-gradient-to-tl from-blue-100 to-cyan-100 rounded-[2.5rem] rotate-2"></div>
-                    <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 aspect-[4/3] group bg-white p-8 flex items-center justify-center">
+                    <div className="absolute -inset-4 bg-gradient-to-tl from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-[2.5rem] rotate-2"></div>
+                    <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 aspect-[4/3] group bg-white dark:bg-slate-800 p-8 flex items-center justify-center">
                         <img
                             src="/assets/peristiwa.png"
                             alt="PT Peristiwa Kreatif Nusantara"
-                            className="w-2/3 h-auto object-contain transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                            className="w-2/3 h-auto object-contain transform group-hover:scale-110 transition-transform duration-700 ease-in-out dark:brightness-[0.8] dark:contrast-[1.2]"
                         />
                     </div>
                     {/* Floating Badge 1: Expert Engineers (Bottom Right) */}
-                    <div className="floating-badge absolute -bottom-6 -right-2 bg-white p-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-3 z-20">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                    <div className="floating-badge absolute -bottom-6 -right-2 bg-white dark:bg-slate-700 p-3 rounded-xl shadow-lg border border-slate-100 dark:border-slate-600 flex items-center gap-3 z-20">
+                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
                             <Code2 size={16} />
                         </div>
                         <div>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase">Team</p>
-                            <p className="text-xs font-bold text-slate-900">Expert Engineers</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">Team</p>
+                            <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Expert Engineers</p>
                         </div>
                     </div>
 
                     {/* Floating Badge 2: Certified (Top Left) */}
-                    <div className="floating-badge absolute -top-4 -left-4 bg-white p-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-3 z-20">
-                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                    <div className="floating-badge absolute -top-4 -left-4 bg-white dark:bg-slate-700 p-3 rounded-xl shadow-lg border border-slate-100 dark:border-slate-600 flex items-center gap-3 z-20">
+                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400">
                             <CheckCircle2 size={16} />
                         </div>
                         <div>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase">Quality</p>
-                            <p className="text-xs font-bold text-slate-900">Certified</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">Quality</p>
+                            <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Certified</p>
                         </div>
                     </div>
 
                     {/* Floating Badge 3: Innovation (Top Right) */}
-                    <div className="floating-badge absolute top-10 -right-8 bg-white p-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-3 z-20">
-                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                    <div className="floating-badge absolute top-10 -right-8 bg-white dark:bg-slate-700 p-3 rounded-xl shadow-lg border border-slate-100 dark:border-slate-600 flex items-center gap-3 z-20">
+                        <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400">
                             <Cpu size={16} />
                         </div>
                         <div>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase">Tech</p>
-                            <p className="text-xs font-bold text-slate-900">Innovation</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">Tech</p>
+                            <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Innovation</p>
                         </div>
                     </div>
 
                     {/* Floating Badge 4: Global Scale (Bottom Left) */}
-                    <div className="floating-badge absolute bottom-8 -left-8 bg-white p-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-3 z-20">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+                    <div className="floating-badge absolute bottom-8 -left-8 bg-white dark:bg-slate-700 p-3 rounded-xl shadow-lg border border-slate-100 dark:border-slate-600 flex items-center gap-3 z-20">
+                        <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400">
                             <Globe2 size={16} />
                         </div>
                         <div>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase">Reach</p>
-                            <p className="text-xs font-bold text-slate-900">Global Scale</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">Reach</p>
+                            <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Global Scale</p>
                         </div>
                     </div>
 
                     {/* Floating Badge 5: Security (Center Right Edge) */}
-                    <div className="floating-badge absolute top-1/2 -right-10 bg-white p-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-3 z-20">
-                        <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                    <div className="floating-badge absolute top-1/2 -right-10 bg-white dark:bg-slate-700 p-3 rounded-xl shadow-lg border border-slate-100 dark:border-slate-600 flex items-center gap-3 z-20">
+                        <div className="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400">
                             <CheckCircle2 size={16} />
                         </div>
                         <div>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase">Data</p>
-                            <p className="text-xs font-bold text-slate-900">Secure</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">Data</p>
+                            <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Secure</p>
                         </div>
                     </div>
 
                     {/* Floating Badge 6: Creative (Center Left Edge) */}
-                    <div className="floating-badge absolute top-1/2 -left-12 bg-white p-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-3 z-20">
-                        <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600">
+                    <div className="floating-badge absolute top-1/2 -left-12 bg-white dark:bg-slate-700 p-3 rounded-xl shadow-lg border border-slate-100 dark:border-slate-600 flex items-center gap-3 z-20">
+                        <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center text-yellow-600 dark:text-yellow-400">
                             <Zap size={16} />
                         </div>
                         <div>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase">Idea</p>
-                            <p className="text-xs font-bold text-slate-900">Creative</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">Idea</p>
+                            <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Creative</p>
                         </div>
                     </div>
                 </div>
@@ -174,16 +174,16 @@ const AboutDeveloper = () => {
                         </span>
                     </div>
 
-                    <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">
+                    <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white leading-tight">
                         PT Peristiwa Kreatif <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400">
                             Nusantara.
                         </span>
                     </h2>
 
-                    <div className="space-y-6 text-lg text-slate-600 leading-relaxed font-medium">
+                    <div className="space-y-6 text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                         <p>
-                            Di balik kecanggihan Heroestix, terdapat <span className="text-slate-900 font-bold">PT Peristiwa Kreatif Nusantara</span>, sebuah perusahaan teknologi yang berdedikasi untuk merevolusi industri event di Indonesia.
+                            Di balik kecanggihan Heroestix, terdapat <span className="text-slate-900 dark:text-white font-bold">PT Peristiwa Kreatif Nusantara</span>, sebuah perusahaan teknologi yang berdedikasi untuk merevolusi industri event di Indonesia.
                         </p>
                         <p>
                             Kami menggabungkan kreativitas anak bangsa dengan teknologi terkini untuk menciptakan solusi digital yang tidak hanya fungsional, tetapi juga memberikan pengalaman pengguna yang luar biasa.
@@ -198,10 +198,10 @@ const AboutDeveloper = () => {
                             { text: "Inovasi Berkelanjutan", icon: <Code2 size={18} /> }
                         ].map((item, idx) => (
                             <div key={idx} className="flex items-center gap-3">
-                                <div className="text-blue-500 shrink-0">
+                                <div className="text-blue-500 dark:text-blue-400 shrink-0">
                                     {item.icon}
                                 </div>
-                                <span className="text-slate-700 font-semibold text-sm">{item.text}</span>
+                                <span className="text-slate-700 dark:text-slate-300 font-semibold text-sm">{item.text}</span>
                             </div>
                         ))}
                     </div>
