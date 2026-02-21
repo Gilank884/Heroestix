@@ -82,7 +82,7 @@ const UserRegister = () => {
                     return;
                 }
 
-                // DIRECT REGISTER: No OTP. Create profile immediately.
+                // DIRECT REGISTER: No OTP. 
                 await supabase.from('profiles').upsert({
                     id: authData.user.id,
                     email: form.email,
