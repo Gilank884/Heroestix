@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import useAuthStore from '../../auth/useAuthStore';
 import { supabase } from '../../lib/supabaseClient';
 import {
@@ -15,14 +15,14 @@ import {
 } from 'react-icons/hi';
 import VerificationPending from '../components/VerificationPending';
 import {
-    AreaChart,
-    Area,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer
+    PieChart,
+    Pie,
+    Cell,
+    Tooltip as RechartsTooltip,
+    ResponsiveContainer,
+    Legend
 } from 'recharts';
+
 
 import { useNavigate } from 'react-router-dom';
 import TicketControlModal from '../components/TicketControlModal';
@@ -44,7 +44,8 @@ const CreatorDashboard = () => {
         totalEvents: 0,
         totalTickets: 0,
         totalQuota: 0,
-        fillRate: 0
+        totalRevenue: 0,
+        genderData: []
     });
     const [loading, setLoading] = useState(true);
     const [showControlModal, setShowControlModal] = useState(false);
@@ -95,10 +96,41 @@ const CreatorDashboard = () => {
                 });
             });
 
+            // Fetch Tickets for Demographics
+            const eventIds = eventsData.map(e => e.id);
+            let genderResult = [];
+
+            if (eventIds.length > 0) {
+                // To fetch tickets for all events, we need the ticket records tied to ticket_types of these events
+                const { data: ticketsData } = await supabase
+                    .from('tickets')
+                    .select('gender, ticket_types!inner(event_id)')
+                    .in('ticket_types.event_id', eventIds);
+
+                if (ticketsData) {
+                    let maleCount = 0;
+                    let femaleCount = 0;
+
+                    ticketsData.forEach(ticket => {
+                        const g = ticket.gender?.toLowerCase();
+                        if (g === 'laki - laki' || g === 'laki-laki' || g === 'male') maleCount++;
+                        else if (g === 'perempuan' || g === 'female') femaleCount++;
+                    });
+
+                    if (maleCount > 0 || femaleCount > 0) {
+                        genderResult = [
+                            { name: 'Laki - Laki', value: maleCount, color: '#3B82F6' },
+                            { name: 'Perempuan', value: femaleCount, color: '#EC4899' }
+                        ];
+                    }
+                }
+            }
+
             setStats({
                 totalEvents: eventsData?.length || 0,
                 totalTickets: totalSold,
-                totalRevenue: totalRev
+                totalRevenue: totalRev,
+                genderData: genderResult
             });
 
         } catch (error) {
@@ -108,17 +140,7 @@ const CreatorDashboard = () => {
         }
     };
 
-    // Prepare chart data for Sales Performance (Tickets Sold per Day)
-    const chartData = useMemo(() => {
-        if (!balances.length) return [];
-        const days = {};
-        balances.forEach(b => {
-            const date = new Date(b.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-            // Each credit in creator_balances represents a ticket sale transaction
-            days[date] = (days[date] || 0) + 1;
-        });
-        return Object.entries(days).map(([name, value]) => ({ name, value })).slice(-7);
-    }, [balances]);
+
 
     if (loading) return (
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -130,119 +152,116 @@ const CreatorDashboard = () => {
 
     return (
         <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Premium Header */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 p-8 text-white shadow-2xl shadow-blue-900/10 border border-white/5">
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-                    <div className="space-y-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
-                            <HiSparkles size={12} className="text-blue-300" />
-                            <span className="text-[10px] uppercase tracking-[0.2em] text-blue-100">Operation Center</span>
-                        </div>
+            {/* Dashboard Sections */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* Overview Table */}
+                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm lg:col-span-2">
+                    <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h2 className="text-3xl md:text-4xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-blue-200 tracking-tight">
-                                Core Console
-                            </h2>
-                            <p className="text-slate-300 max-w-lg mt-3 text-lg leading-relaxed">
-                                Pantau operasional publik dan performa real-time event.
-                            </p>
+                            <h3 className="text-2xl font-medium text-slate-900 tracking-tight">Overview</h3>
+                            <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Key Performance Indicators</p>
                         </div>
+                    </div>
+
+                    <div className="overflow-x-auto no-scrollbar">
+                        <table className="w-full text-left bg-slate-50/50 rounded-2xl overflow-hidden border border-slate-100">
+                            <thead>
+                                <tr className="text-slate-400 text-[10px] uppercase tracking-[0.2em] border-b border-slate-100 bg-white">
+                                    <th className="py-5 pl-6 font-semibold">Active Campaigns</th>
+                                    <th className="py-5 font-semibold">Tickets Sold</th>
+                                    <th className="py-5 pr-6 font-semibold text-right">Net Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                <tr>
+                                    <td className="py-6 pl-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                                <HiCalendar size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-900 text-lg">{stats.totalEvents}</p>
+                                                <p className="text-[10px] text-slate-400 uppercase tracking-widest">Live Operations</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                                <HiTicket size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-900 text-lg">{stats.totalTickets.toLocaleString()}</p>
+                                                <p className="text-[10px] text-slate-400 uppercase tracking-widest">Units Distributed</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-6 pr-6 text-right">
+                                        <div className="flex items-center justify-end gap-3">
+                                            <div className="text-right">
+                                                <p className="font-bold text-slate-900 text-lg">{rupiah(stats.totalRevenue)}</p>
+                                                <p className="text-[10px] text-slate-400 uppercase tracking-widest">Available Balance</p>
+                                            </div>
+                                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                                <HiCash size={20} />
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] -mr-32 -mt-32" />
-            </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard
-                    label="Active Operations"
-                    value={stats.totalEvents}
-                    unit="Campaigns"
-                    icon={<HiCalendar size={24} />}
-                    color="blue"
-                    grow={`${stats.totalEvents} Live`}
-                />
-                <StatCard
-                    label="Tickets Distributed"
-                    value={stats.totalTickets.toLocaleString()}
-                    unit="Units Sold"
-                    icon={<HiTicket size={24} />}
-                    color="emerald"
-                    grow="Verified Check-ins"
-                />
-                <StatCard
-                    label="Net Revenue"
-                    value={rupiah(stats.totalRevenue)}
-                    unit="Payout Balance"
-                    icon={<HiCash size={24} />}
-                    color="indigo"
-                    grow="Collected Funds"
-                />
-            </div>
-
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 gap-8">
-                {/* Sales Performance Chart */}
-                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
-                    <div className="flex items-center justify-between mb-10">
+                {/* Demographics Area */}
+                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm lg:col-span-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-6">
                         <div>
-                            <h3 className="text-xl font-medium text-slate-900 tracking-tight">Sales Performance</h3>
-                            <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Daily Ticket Sales</p>
-                        </div>
-                        <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
-                            <HiTrendingUp size={20} />
+                            <h3 className="text-xl font-medium text-slate-900 tracking-tight">Demografi</h3>
+                            <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Distribusi Gender</p>
                         </div>
                     </div>
-                    <div className="h-[350px] w-full">
-                        {chartData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1} />
-                                            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="#F1F5F9" />
-                                    <XAxis
-                                        dataKey="name"
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fontSize: 10, fill: '#94A3B8' }}
-                                        dy={10}
-                                    />
-                                    <YAxis
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fontSize: 10, fill: '#94A3B8' }}
-                                        tickCount={5}
-                                        domain={[0, 'auto']}
-                                        allowDecimals={false}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px' }}
-                                        formatter={(val) => [`${val} Units`, 'Tickets Sold']}
-                                        cursor={{ stroke: '#E2E8F0', strokeWidth: 1, strokeDasharray: '4 4' }}
-                                    />
-                                    <Area
-                                        type="monotone"
+
+                    <div className="flex-1 w-full flex items-center justify-center min-h-[200px]">
+                        {stats.genderData && stats.genderData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={220}>
+                                <PieChart>
+                                    <Pie
+                                        data={stats.genderData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={5}
                                         dataKey="value"
-                                        stroke="#3B82F6"
-                                        strokeWidth={3}
-                                        fillOpacity={1}
-                                        fill="url(#colorValue)"
-                                        dot={{ r: 4, fill: '#3B82F6', strokeWidth: 2, stroke: '#fff' }}
-                                        activeDot={{ r: 6, fill: '#3B82F6', strokeWidth: 0 }}
+                                        stroke="none"
+                                    >
+                                        {stats.genderData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <RechartsTooltip
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
+                                        formatter={(val) => [`${val} Orang`, 'Total']}
                                     />
-                                </AreaChart>
+                                    <Legend
+                                        verticalAlign="bottom"
+                                        height={36}
+                                        iconType="circle"
+                                        wrapperStyle={{ fontSize: '11px', fontWeight: '500', color: '#64748b' }}
+                                    />
+                                </PieChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-4">
-                                <HiTrendingUp size={48} className="opacity-20" />
-                                <p className="text-xs uppercase tracking-[0.2em]">Belum ada data penjualan</p>
+                            <div className="text-center space-y-2 opacity-50">
+                                <HiArrowsExpand size={32} className="mx-auto text-slate-300" />
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Belum ada data<br />demografi pengunjung</p>
                             </div>
                         )}
                     </div>
                 </div>
+
             </div>
 
             {/* Operations Table */}
@@ -322,34 +341,6 @@ const CreatorDashboard = () => {
             </div>
 
             <TicketControlModal isOpen={showControlModal} onClose={() => setShowControlModal(false)} />
-        </div>
-    );
-};
-
-const StatCard = ({ label, value, unit, icon, color, grow }) => {
-    const colors = {
-        blue: "bg-blue-50 text-blue-600 hover:border-blue-200",
-        emerald: "bg-emerald-50 text-emerald-600 hover:border-emerald-200",
-        indigo: "bg-indigo-50 text-indigo-600 hover:border-indigo-200"
-    };
-
-    return (
-        <div className={`relative bg-white p-7 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:-translate-y-1 transition-all duration-300 overflow-hidden ${colors[color].split(' ').pop()}`}>
-            <div className="relative z-10 space-y-2">
-                <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em]">{label}</p>
-                <div className="flex items-baseline gap-2">
-                    <h4 className="text-3xl font-medium text-slate-900 tracking-tighter">{value}</h4>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-widest">{unit}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest mt-2" style={{ color: `var(--color-${color}-600)` }}>
-                    <div className={`w-1 h-1 rounded-full animate-pulse ${grow ? 'bg-current' : 'hidden'}`} />
-                    <span className="opacity-70">{grow}</span>
-                </div>
-            </div>
-            <div className={`relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:bg-opacity-100 group-hover:text-white ${colors[color].split(' ').slice(0, 2).join(' ')} group-hover:${color === 'blue' ? 'bg-blue-600' : color === 'emerald' ? 'bg-emerald-600' : 'bg-indigo-600'}`}>
-                {icon}
-            </div>
-            <div className={`absolute top-0 right-0 w-32 h-32 opacity-20 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700 bg-${color}-50`} />
         </div>
     );
 };
