@@ -30,6 +30,8 @@ async function sha256Hex(message: string): Promise<string> {
 
 /**
  * Converts a PEM-formatted key to a Uint8Array.
+ * 
+ * 
  * Works for PKCS#8 Private Keys and SPKI Public Keys.
  */
 function pemToBinary(pem: string): Uint8Array {
