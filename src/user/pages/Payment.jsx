@@ -19,27 +19,38 @@ export default function Payment() {
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const { total, selectedPayment, orderId, eventTitle, visitorEmail } = location.state || { total: 0, selectedPayment: "bca", orderId: null, eventTitle: "", visitorEmail: "" };
+    const { total, selectedPayment, orderId, eventTitle, visitorEmail, virtualAccountNo, bankName, expiredDate } = location.state || { total: 0, selectedPayment: "bayarind", orderId: null, eventTitle: "", visitorEmail: "", virtualAccountNo: "", bankName: "BAYARIND", expiredDate: "" };
 
-    const [timeLeft, setTimeLeft] = useState(28 * 60 + 3);
+    const [timeLeft, setTimeLeft] = useState(24 * 60 * 60); // Default 24h
     const [activeTab, setActiveTab] = useState("MBanking");
     const [loading, setLoading] = useState(false);
+    const [statusChecking, setStatusChecking] = useState(false);
 
     useEffect(() => {
-        if (!orderId) {
+        if (!orderId || !virtualAccountNo) {
             navigate(`/`);
             return;
         }
+
+        // Calculate time left from expiredDate if available
+        if (expiredDate) {
+            const expiry = new Date(expiredDate).getTime();
+            const now = new Date().getTime();
+            const diff = Math.floor((expiry - now) / 1000);
+            if (diff > 0) setTimeLeft(diff);
+        }
+
         const timer = setInterval(() => {
             setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
         }, 1000);
         return () => clearInterval(timer);
-    }, [orderId, navigate]);
+    }, [orderId, virtualAccountNo, expiredDate, navigate]);
 
     const formatTime = (seconds) => {
+        const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
         const s = seconds % 60;
-        return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+        return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     };
 
     const copyToClipboard = (text) => {
@@ -47,119 +58,37 @@ export default function Payment() {
         alert("Nomor Virtual Account disalin!");
     };
 
-    const handleSimulatePayment = async () => {
-        setLoading(true);
+    const handleCheckStatus = async () => {
+        setStatusChecking(true);
         try {
-            // 1. Create Transaction
-            const { error: transError } = await supabase
-                .from("transactions")
-                .insert({
-                    order_id: orderId,
-                    amount: total,
-                    method: selectedPayment,
-                    status: "success"
-                });
-
-            if (transError) throw transError;
-
-            // 2. Update Order Status
-            const { error: orderError } = await supabase
-                .from("orders")
-                .update({ status: "paid" })
-                .eq("id", orderId);
-
-            if (orderError) throw orderError;
-
-            // 3. Update Ticket Types "sold" count (increment) and Record Creator Earnings
-            const { data: orderTickets, error: fetchOrderTicketsError } = await supabase
-                .from("tickets")
-                .select(`
-                    id,
-                    ticket_type_id,
-                    ticket_types (
-                        name,
-                        price,
-                        price_net,
-                        events (
-                            creator_id
-                        )
-                    )
-                `)
-                .eq("order_id", orderId);
-
-            if (fetchOrderTicketsError) {
-                console.error("Error fetching order tickets for updates:", fetchOrderTicketsError);
-            } else if (orderTickets && orderTickets.length > 0) {
-                const typeCounts = {};
-                const creatorEarnings = []; // Array to store balance entries
-
-                orderTickets.forEach(t => {
-                    const typeId = t.ticket_type_id;
-                    typeCounts[typeId] = (typeCounts[typeId] || 0) + 1;
-
-                    // Prepare earning entry for each ticket
-                    if (t.ticket_types?.events?.creator_id) {
-                        creatorEarnings.push({
-                            creator_id: t.ticket_types.events.creator_id,
-                            order_id: orderId,
-                            ticket_id: t.id,
-                            amount: t.ticket_types.price_net || t.ticket_types.price || 0,
-                            type: 'credit',
-                            description: `Ticket Sale: ${t.ticket_types.name}`
-                        });
-                    }
-                });
-
-                // 3a. Record earnings in creator_balances
-                if (creatorEarnings.length > 0) {
-                    const { error: balanceError } = await supabase
-                        .from('creator_balances')
-                        .insert(creatorEarnings);
-
-                    if (balanceError) console.error("Error recording creator earnings:", balanceError);
-                }
-
-                // 3b. Update sold counts
-                for (const [typeId, count] of Object.entries(typeCounts)) {
-                    const { error: rpcError } = await supabase.rpc('increment_ticket_sold', {
-                        t_id: typeId,
-                        quantity: count
-                    });
-
-                    if (rpcError) {
-                        const { data: currentType } = await supabase
-                            .from('ticket_types')
-                            .select('sold')
-                            .eq('id', typeId)
-                            .single();
-
-                        if (currentType) {
-                            await supabase
-                                .from('ticket_types')
-                                .update({ sold: (currentType.sold || 0) + count })
-                                .eq('id', typeId);
-                        }
-                    }
-                }
-            }
-
-            // 4. Send Email Notification
-            // 4. Send Email Notification
-            await emailService.sendTicketEmail(orderId, visitorEmail);
-
-            alert("Pembayaran Berhasil! Tiket Anda telah diterbitkan.");
-            navigate(`/transaction-detail/${orderId}`, {
-                state: {
-                    total: total,
-                    selectedPayment: selectedPayment
+            // Check status via inquiry endpoint
+            const { data, error } = await supabase.functions.invoke('payment-gateway', {
+                body: {
+                    action: "inquiry", // or whatever action identifies inquiry check locally
+                    order_id: orderId
                 }
             });
 
-        } catch (error) {
-            console.error("Payment error:", error);
-            alert("Error processing payment: " + error.message);
+            // Alternatively, just check the orders table directly for status update
+            const { data: order } = await supabase.from('orders').select('status').eq('id', orderId).single();
+
+            if (order?.status === 'paid' || data?.status === 'success') {
+                alert("Pembayaran Berhasil!");
+                navigate(`/payment/receipt`, { state: { orderId } });
+            } else {
+                alert("Pembayaran belum diterima. Silakan selesaikan pembayaran Anda.");
+            }
+        } catch (err) {
+            console.error("Status check error:", err);
+            // Fallback: check DB directly
+            const { data: order } = await supabase.from('orders').select('status').eq('id', orderId).single();
+            if (order?.status === 'paid') {
+                navigate(`/payment/receipt`, { state: { orderId } });
+            } else {
+                alert("Status pembayaran belum berubah.");
+            }
         } finally {
-            setLoading(false);
+            setStatusChecking(false);
         }
     };
 
@@ -180,16 +109,16 @@ export default function Payment() {
                         <div className="flex divide-x divide-slate-50">
                             <div className="flex-1 p-6 space-y-4">
                                 <div className="space-y-1">
-                                    <p className="text-xs font-bold text-slate-400">Nomor Akun Virtual</p>
+                                    <p className="text-xs font-bold text-slate-400">Nomor Akun Virtual ({bankName})</p>
                                     <div className="flex items-center gap-2">
-                                        <p className="text-lg font-black text-slate-800 tracking-tight">3816529350750232</p>
-                                        <button onClick={() => copyToClipboard("3816529350750232")} className="text-slate-400 hover:text-blue-600 transition-colors">
+                                        <p className="text-lg font-black text-slate-800 tracking-tight">{virtualAccountNo}</p>
+                                        <button onClick={() => copyToClipboard(virtualAccountNo)} className="text-slate-400 hover:text-blue-600 transition-colors">
                                             <HiOutlineDuplicate size={20} />
                                         </button>
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-bold text-slate-400">Total</p>
+                                    <p className="text-xs font-bold text-slate-400">Total Tagihan</p>
                                     <p className="text-lg font-black text-slate-800">{rupiah(total)}</p>
                                 </div>
                                 <div className="space-y-1">
@@ -199,36 +128,15 @@ export default function Payment() {
                             </div>
                             <div className="w-1/3 p-6 flex items-center justify-center bg-slate-50/50">
                                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center min-w-[100px]">
-                                    {(() => {
-                                        const logos = {
-                                            "bca": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Bank_Central_Asia.svg/2560px-Bank_Central_Asia.svg.png",
-                                            "mandiri": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Bank_Mandiri_logo_2016.svg/1200px-Bank_Mandiri_logo_2016.svg.png",
-                                            "bni": "https://upload.wikimedia.org/wikipedia/id/thumb/5/55/BNI_logo.svg/1200px-BNI_logo.svg.png",
-                                            "bri": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/BANK_BRI_logo.svg/1200px-BANK_BRI_logo.svg.png",
-                                            "gopay": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Gopay_logo.svg/1200px-Gopay_logo.svg.png",
-                                            "ovo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Logo_ovo_purple.svg/1200px-Logo_ovo_purple.svg.png",
-                                            "dana": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Logo_dana_blue.svg/1200px-Logo_dana_blue.svg.png",
-                                            "shopeepay": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Shopee.svg/1200px-Shopee.svg.png"
-                                        };
-
-                                        const logoUrl = logos[selectedPayment?.toLowerCase()];
-
-                                        if (logoUrl) {
-                                            return (
-                                                <img
-                                                    src={logoUrl}
-                                                    alt={selectedPayment}
-                                                    className="h-8 w-auto object-contain"
-                                                />
-                                            );
-                                        }
-
-                                        return (
-                                            <span className="font-black text-blue-700 italic text-xl uppercase">
-                                                {selectedPayment}
-                                            </span>
-                                        );
-                                    })()}
+                                    <img
+                                        src="https://api.bayarind.id/assets/images/logo.png"
+                                        alt="Bayarind"
+                                        className="h-8 w-auto object-contain"
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.parentNode.innerHTML = '<span className="font-black text-blue-700 italic text-xl">BAYARIND</span>';
+                                        }}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -236,14 +144,11 @@ export default function Payment() {
 
                     <div className="grid grid-cols-1 gap-4 mb-4">
                         <button
-                            disabled={loading}
-                            onClick={() => {
-                                setLoading(true);
-                                navigate(`/payment/processing?order_id=${orderId}&amount=${total}`);
-                            }}
-                            className={`w-full py-4 rounded-2xl font-black text-white transition-all shadow-xl ${loading ? 'bg-slate-300' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-100'}`}
+                            disabled={statusChecking}
+                            onClick={handleCheckStatus}
+                            className={`w-full py-4 rounded-2xl font-black text-white transition-all shadow-xl ${statusChecking ? 'bg-slate-300' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-100'}`}
                         >
-                            {loading ? "REDIRECTING TO PAYMENT..." : "PAY NOW"}
+                            {statusChecking ? "MEMERIKSA STATUS..." : "CEK STATUS PEMBAYARAN"}
                         </button>
                     </div>
 
@@ -251,7 +156,7 @@ export default function Payment() {
                         onClick={() => navigate(-1)}
                         className="w-full py-3 rounded-xl border border-slate-100 text-slate-400 font-bold text-sm hover:bg-slate-50 transition-all mb-6"
                     >
-                        Change Payment Method
+                        Kembali ke Checkout
                     </button>
 
                     <div className="border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
@@ -272,11 +177,14 @@ export default function Payment() {
                         </div>
                         <div className="p-8 space-y-8 bg-white">
                             <div className="space-y-4">
-                                <h3 className="font-black text-slate-800">Masuk Ke Akun Anda</h3>
+                                <h3 className="font-black text-slate-800">Instruksi Pembayaran</h3>
                                 <ul className="space-y-2 text-sm font-medium text-slate-600 list-decimal pl-4">
-                                    <li>Buka Aplikasi {selectedPayment.toUpperCase()} Mobile</li>
-                                    <li>Pilih 'Transfer' atau 'Bayar'</li>
-                                    <li>Masukkan Nomor Virtual Account di atas</li>
+                                    <li>Gunakan ATM atau M-Banking pilihan Anda</li>
+                                    <li>Pilih menu <strong>Transfer ke Bank Lain</strong> atau <strong>Virtual Account</strong></li>
+                                    <li>Pilih Bank Tujuan: <strong>BAYARIND</strong> atau masukkan kode bank <strong>901</strong></li>
+                                    <li>Masukkan Nomor Virtual Account: <strong>{virtualAccountNo}</strong></li>
+                                    <li>Pastikan nominal pembayaran sesuai: <strong>{rupiah(total)}</strong></li>
+                                    <li>Konfirmasi pembayaran dan simpan struk sebagai bukti</li>
                                 </ul>
                             </div>
                         </div>

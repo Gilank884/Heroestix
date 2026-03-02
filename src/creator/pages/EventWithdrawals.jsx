@@ -77,15 +77,45 @@ export default function EventWithdrawals() {
                 tIds = (tickets || []).map(t => t.id);
             }
 
-            // 3. Calculate Balance (Credit from sales - Already withdrawn for this event)
+            // 3. Calculate Balance using Fair-Share Orders Logic
             let salesTotal = 0;
-            if (tIds.length > 0) {
-                const { data: bData } = await supabase
-                    .from('creator_balances')
-                    .select('amount')
-                    .in('ticket_id', tIds)
-                    .eq('type', 'credit');
-                salesTotal = (bData || []).reduce((acc, curr) => acc + (Number(curr.amount) - 8500), 0);
+            if (ttIds.length > 0) {
+                // Fetch all tickets for this event that are PAID
+                const { data: eventTickets, error: etError } = await supabase
+                    .from('tickets')
+                    .select(`
+                        id,
+                        order_id,
+                        orders!inner (id, total, status)
+                    `)
+                    .in('ticket_type_id', ttIds)
+                    .eq('orders.status', 'paid');
+
+                if (etError) throw etError;
+
+                if (eventTickets && eventTickets.length > 0) {
+                    // To handle orders with multiple tickets fairly:
+                    // 1. Get all unique order IDs
+                    const orderIds = [...new Set(eventTickets.map(t => t.order_id))];
+
+                    // 2. Fetch total ticket count for EACH of these orders (to split revenue)
+                    const { data: allTicketsInOrders } = await supabase
+                        .from('tickets')
+                        .select('order_id')
+                        .in('order_id', orderIds);
+
+                    const orderTicketCounts = {};
+                    allTicketsInOrders?.forEach(t => {
+                        orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                    });
+
+                    // 3. Calculate revenue: (Order Total / Total Tickets) - 8500 per ticket
+                    eventTickets.forEach(t => {
+                        const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
+                        const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
+                        salesTotal += (shareOfGross - 8500);
+                    });
+                }
             }
 
             // 4. Fetch Withdrawals for this event

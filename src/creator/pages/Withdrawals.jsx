@@ -78,10 +78,41 @@ export default function Withdrawals() {
 
             if (requestError) throw requestError;
 
-            // 1. Calculate Total Net Revenue from sales (credits)
-            const netSales = (balanceData || [])
-                .filter(curr => curr.type === 'credit')
-                .reduce((acc, curr) => acc + (Number(curr.amount) - 8500), 0);
+            // 1. Fetch all events for the creator
+            const { data: eventsData } = await supabase.from('events').select('id').eq('creator_id', user.id);
+            const eventIds = eventsData?.map(e => e.id) || [];
+
+            let netSales = 0;
+            if (eventIds.length > 0) {
+                const { data: ticketsWithOrders } = await supabase
+                    .from('tickets')
+                    .select('id, order_id, orders!inner(id, total, status), ticket_types!inner(event_id)')
+                    .in('ticket_types.event_id', eventIds)
+                    .eq('orders.status', 'paid');
+
+                if (ticketsWithOrders && ticketsWithOrders.length > 0) {
+                    // Logic to handle orders with multiple tickets fairly
+                    const orderIds = [...new Set(ticketsWithOrders.map(t => t.order_id))];
+                    const { data: allTicketsInOrders } = await supabase
+                        .from('tickets')
+                        .select('order_id')
+                        .in('order_id', orderIds);
+
+                    const orderTicketCounts = {};
+                    allTicketsInOrders?.forEach(t => {
+                        orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                    });
+
+                    let calculatedNetSales = 0;
+                    ticketsWithOrders.forEach(t => {
+                        const countInOrder = orderTicketCounts[t.order_id] || 1;
+                        const share = Number(t.orders.total) / countInOrder;
+                        calculatedNetSales += (share - 8500);
+                    });
+
+                    netSales = calculatedNetSales;
+                }
+            }
 
             // 2. Calculate Total Already Withdrawn (approved requests)
             const totalWithdrawn = (requestData || [])

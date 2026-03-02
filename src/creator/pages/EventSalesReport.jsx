@@ -69,36 +69,51 @@ export default function EventSalesReport() {
                 .select('id')
                 .eq('event_id', eventId);
 
-            const ttIds = (ticketTypes || []).map(tt => tt.id);
-
             if (ttIds.length > 0) {
-                // 3. Fetch individual tickets belonging to these ticket types
-                const { data: tickets } = await supabase
+                // 3. Fetch Tickets with joined Orders for this event
+                const { data: ticketsWithOrders, error: tError } = await supabase
                     .from('tickets')
-                    .select('id')
-                    .in('ticket_type_id', ttIds);
+                    .select(`
+                        id,
+                        created_at,
+                        order_id,
+                        orders!inner (id, total, status),
+                        ticket_types!inner (event_id)
+                    `)
+                    .in('ticket_type_id', ttIds)
+                    .eq('orders.status', 'paid');
 
-                const tIds = (tickets || []).map(t => t.id);
+                if (tError) throw tError;
 
-                if (tIds.length > 0) {
-                    // 4. Fetch creator_balances linked to these tickets
-                    const { data: balanceData, error } = await supabase
-                        .from('creator_balances')
-                        .select('*')
-                        .in('ticket_id', tIds)
-                        .order('created_at', { ascending: false });
+                if (ticketsWithOrders && ticketsWithOrders.length > 0) {
+                    // To handle orders with multiple tickets fairly:
+                    // 1. Get all unique order IDs
+                    const orderIds = [...new Set(ticketsWithOrders.map(t => t.order_id))];
 
-                    if (error) throw error;
+                    // 2. Fetch total ticket count for EACH of these orders (to split revenue)
+                    const { data: allTicketsInOrders } = await supabase
+                        .from('tickets')
+                        .select('order_id')
+                        .in('order_id', orderIds);
 
-                    const sales = (balanceData || []).filter(item => item.type === 'credit');
-                    if (sales.length > 0) {
-                        const adjustedTotalRevenue = sales.reduce((acc, curr) => acc + (Number(curr.amount) - 8500), 0);
-                        setStats({
-                            totalRevenue: adjustedTotalRevenue,
-                            ticketsSold: sales.length
-                        });
-                        setHistory(sales || []);
-                    }
+                    const orderTicketCounts = {};
+                    allTicketsInOrders?.forEach(t => {
+                        orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                    });
+
+                    // 3. Calculate revenue: (Order Total / Total Tickets) - 8500 per ticket
+                    let calculatedNetRevenue = 0;
+                    ticketsWithOrders.forEach(t => {
+                        const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
+                        const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
+                        calculatedNetRevenue += (shareOfGross - 8500);
+                    });
+
+                    setStats({
+                        totalRevenue: calculatedNetRevenue,
+                        ticketsSold: ticketsWithOrders.length
+                    });
+                    setHistory(ticketsWithOrders || []);
                 }
             }
         } catch (error) {
@@ -205,8 +220,8 @@ export default function EventSalesReport() {
                                                     <ArrowDownLeft size={18} />
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-slate-800 tracking-tight">{item.description}</p>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">ID: {item.ticket_id?.substring(0, 8)}</p>
+                                                    <p className="font-semibold text-slate-800 tracking-tight">Order #{item.orders.id.substring(0, 8)}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Ticket ID: {item.id.substring(0, 8)}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -214,7 +229,7 @@ export default function EventSalesReport() {
                                             <span className="text-slate-500 text-xs font-semibold">{new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                                         </td>
                                         <td className="px-8 py-6 text-right">
-                                            <p className="font-bold text-slate-900 tabular-nums">+{rupiah(Number(item.amount) - 8500)}</p>
+                                            <p className="font-bold text-slate-900 tabular-nums">+{rupiah(Number(item.orders.total) - 8500)}</p>
                                         </td>
                                     </tr>
                                 )) : (

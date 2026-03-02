@@ -70,6 +70,19 @@ export default function EventSection({ searchTerm = "" }) {
                 const prices = tt_array.map(tt => tt.price).filter(p => p !== undefined && p !== null) || [];
                 const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
 
+                // Determine if event has ended
+                let isEnded = false;
+                if (ev.event_date) {
+                    const eventDate = new Date(ev.event_date);
+                    if (ev.event_time) {
+                        const [hours, minutes] = ev.event_time.split(':');
+                        eventDate.setHours(parseInt(hours), parseInt(minutes), 0);
+                    } else {
+                        eventDate.setHours(23, 59, 59);
+                    }
+                    isEnded = new Date() > eventDate;
+                }
+
                 return {
                     id: ev.id,
                     title: ev.title,
@@ -77,7 +90,9 @@ export default function EventSection({ searchTerm = "" }) {
                     date: ev.event_date,
                     image: ev.poster_url,
                     price: minPrice,
-                    status: ev.status
+                    status: ev.status,
+                    category: ev.category,
+                    isEnded: isEnded
                 };
             });
 

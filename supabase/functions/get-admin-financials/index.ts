@@ -40,76 +40,117 @@ serve(async (req) => {
             return allRows;
         };
 
+        // Parse date filters if provided
+        let body = {};
+        try {
+            const text = await req.text();
+            if (text) body = JSON.parse(text);
+        } catch (e) {
+            console.warn('Could not parse body:', e);
+        }
+
+        const { startDate, endDate } = body as any;
+
         // 1. Fetch data in parallel
-        const [withdrawals, creators, profiles, transactions, creatorBalances] = await Promise.all([
+        const [withdrawalsRaw, creators, profiles, ticketsWithOrdersRaw] = await Promise.all([
             fetchAll('withdrawals'),
             fetchAll('creators'),
             fetchAll('profiles', 'id, full_name'),
-            fetchAll('transactions', 'amount, status'),
-            fetchAll('creator_balances', 'creator_id, amount, type, created_at')
+            fetchAll('tickets', 'id, order_id, orders!inner(id, total, status, created_at), ticket_types!inner(events!inner(creator_id))')
         ]);
 
-        console.log(`Fetched: ${withdrawals.length} wds, ${creators.length} creators, ${transactions.length} txns, ${creatorBalances.length} balances`);
+        // 2. Filter by date if provided
+        let paidTickets = (ticketsWithOrdersRaw as any[]).filter((t: any) => t.orders?.status === 'paid');
+        let filteredWithdrawals = withdrawalsRaw as any[];
 
-        const profileMap = profiles.reduce((acc: any, p: any) => ({ ...acc, [p.id]: p }), {});
-        const creatorMap = creators.reduce((acc: any, c: any) => ({
+        if (startDate || endDate) {
+            const start = startDate ? new Date(startDate) : new Date(0);
+            const end = endDate ? new Date(endDate) : new Date();
+            if (endDate && endDate.length <= 10) end.setHours(23, 59, 59, 999);
+
+            paidTickets = paidTickets.filter((t: any) => {
+                const orderDate = new Date(t.orders.created_at);
+                return orderDate >= start && orderDate <= end;
+            });
+
+            filteredWithdrawals = (withdrawalsRaw as any[]).filter((w: any) => {
+                const wdDate = new Date(w.created_at);
+                return wdDate >= start && wdDate <= end;
+            });
+        }
+
+        const withdrawals = filteredWithdrawals;
+        console.log(`Fetched: ${withdrawals.length} wds, ${creators.length} creators, ${paidTickets.length} paid tickets`);
+
+        const profileMap = (profiles as any[]).reduce((acc: any, p: any) => ({ ...acc, [p.id]: p }), {});
+        const creatorMap = (creators as any[]).reduce((acc: any, c: any) => ({
             ...acc,
             [c.id]: { ...c, profiles: profileMap[c.id] || null }
         }), {});
 
-        // 2. Pre-calculate metrics
-        const totalGross = transactions
-            .filter((t: any) => t.status === 'success')
-            .reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
+        // 2. Pre-calculate metrics using Fair-Share Logic
+        const orderIds = [...new Set(paidTickets.map((t: any) => t.order_id))];
+        const orderTicketCounts: Record<string, number> = {};
+        if (orderIds.length > 0) {
+            const allTickets = await fetchAll('tickets', 'order_id');
+            allTickets.forEach((t: any) => {
+                if (orderIds.includes(t.order_id)) {
+                    orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                }
+            });
+        }
 
-        const totalNet = creatorBalances
-            .filter((b: any) => b.type === 'credit')
-            .reduce((sum: number, b: any) => {
-                const amt = Math.max(0, Number(b.amount || 0));
-                // Subtract platform fee $8500 per ticket if applicable
-                return sum + (amt > 8500 ? (amt - 8500) : amt);
-            }, 0);
+        let totalGross = 0;
+        let totalNet = 0;
+        const revenueByCreator: Record<string, number> = {};
+        const grossByCreator: Record<string, number> = {};
+
+        paidTickets.forEach((t: any) => {
+            const orderTotal = Number(t.orders?.total || 0);
+            const countInOrder = orderTicketCounts[t.order_id] || 1;
+            const shareOfGross = orderTotal / countInOrder;
+            const ticketNet = shareOfGross - 8500;
+            totalNet += ticketNet;
+            const creatorId = t.ticket_types?.events?.creator_id;
+            if (creatorId) {
+                grossByCreator[creatorId] = (grossByCreator[creatorId] || 0) + shareOfGross;
+                revenueByCreator[creatorId] = (revenueByCreator[creatorId] || 0) + ticketNet;
+            }
+        });
+
+        const uniqueOrderTotals = new Map();
+        paidTickets.forEach((t: any) => {
+            uniqueOrderTotals.set(t.order_id, Number(t.orders?.total || 0));
+        });
+        totalGross = Array.from(uniqueOrderTotals.values()).reduce((a, b: any) => a + b, 0);
 
         const globalDisbursed = withdrawals
             .filter((w: any) => w.status === 'approved')
             .reduce((sum: number, w: any) => sum + Number(w.amount || 0), 0);
 
-        // 3. Group balances and approved withdrawals by creator for O(N) settlement calc
-        const balancesByCreator: Record<string, any[]> = {};
-        creatorBalances.forEach(b => {
-            if (!balancesByCreator[b.creator_id]) balancesByCreator[b.creator_id] = [];
-            balancesByCreator[b.creator_id].push(b);
-        });
-
         const disbursedByCreator: Record<string, number> = {};
-        withdrawals.filter(w => w.status === 'approved').forEach(w => {
+        withdrawals.filter((w: any) => w.status === 'approved').forEach((w: any) => {
             disbursedByCreator[w.creator_id] = (disbursedByCreator[w.creator_id] || 0) + Number(w.amount || 0);
         });
 
-        // 4. Calculate settlements
-        const settlements = creators.map((creator: any) => {
-            const balances = balancesByCreator[creator.id] || [];
-            const creatorRevenue = balances
-                .filter((b: any) => b.type === 'credit')
-                .reduce((sum: number, b: any) => {
-                    const amt = Math.max(0, Number(b.amount || 0));
-                    return sum + (amt > 8500 ? (amt - 8500) : amt);
-                }, 0);
-
+        const settlements = (creators as any[]).map((creator: any) => {
+            const creatorGross = grossByCreator[creator.id] || 0;
+            const creatorNet = revenueByCreator[creator.id] || 0;
             const creatorDisbursed = disbursedByCreator[creator.id] || 0;
-
             return {
                 id: creator.id,
                 brandName: creator.brand_name || 'Anonymous',
                 ownerName: profileMap[creator.id]?.full_name || 'Anonymous Owner',
-                revenue: creatorRevenue,
+                grossRevenue: creatorGross,
+                revenue: creatorNet,
+                developerProfit: creatorGross - creatorNet,
                 disbursed: creatorDisbursed
             };
         }).sort((a: any, b: any) => b.revenue - a.revenue);
 
         const responseData = {
             metrics: { totalGross, totalNet, disbursed: globalDisbursed },
-            settlements: settlements.filter(s => s.revenue > 0 || s.disbursed > 0),
+            settlements: settlements.filter((s: any) => s.revenue > 0 || s.disbursed > 0),
             withdrawals: withdrawals.slice(0, 100).map((w: any) => ({
                 ...w,
                 creators: creatorMap[w.creator_id] || { brand_name: 'Unknown' }

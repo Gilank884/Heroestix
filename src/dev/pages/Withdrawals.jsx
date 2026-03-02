@@ -41,18 +41,38 @@ export default function Withdrawals() {
     const fetchCreatorStats = async (creatorId) => {
         setStatsLoading(true);
         try {
-            const [balanceRes, withdrawalRes] = await Promise.all([
-                supabase.from('creator_balances').select('*').eq('creator_id', creatorId),
+            // Updated to Fair-Share Orders Logic
+            const [ticketsRes, withdrawalRes] = await Promise.all([
+                supabase
+                    .from('tickets')
+                    .select('id, order_id, orders!inner(id, total, status), ticket_types!inner(events!inner(creator_id))')
+                    .eq('orders.status', 'paid')
+                    .eq('ticket_types.events.creator_id', creatorId),
                 supabase.from('withdrawals').select('*').eq('creator_id', creatorId)
             ]);
 
-            const balanceData = balanceRes.data || [];
+            const paidTickets = ticketsRes.data || [];
             const withdrawalData = withdrawalRes.data || [];
 
-            // Calculate Net Sales (Gross - 8500 platform fee)
-            const netSales = balanceData
-                .filter(curr => curr.type === 'credit')
-                .reduce((acc, curr) => acc + (Number(curr.amount) - 8500), 0);
+            let netSales = 0;
+            if (paidTickets.length > 0) {
+                const orderIds = [...new Set(paidTickets.map(t => t.order_id))];
+                const { data: countData } = await supabase
+                    .from('tickets')
+                    .select('order_id')
+                    .in('order_id', orderIds);
+
+                const orderTicketCounts = {};
+                countData?.forEach(t => {
+                    orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                });
+
+                paidTickets.forEach(t => {
+                    const countInOrder = orderTicketCounts[t.order_id] || 1;
+                    const share = Number(t.orders.total) / countInOrder;
+                    netSales += (share - 8500);
+                });
+            }
 
             // Calculate Total Already Withdrawn (approved requests)
             const totalWithdrawn = withdrawalData

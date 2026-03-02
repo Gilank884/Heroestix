@@ -62,39 +62,54 @@ export default function Overview() {
 
             if (eventsError) throw eventsError;
 
-            // 2. Fetch all sales credits for this creator
-            const { data: balanceData, error: balanceError } = await supabase
-                .from('creator_balances')
-                .select('*')
-                .eq('creator_id', user.id)
-                .eq('type', 'credit');
+            // 2. Fetch all tickets and their associated orders for these events
+            const eventIds = eventsData.map(e => e.id);
+            let ticketsWithOrders = [];
 
-            if (balanceError) throw balanceError;
-
-            // 3. To map balances to events, we need the tickets
-            const ticketIds = balanceData.map(b => b.ticket_id).filter(Boolean);
-            let ticketToEventMap = {};
-
-            if (ticketIds.length > 0) {
+            if (eventIds.length > 0) {
                 const { data: tData, error: tError } = await supabase
                     .from('tickets')
-                    .select('id, ticket_types(event_id)')
-                    .in('id', ticketIds);
+                    .select(`
+                        id,
+                        order_id,
+                        orders!inner (id, total, status),
+                        ticket_types!inner (event_id)
+                    `)
+                    .in('ticket_types.event_id', eventIds)
+                    .eq('orders.status', 'paid');
 
-                if (!tError && tData) {
-                    tData.forEach(t => {
-                        ticketToEventMap[t.id] = t.ticket_types?.event_id;
-                    });
-                }
+                if (tError) throw tError;
+                ticketsWithOrders = tData || [];
             }
 
-            // 4. Aggregating stats per event
-            const eventStats = eventsData.map(event => {
-                const eventBalances = balanceData.filter(b => ticketToEventMap[b.ticket_id] === event.id);
-                const ticketsSold = eventBalances.length;
-                const totalRevenue = eventBalances.reduce((acc, curr) => acc + (Number(curr.amount) - 8500), 0);
+            // 3. Aggregate stats using Fair-Share Logic
+            // We need to know the total number of tickets in EACH order to split revenue fairly
+            const orderIdsOverall = [...new Set(ticketsWithOrders.map(t => t.order_id))];
+            let orderTicketCounts = {};
 
-                // Determine status (Active if status is active and date is >= today)
+            if (orderIdsOverall.length > 0) {
+                const { data: allTicketsInOrders } = await supabase
+                    .from('tickets')
+                    .select('order_id')
+                    .in('order_id', orderIdsOverall);
+
+                allTicketsInOrders?.forEach(t => {
+                    orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                });
+            }
+
+            const eventStats = eventsData.map(event => {
+                const ticketsInEvent = ticketsWithOrders.filter(t => t.ticket_types.event_id === event.id);
+                const ticketsSold = ticketsInEvent.length;
+
+                // Calculate revenue based on each ticket's share of its order
+                let totalRevenue = 0;
+                ticketsInEvent.forEach(t => {
+                    const totalInOrder = orderTicketCounts[t.order_id] || 1;
+                    const share = Number(t.orders.total) / totalInOrder;
+                    totalRevenue += (share - 8500);
+                });
+
                 const today = new Date().toISOString().split('T')[0];
                 const isActive = event.status === 'active' && event.event_date >= today;
 
@@ -110,8 +125,8 @@ export default function Overview() {
             });
 
             // Overall Stats
-            const totalRevenueAll = balanceData.reduce((acc, curr) => acc + (Number(curr.amount) - 8500), 0);
-            const totalTicketsAll = balanceData.length;
+            const totalTicketsAll = ticketsWithOrders.length;
+            const totalRevenueAll = eventStats.reduce((acc, curr) => acc + curr.totalRevenue, 0);
 
             setStats({
                 totalRevenue: totalRevenueAll,

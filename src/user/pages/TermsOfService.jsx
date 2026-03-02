@@ -202,6 +202,24 @@ export default function TermsOfService() {
             expandLabel: "Lihat Detail"
         },
         {
+            title: "Kebijakan Pengembalian Dana / Refund",
+            content: (
+                <div className="space-y-4">
+                    <p>
+                        Heroestix menyediakan fasilitas pengembalian dana (refund) bagi Pengguna dalam kondisi tertentu yang disepakati oleh Creator. Proses pengerjaan pengembalian dana memakan waktu sekitar <strong>1-3 hari kerja</strong> setelah permohonan disetujui.
+                    </p>
+                    <p>
+                        Mohon diperhatikan bahwa biaya layanan (Platform Fee) dan biaya transaksi payment gateway mungkin tidak dapat dikembalikan, tergantung pada kebijakan yang berlaku. Keputusan akhir mengenai persetujuan refund sepenuhnya berada di tangan Creator acara tersebut.
+                    </p>
+                    <p>
+                        Pengguna dapat mengajukan permohonan refund melalui fitur yang tersedia di platform atau dengan menghubungi layanan pelanggan Heroestix dengan melampirkan bukti transaksi yang sah.
+                    </p>
+                </div>
+            ),
+            isExpandable: true,
+            expandLabel: "Lihat Kebijakan"
+        },
+        {
             title: "Lain Lain",
             content: (
                 <div className="space-y-4 text-sm text-slate-500 text-left">

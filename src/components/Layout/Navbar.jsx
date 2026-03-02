@@ -77,7 +77,7 @@ const Navbar = ({ alwaysScrolled = false, searchTerm, onSearchChange }) => {
         <header
             className={`
                 fixed top-6 left-1/2 -translate-x-1/2 z-50 
-                w-[90%] md:w-[95%] max-w-6xl
+                w-[95%] md:w-[98%] max-w-[1400px]
                 transition-all duration-300 ease-in-out
                 rounded-full border border-white/40 dark:border-slate-800/60 shadow-2xl shadow-blue-900/10 dark:shadow-slate-900/50
                 backdrop-blur-md 
@@ -86,9 +86,9 @@ const Navbar = ({ alwaysScrolled = false, searchTerm, onSearchChange }) => {
                     : "py-4 bg-white/10 dark:bg-slate-900/10"}
             `}
         >
-            <div className="px-6 md:px-8 flex items-center justify-between">
+            <div className="px-8 md:px-12 flex items-center justify-between">
                 {/* Logo Section - Professional Blue */}
-                <div className="flex items-center gap-6 md:gap-10">
+                <div className="flex items-center gap-8 md:gap-14">
                     <Link to="/" className="flex-shrink-0 flex items-center gap-3 group/logo">
                         <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center transform group-hover/logo:rotate-12 transition-transform duration-300 shadow-lg shadow-blue-600/30">
                             <img

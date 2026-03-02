@@ -103,20 +103,54 @@ export default function EventCash() {
                 tIds = (tickets || []).map(t => t.id);
             }
 
-            // 3. Fetch creator_balances linked to these tickets
-            let balanceData = [];
-            if (tIds.length > 0) {
-                const { data: bData, error: balanceError } = await supabase
-                    .from('creator_balances')
-                    .select('*')
-                    .in('ticket_id', tIds)
-                    .order('created_at', { ascending: false });
+            // 3. Fetch Tickets with joined Orders for this event
+            let sales = 0;
+            let ticketsForLedger = [];
+            if (ttIds.length > 0) {
+                const { data: ticketsWithOrders, error: tError } = await supabase
+                    .from('tickets')
+                    .select(`
+                        id,
+                        created_at,
+                        order_id,
+                        orders!inner (id, total, status),
+                        ticket_types!inner (event_id)
+                    `)
+                    .in('ticket_type_id', ttIds)
+                    .eq('orders.status', 'paid');
 
-                if (balanceError) throw balanceError;
-                balanceData = bData || [];
+                if (tError) throw tError;
+
+                if (ticketsWithOrders && ticketsWithOrders.length > 0) {
+                    // To handle orders with multiple tickets fairly:
+                    // 1. Get all unique order IDs
+                    const orderIds = [...new Set(ticketsWithOrders.map(t => t.order_id))];
+
+                    // 2. Fetch total ticket count for EACH of these orders (to split revenue)
+                    const { data: allTicketsInOrders } = await supabase
+                        .from('tickets')
+                        .select('order_id')
+                        .in('order_id', orderIds);
+
+                    const orderTicketCounts = {};
+                    allTicketsInOrders?.forEach(t => {
+                        orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                    });
+
+                    // 3. Calculate revenue: (Order Total / Total Tickets) - 8500 per ticket
+                    let calculatedSales = 0;
+                    ticketsWithOrders.forEach(t => {
+                        const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
+                        const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
+                        calculatedSales += (shareOfGross - 8500);
+                    });
+
+                    sales = calculatedSales;
+                    ticketsForLedger = ticketsWithOrders;
+                }
             }
 
-            // 4. Fetch withdrawals linked to this event (check description for event ID)
+            // 4. Fetch withdrawals linked to this event
             const { data: withdrawalData, error: withdrawalError } = await supabase
                 .from('withdrawals')
                 .select('*')
@@ -130,13 +164,12 @@ export default function EventCash() {
             );
 
             // 5. Calculations
-            const sales = (balanceData || []).reduce((acc, curr) => acc + (curr.type === 'credit' ? (Number(curr.amount) - 8500) : 0), 0);
             const withdrawn = eventWithdrawals.reduce((acc, curr) => acc + (curr.status === 'approved' ? Number(curr.amount) : 0), 0);
 
             setTotalSales(sales);
             setTotalWithdrawn(withdrawn);
             setEventBalance(sales - withdrawn);
-            setTransactions(balanceData || []);
+            setTransactions(ticketsForLedger || []);
             setWithdrawals(eventWithdrawals || []);
 
         } catch (error) {
@@ -397,13 +430,14 @@ export default function EventCash() {
                                                         <ArrowDownLeft size={16} />
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-slate-800 leading-tight mb-1 line-clamp-1">{h.description}</p>
+                                                        <p className="font-bold text-slate-800 leading-tight mb-1 line-clamp-1">Order #{h.orders.id.substring(0, 8)}</p>
                                                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date(h.created_at).toLocaleDateString()} • Ticket Credit</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <p className="font-black text-green-600 tabular-nums">+{rupiah(h.amount)}</p>
+                                                {/* Note: Showing (Total - fee) as net revenue for this ticket */}
+                                                <p className="font-black text-green-600 tabular-nums">+{rupiah(Number(h.orders.total) - 8500)}</p>
                                             </td>
                                         </tr>
                                     )) : (

@@ -54,18 +54,51 @@ export default function RequestWithdrawal() {
             setCreatorInfo(creatorData);
 
             // 2. Fetch Financial Data
-            const [balanceRes, withdrawalRes] = await Promise.all([
-                supabase.from('creator_balances').select('*').eq('creator_id', user.id),
-                supabase.from('withdrawals').select('*').eq('creator_id', user.id)
-            ]);
+            const { data: eventsData } = await supabase.from('events').select('id').eq('creator_id', user.id);
+            const eventIds = eventsData?.map(e => e.id) || [];
 
-            const balanceData = balanceRes.data || [];
-            const withdrawalData = withdrawalRes.data || [];
+            let netSales = 0;
+            let withdrawalData = [];
 
-            // Calculate Net Sales (Gross - 8500 platform fee)
-            const netSales = balanceData
-                .filter(curr => curr.type === 'credit')
-                .reduce((acc, curr) => acc + (Number(curr.amount) - 8500), 0);
+            if (eventIds.length > 0) {
+                const [ticketsRes, withdrawalRes] = await Promise.all([
+                    supabase
+                        .from('tickets')
+                        .select('id, orders!inner(id, total, status), ticket_types!inner(event_id)')
+                        .in('ticket_types.event_id', eventIds)
+                        .eq('orders.status', 'paid'),
+                    supabase.from('withdrawals').select('*').eq('creator_id', user.id)
+                ]);
+
+                const ticketsWithOrders = ticketsRes.data || [];
+                withdrawalData = withdrawalRes.data || [];
+
+                if (ticketsWithOrders.length > 0) {
+                    // Logic to handle orders with multiple tickets fairly
+                    const orderIds = [...new Set(ticketsWithOrders.map(t => t.order_id))];
+                    const { data: allTicketsInOrders } = await supabase
+                        .from('tickets')
+                        .select('order_id')
+                        .in('order_id', orderIds);
+
+                    const orderTicketCounts = {};
+                    allTicketsInOrders?.forEach(t => {
+                        orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                    });
+
+                    let calculatedNetSales = 0;
+                    ticketsWithOrders.forEach(t => {
+                        const countInOrder = orderTicketCounts[t.order_id] || 1;
+                        const share = Number(t.orders.total) / countInOrder;
+                        calculatedNetSales += (share - 8500);
+                    });
+
+                    netSales = calculatedNetSales;
+                }
+            } else {
+                const { data } = await supabase.from('withdrawals').select('*').eq('creator_id', user.id);
+                withdrawalData = data || [];
+            }
 
             // Calculate Already Withdrawn (approved)
             const totalWithdrawn = withdrawalData

@@ -274,16 +274,34 @@ export default function Checkout() {
 
             if (gatewayError) {
                 console.error("[Order] Gateway error:", gatewayError);
+                // Try to get detailed error from context
+                let detail = gatewayError.message;
+                if (gatewayError.context && gatewayError.context.error) {
+                    detail = `${gatewayError.context.error}\n${gatewayError.context.details || ''}`;
+                }
+                alert("Gagal membuat pembayaran: " + detail);
                 throw gatewayError;
             }
 
             console.log("[Order] Gateway success:", gatewayData);
 
-            // Redirect to Xendit invoice page
-            if (gatewayData?.redirect_url) {
-                window.location.href = gatewayData.redirect_url;
+            // Bayarind SNAP B2B returns VA details directly
+            if (gatewayData?.success && gatewayData?.virtualAccountNo) {
+                // Navigate to payment page with VA details
+                navigate(`/payment/${gatewayData.transaction_id}`, {
+                    state: {
+                        total: totalAmount + platformFee + taxAmount - (appliedVoucher?.discount_amount || 0),
+                        selectedPayment: "bayarind",
+                        orderId: order_id,
+                        eventTitle: eventData.title,
+                        visitorEmail: ticketHolders[0].email,
+                        virtualAccountNo: gatewayData.virtualAccountNo,
+                        bankName: gatewayData.bankName,
+                        expiredDate: gatewayData.expiredDate
+                    }
+                });
             } else {
-                throw new Error("Invoice URL not found in response");
+                throw new Error(gatewayData?.error || "Gagal mendapatkan nomor Virtual Account");
             }
 
         } catch (error) {

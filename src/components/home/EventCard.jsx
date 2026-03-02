@@ -18,7 +18,7 @@ const rupiah = (value) => {
     }).format(value);
 };
 
-const EventCard = ({ id, image, title, date, location, price, status, variant, category }) => {
+const EventCard = ({ id, image, title, date, location, price, status, variant, category, isEnded }) => {
     // Render "Load More" card variant
     if (variant === "more") {
         return (
@@ -44,13 +44,19 @@ const EventCard = ({ id, image, title, date, location, price, status, variant, c
                 <img
                     src={image || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop"}
                     alt={title}
-                    className={`w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 ${!isAvailable ? "grayscale opacity-70" : ""}`}
+                    className={`w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 ${( !isAvailable || isEnded ) ? "grayscale opacity-70" : ""}`}
                 />
 
                 {/* Subtle Overlay */}
                 {!isAvailable && (
                     <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
                         <span className="bg-white/90 px-4 py-2 rounded-lg text-xs font-medium uppercase tracking-[0.2em] text-slate-900">Sold Out</span>
+                    </div>
+                )}
+
+                {isEnded && (
+                    <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
+                        <span className="bg-white/90 px-4 py-2 rounded-lg text-xs font-medium uppercase tracking-[0.2em] text-slate-900">Ended</span>
                     </div>
                 )}
 
@@ -74,9 +80,9 @@ const EventCard = ({ id, image, title, date, location, price, status, variant, c
 
                     <div className="space-y-2">
                         <div className="flex items-center gap-2 text-[#374151] dark:text-slate-300">
-                            <Calendar size={14} className="text-blue-600 dark:text-blue-400 shrink-0" />
-                            <p className="text-[14px] font-medium">
-                                {date || "Coming Soon"}
+                            <Calendar size={14} className={`${isEnded ? 'text-slate-400 dark:text-slate-500' : 'text-blue-600 dark:text-blue-400'} shrink-0`} />
+                            <p className={`text-[14px] font-medium ${isEnded ? 'text-slate-400 dark:text-slate-500 uppercase italic' : ''}`}>
+                                {isEnded ? "Event Telah Berakhir" : (date || "Coming Soon")}
                             </p>
                         </div>
                         <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
@@ -90,7 +96,7 @@ const EventCard = ({ id, image, title, date, location, price, status, variant, c
             </div>
 
             {/* CARD FOOTER: PRICE */}
-            <div className="mt-auto px-4 py-3.5 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div className={`mt-auto px-4 py-3.5 ${isEnded ? 'bg-slate-100/50 dark:bg-slate-800/10 opacity-60' : 'bg-slate-50/50 dark:bg-slate-800/30'} border-t border-slate-100 dark:border-slate-800 flex items-center justify-between`}>
                 <span className="text-[13px] font-medium text-slate-500 dark:text-slate-400">
                     Mulai Dari
                 </span>

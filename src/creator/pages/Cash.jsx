@@ -26,11 +26,14 @@ export default function CreatorCash() {
     const { user } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [balance, setBalance] = useState(0);
+    const [totalIncome, setTotalIncome] = useState(0);
+    const [totalWithdrawn, setTotalWithdrawn] = useState(0);
     const [history, setHistory] = useState([]);
     const [requests, setRequests] = useState([]);
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
     const [withdrawAmount, setWithdrawAmount] = useState('');
     const [creatorInfo, setCreatorInfo] = useState(null);
+    const [isVerified, setIsVerified] = useState(true);
 
     useEffect(() => {
         if (user?.id) {
@@ -51,31 +54,84 @@ export default function CreatorCash() {
     const fetchFinancials = async () => {
         setLoading(true);
         try {
-            // 1. Fetch History (Limit to recent 1000 for display - Supabase default max)
+            // Check Verification
+            const { data: creatorData } = await supabase
+                .from('creators')
+                .select('verified')
+                .eq('id', user.id)
+                .single();
+
+            const verified = creatorData?.verified ?? false;
+            setIsVerified(verified);
+            if (!verified) { setLoading(false); return; }
+
+            // 1. Fetch History (Recent transactions from creator_balances)
             const { data: historyData, error: historyError } = await supabase
                 .from('creator_balances')
                 .select('*')
                 .eq('creator_id', user.id)
                 .order('created_at', { ascending: false })
-                .limit(1000);
+                .limit(10); // Limit for display, edge function handles totals
 
             if (historyError) throw historyError;
             setHistory(historyData || []);
 
             // 2. Fetch Global Financials via Edge Function
-            // This ensures we get the Total Balance across ALL records, not just the limited ones
             const { data: financialData, error: financialError } = await supabase.functions.invoke('get-creator-financials');
 
             if (financialError) {
-                console.error("Financial Edge Function Error:", financialError);
-                // Fallback: Calculate from limited history (better than nothing, but user should be warned if history > 50)
-                const total = (historyData || []).reduce((acc, curr) => {
-                    return curr.type === 'credit' ? acc + Number(curr.amount) : acc - Number(curr.amount);
-                }, 0);
-                setBalance(total);
+                console.warn('Edge Function failed, using fallback calculation:', financialError);
+
+                // Fallback: Replicate the new orders-based calculation
+                const { data: eventsData } = await supabase.from('events').select('id').eq('creator_id', user.id);
+                const eventIds = eventsData?.map(e => e.id) || [];
+
+                let calculatedIncome = 0;
+                if (eventIds.length > 0) {
+                    const { data: ticketsWithOrders } = await supabase
+                        .from('tickets')
+                        .select('id, orders!inner(id, total, status), ticket_types!inner(event_id)')
+                        .in('ticket_types.event_id', eventIds)
+                        .eq('orders.status', 'paid');
+
+                    if (ticketsWithOrders && ticketsWithOrders.length > 0) {
+                        const orderIds = [...new Set(ticketsWithOrders.map(t => t.orders.id))];
+                        const { data: allTicketsInOrders } = await supabase
+                            .from('tickets')
+                            .select('order_id')
+                            .in('order_id', orderIds);
+
+                        const orderTicketCounts = {};
+                        allTicketsInOrders?.forEach(t => {
+                            orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                        });
+
+                        let fallbackIncome = 0;
+                        ticketsWithOrders.forEach(t => {
+                            const countInOrder = orderTicketCounts[t.orders.id] || 1;
+                            const share = Number(t.orders.total) / countInOrder;
+                            fallbackIncome += (share - 8500);
+                        });
+                        calculatedIncome = fallbackIncome;
+                    }
+                }
+
+                // Fetch total debits for fallback
+                const { data: debitsData } = await supabase
+                    .from('creator_balances')
+                    .select('amount')
+                    .eq('creator_id', user.id)
+                    .eq('type', 'debit');
+
+                const calculatedDebits = (debitsData || []).reduce((a, b) => a + Number(b.amount), 0);
+
+                setTotalIncome(calculatedIncome);
+                setTotalWithdrawn(calculatedDebits);
+                setBalance(calculatedIncome - calculatedDebits);
             } else {
                 setBalance(financialData.balance || 0);
-                // We could also set total income/withdrawn here if we had state for it
+                setTotalIncome(financialData.total_income || 0);
+                setTotalWithdrawn(financialData.total_withdrawn || 0);
             }
 
             // 2. Fetch Withdrawal Requests
@@ -177,12 +233,12 @@ export default function CreatorCash() {
 
                         <div className="flex flex-wrap gap-8 pt-4 border-t border-white/10">
                             <div>
-                                <p className="text-white/40 text-[9px] font-black uppercase tracking-widest mb-1">Total Penjualan</p>
-                                <p className="text-xl font-bold">{rupiah(history.filter(h => h.type === 'credit').reduce((a, b) => a + Number(b.amount), 0))}</p>
+                                <p className="text-white/40 text-[9px] font-black uppercase tracking-widest mb-1">Total Pendapatan</p>
+                                <p className="text-xl font-bold">{rupiah(totalIncome)}</p>
                             </div>
                             <div>
                                 <p className="text-white/40 text-[9px] font-black uppercase tracking-widest mb-1">Total Ditarik</p>
-                                <p className="text-xl font-bold">{rupiah(history.filter(h => h.type === 'debit').reduce((a, b) => a + Number(b.amount), 0))}</p>
+                                <p className="text-xl font-bold">{rupiah(totalWithdrawn)}</p>
                             </div>
                         </div>
                     </div>

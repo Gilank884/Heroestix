@@ -8,7 +8,110 @@ const corsHeaders = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-serve(async (req) => {
+// --- RSA-SHA256 (SNAP B2B) Helpers ---
+
+/**
+ * Minifies a JSON object/string for the stringToSign formula.
+ */
+function minify(payload: any): string {
+    if (!payload || Object.keys(payload).length === 0) return "";
+    return JSON.stringify(payload);
+}
+
+/**
+ * Generates a Hex-encoded SHA-256 hash of a string.
+ */
+async function sha256Hex(message: string): Promise<string> {
+    const msgUint8 = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Converts a PEM-formatted key to a Uint8Array.
+ * Works for PKCS#8 Private Keys and SPKI Public Keys.
+ */
+function pemToBinary(pem: string): Uint8Array {
+    const base64 = pem
+        .replace(/-----BEGIN (?:RSA )?(?:PRIVATE|PUBLIC) KEY-----/g, "")
+        .replace(/-----END (?:RSA )?(?:PRIVATE|PUBLIC) KEY-----/g, "")
+        .replace(/\s+/g, "");
+
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+}
+
+/**
+ * Generates an RSA-SHA256 signature (Base64).
+ * Formula: SHA256withRSA (privateKey, stringToSign)
+ */
+async function generateRSASignature(stringToSign: string, privateKeyPem: string): Promise<string> {
+    try {
+        const privateKeyBuffer = pemToBinary(privateKeyPem);
+        const privateKey = await crypto.subtle.importKey(
+            "pkcs8",
+            privateKeyBuffer as any,
+            { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+            false,
+            ["sign"]
+        );
+
+        const signatureBuffer = await crypto.subtle.sign(
+            "RSASSA-PKCS1-v1_5",
+            privateKey,
+            new TextEncoder().encode(stringToSign) as any
+        );
+
+        // Convert signature buffer to Base64
+        const uint8 = new Uint8Array(signatureBuffer);
+        let binary = "";
+        for (let i = 0; i < uint8.byteLength; i++) {
+            binary += String.fromCharCode(uint8[i]);
+        }
+        return btoa(binary);
+    } catch (err: any) {
+        console.error("[RSA Sign] Error:", err.message);
+        throw new Error("Gagal generate signature RSA: " + err.message);
+    }
+}
+
+/**
+ * Verifies an RSA-SHA256 signature (Base64).
+ */
+async function verifyRSASignature(signature: string, stringToSign: string, publicKeyPem: string): Promise<boolean> {
+    try {
+        const publicKeyBuffer = pemToBinary(publicKeyPem);
+        const publicKey = await crypto.subtle.importKey(
+            "spki",
+            publicKeyBuffer as any,
+            { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+            false,
+            ["verify"]
+        );
+
+        const binarySignature = new Uint8Array(
+            atob(signature).split("").map(c => c.charCodeAt(0))
+        );
+
+        return await crypto.subtle.verify(
+            "RSASSA-PKCS1-v1_5",
+            publicKey,
+            binarySignature as any,
+            new TextEncoder().encode(stringToSign) as any
+        );
+    } catch (err: any) {
+        console.error("[RSA Verify] Error:", err.message);
+        return false;
+    }
+}
+
+serve(async (req: any) => {
     if (req.method === "OPTIONS") {
         return new Response("ok", { status: 200, headers: corsHeaders });
     }
@@ -19,13 +122,189 @@ serve(async (req) => {
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
 
-        const url = new URL(req.url);
-        const payload = await req.json();
-        const { action } = payload;
+        const PRIVATE_KEY = Deno.env.get("BAYARIND_PRIVATE_KEY");
+        const PUBLIC_KEY = Deno.env.get("BAYARIND_PUBLIC_KEY");
+        const PARTNER_ID = Deno.env.get("BAYARIND_PARTNER_ID");
+        const PARTNER_SERVICE_ID = Deno.env.get("BAYARIND_PARTNER_SERVICE_ID");
+        const API_URL = Deno.env.get("BAYARIND_API_URL");
 
-        // 1. INITIATE TRANSACTION
+        const BAYARIND_CHANNEL_ID = Deno.env.get("BAYARIND_CHANNEL_ID") || "1021";
+
+        if (!PRIVATE_KEY || !PUBLIC_KEY || !PARTNER_ID || !PARTNER_SERVICE_ID || !API_URL) {
+            const missing = [];
+            if (!PRIVATE_KEY) missing.push("BAYARIND_PRIVATE_KEY");
+            if (!PUBLIC_KEY) missing.push("BAYARIND_PUBLIC_KEY");
+            if (!PARTNER_ID) missing.push("BAYARIND_PARTNER_ID");
+            if (!PARTNER_SERVICE_ID) missing.push("BAYARIND_PARTNER_SERVICE_ID");
+            if (!API_URL) missing.push("BAYARIND_API_URL");
+
+            console.error(`[Bayarind] Missing environment variables: ${missing.join(", ")}`);
+            throw new Error(`Integrasi Bayarind (RSA) belum dikonfigurasi. Kurang: ${missing.join(", ")}`);
+        }
+
+        const url = new URL(req.url);
+
+        // 1. BAYARIND CALLBACK / INQUIRY (Outbound from Bayarind)
+        if (url.pathname.endsWith("/transfer-va/payment") || url.pathname.endsWith("/transfer-va/inquiry")) {
+            const isPayment = url.pathname.endsWith("/payment");
+            const rawBody = await req.text();
+            const timestamp = req.headers.get("X-TIMESTAMP");
+            const signature = req.headers.get("X-SIGNATURE");
+
+            // A. VALIDATE RSA SIGNATURE
+            // Formula: HTTPMethod + ":" + RelativePathUrl + ":" + Lowercase(HexEncode(SHA-256(minify(RequestBody)))) + ":" + TimeStamp
+            try {
+                if (!signature || !timestamp) {
+                    throw new Error("Missing X-SIGNATURE or X-TIMESTAMP header");
+                }
+
+                const signaturePath = isPayment ? "/v1.0/transfer-va/payment" : "/v1.0/transfer-va/inquiry";
+
+                // B. REPLAY ATTACK PROTECTION
+                const now = Date.now();
+                const requestTime = Date.parse(timestamp);
+                if (!requestTime || Math.abs(now - requestTime) > 5 * 60 * 1000) {
+                    console.error("[Bayarind] Timestamp expired or invalid:", timestamp);
+                    return new Response(
+                        JSON.stringify({
+                            responseCode: isPayment ? "4012501" : "4012401",
+                            responseMessage: "Unauthorized: Request expired"
+                        }),
+                        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                    );
+                }
+
+                const minifiedBody = JSON.stringify(JSON.parse(rawBody));
+                const hashedBody = await sha256Hex(minifiedBody);
+                const stringToSign = `${req.method.toUpperCase()}:${signaturePath}:${hashedBody.toLowerCase()}:${timestamp}`;
+
+                const isValid = await verifyRSASignature(signature, stringToSign, PUBLIC_KEY);
+                if (!isValid) throw new Error(`RSA Signature verification failed for ${signaturePath}`);
+
+                console.log(`[Bayarind] RSA Signature Valid for ${signaturePath}`);
+            } catch (err: any) {
+                console.error("[Bayarind] Auth Failed:", err.message);
+                return new Response(
+                    JSON.stringify({
+                        responseCode: isPayment ? "4012501" : "4012401", // Code depends on service
+                        responseMessage: "Unauthorized: " + err.message
+                    }),
+                    { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
+
+            const payload = JSON.parse(rawBody);
+            // trxId might be in virtualAccountData or at root depending on request type
+            // Based on doc, inquiry has trxDateInit, customerNo, etc.
+            const trxId = payload.trxId || payload.additionalInfo?.trxId;
+
+            console.log(`[Bayarind ${isPayment ? 'Payment' : 'Inquiry'}] Processing TRX: ${trxId}`);
+
+            // B. FETCH TRANSACTION
+            const { data: transaction, error: findError } = await supabase
+                .from('transactions')
+                .select('id, status, order_id, amount, payment_provider_data')
+                .eq('id', trxId)
+                .single();
+
+            if (findError || !transaction) {
+                console.error("[Bayarind] Transaction not found:", trxId);
+                return new Response(
+                    JSON.stringify({
+                        responseCode: isPayment ? "4042512" : "4042412",
+                        responseMessage: "Bill not found"
+                    }),
+                    { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
+
+            // C. HANDLE INQUIRY
+            if (!isPayment) {
+                const isPaid = transaction.status === 'success';
+                const providerData = transaction.payment_provider_data || {};
+
+                return new Response(
+                    JSON.stringify({
+                        responseCode: isPaid ? "4042414" : "2002400",
+                        responseMessage: isPaid ? "Bill has been paid" : "Success",
+                        virtualAccountData: {
+                            partnerServiceId: providerData.partnerServiceId || "",
+                            customerNo: providerData.customerNo || "",
+                            virtualAccountNo: providerData.virtualAccountNo || "",
+                            virtualAccountName: providerData.virtualAccountName || "Customer",
+                            inquiryRequestId: payload.inquiryRequestId || "",
+                            totalAmount: {
+                                value: parseFloat(transaction.amount).toFixed(2),
+                                currency: "IDR"
+                            },
+                            billDetails: providerData.billDetails || []
+                        }
+                    }),
+                    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
+
+            // D. HANDLE PAYMENT
+            const tagId = payload.additionalInfo?.tagId || payload.tagId;
+            const paidAmount = payload.paidAmount;
+
+            // 1. Idempotency Check
+            const storedTagId = transaction.payment_provider_data?.tagId;
+            if (transaction.status === 'success' || (tagId && storedTagId === tagId)) {
+                return new Response(
+                    JSON.stringify({ responseCode: "2002500", responseMessage: "Success" }),
+                    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
+
+            // 2. Validate Amount
+            const paidValue = parseFloat(paidAmount?.value || "0");
+            if (Math.abs(paidValue - transaction.amount) > 0.01) {
+                console.error(`[Bayarind] Amount mismatch. Paid: ${paidValue}, Expected: ${transaction.amount}`);
+                return new Response(
+                    JSON.stringify({ responseCode: "4042513", responseMessage: "Invalid Amount" }),
+                    { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
+
+            // 3. Update Transaction & Order
+            // When Order status becomes 'paid', it will trigger the 'order-fulfillment' webhook
+            await supabase.from('transactions').update({
+                status: 'success',
+                payment_provider_data: {
+                    ...transaction.payment_provider_data,
+                    ...payload,
+                    tagId,
+                    paid_at: new Date().toISOString(),
+                    processed_at: new Date().toISOString()
+                }
+            }).eq('id', transaction.id);
+
+            await supabase.from('orders').update({ status: 'paid' }).eq('id', transaction.order_id);
+
+            return new Response(
+                JSON.stringify({
+                    responseCode: "2002500",
+                    responseMessage: "Success",
+                    virtualAccountData: {
+                        partnerServiceId: payload.partnerServiceId,
+                        customerNo: payload.customerNo,
+                        virtualAccountNo: payload.virtualAccountNo,
+                        paymentRequestId: payload.paymentRequestId,
+                        paidAmount: payload.paidAmount,
+                        paymentFlagStatus: "00"
+                    }
+                }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
+        // 2. INITIATE TRANSACTION (CREATE VA - MERCHANT -> BAYARIND)
+        const initiatePayload = await req.json();
+        const { action } = initiatePayload;
+
         if (action === "initiate") {
-            const { order_id, amount, customer_email, customer_name, customer_phone } = payload;
+            const { order_id, amount } = initiatePayload;
 
             // A. Create a record in 'transactions' table
             const { data: transaction, error: txError } = await supabase
@@ -34,7 +313,7 @@ serve(async (req) => {
                     {
                         order_id: order_id,
                         amount: amount,
-                        method: 'xendit_invoice',
+                        method: 'bayarind_payment',
                         status: 'pending'
                     }
                 ])
@@ -43,168 +322,105 @@ serve(async (req) => {
 
             if (txError) throw txError;
 
-            // B. Create Invoice via Xendit API
-            const XENDIT_SECRET_KEY = Deno.env.get("XENDIT_SECRET_KEY");
-            if (!XENDIT_SECRET_KEY) {
-                console.error("XENDIT_SECRET_KEY is missing");
-                throw new Error("Server configuration error: payment provider key missing");
-            }
+            // B. Bayarind VA Generation Logic
+            // customerNo should be unique (max 20 digits)
+            const customerNo = transaction.id.replace(/-/g, "").slice(0, 16);
+            // partnerServiceId must be 8 digits left padded with zeros
+            const formattedPartnerServiceId = PARTNER_SERVICE_ID.padStart(8, "0");
+            const virtualAccountNo = `${formattedPartnerServiceId}${customerNo}`;
+            const timestamp = new Date().toISOString();
 
-            console.log(`[Xendit] Creating Invoice for Order #${order_id} (TRX: ${transaction.id})`);
+            const expiredDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
+                .toLocaleString("sv-SE", { timeZone: "Asia/Jakarta" })
+                .replace(" ", "T") + "+07:00";
 
-            const xenditResponse = await fetch("https://api.xendit.co/v2/invoices", {
+            const bankName = "BAYARIND";
+            const externalId = transaction.id.replace(/-/g, "").slice(0, 20);
+
+            console.log(`[Bayarind] Initiating RSA Create VA for Order #${order_id} (TRX: ${transaction.id})`);
+
+            // C. SNAP B2B Body
+            const snapBodyObj = {
+                partnerServiceId: formattedPartnerServiceId,
+                customerNo: customerNo,
+                virtualAccountNo: virtualAccountNo,
+                virtualAccountName: "Customer #" + customerNo.slice(-4),
+                trxId: transaction.id,
+                totalAmount: {
+                    value: parseFloat(amount).toFixed(2),
+                    currency: "IDR"
+                },
+                billDetails: [
+                    {
+                        billDescription: {
+                            english: `Order #${order_id}`,
+                            indonesia: `Pesanan #${order_id}`
+                        }
+                    }
+                ],
+                expiredDate: expiredDate,
+                additionalInfo: {}
+            };
+
+            // D. Generate RSA Signature
+            // Formula: HTTPMethod + ":" + RelativePathUrl + ":" + Lowercase(HexEncode(SHA-256(minify(RequestBody)))) + ":" + TimeStamp
+            const apiUrlObj = new URL(API_URL);
+            const relativePath = apiUrlObj.pathname;
+            const hashedBody = await sha256Hex(minify(snapBodyObj));
+            const stringToSign = `POST:${relativePath}:${hashedBody.toLowerCase()}:${timestamp}`;
+            const rsaSignature = await generateRSASignature(stringToSign, PRIVATE_KEY);
+
+            // E. Call Bayarind API
+            const apiRes = await fetch(API_URL, {
                 method: "POST",
                 headers: {
-                    "Authorization": "Basic " + btoa(XENDIT_SECRET_KEY + ":"),
                     "Content-Type": "application/json",
+                    "X-TIMESTAMP": timestamp,
+                    "X-SIGNATURE": rsaSignature,
+                    "X-PARTNER-ID": PARTNER_ID,
+                    "X-EXTERNAL-ID": externalId,
+                    "CHANNEL-ID": BAYARIND_CHANNEL_ID // Merchant Channel ID
                 },
-                body: JSON.stringify({
-                    external_id: `TRX-${transaction.id}`,
-                    amount: amount,
-                    description: `Payment for Order #${order_id}`,
-                    payer_email: customer_email || "guest@example.com",
-                    customer: {
-                        given_names: customer_name || "Guest",
-                        email: customer_email || "guest@example.com",
-                        mobile_number: customer_phone || undefined
-                    },
-                    success_redirect_url: `https://heroestix.com/payment/processing?status=success&order_id=${order_id}`, // Production URL
-                    failure_redirect_url: `https://heroestix.com/payment/processing?status=failed&order_id=${order_id}`
-                }),
+                body: JSON.stringify(snapBodyObj)
             });
 
-            if (!xenditResponse.ok) {
-                const errorData = await xenditResponse.json();
-                console.error("[Xendit] Invoice Creation Failed:", errorData);
-                throw new Error(`Payment provider error: ${errorData.message || xenditResponse.statusText}`);
+            const apiData = await apiRes.json();
+
+            // Note: Bayarind might return 2002700 for successful VA creation in some versions, 
+            // but 2002500 is common for SNAP Success. Let's check for "200" prefix.
+            if (!apiData.responseCode?.startsWith("200")) {
+                console.error("[Bayarind] API Error:", apiData);
+                throw new Error(apiData.responseMessage || "Bayarind API Error");
             }
 
-            const invoice = await xenditResponse.json();
-            console.log("[Xendit] Invoice Created:", invoice.invoice_url);
+            // F. Update DB with VA details and provider response in JSON
+            const { error: updateError } = await supabase
+                .from('transactions')
+                .update({
+                    payment_provider_data: {
+                        partnerServiceId: formattedPartnerServiceId,
+                        customerNo,
+                        virtualAccountNo,
+                        expiredDate,
+                        bankName,
+                        billDetails: snapBodyObj.billDetails,
+                        bayarind_raw_response: apiData
+                    }
+                })
+                .eq('id', transaction.id);
+
+            if (updateError) console.error("[Bayarind] DB Update Error:", updateError);
 
             return new Response(
                 JSON.stringify({
                     success: true,
-                    redirect_url: invoice.invoice_url,
+                    provider: "bayarind",
+                    virtualAccountNo: virtualAccountNo.trim(), // Trim spaces for UI
+                    bankName,
+                    amount,
+                    expiredDate,
                     transaction_id: transaction.id
                 }),
-                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-        }
-
-        // 2. CALLBACK HANDLER (Payment Flag Request)
-        if (action === "callback") {
-            const { transaction_id, status } = payload;
-            console.log(`[Webhook] Received Callback for ${transaction_id}, Status: ${status}`);
-
-            // 1. Update Transaction Status
-            const { data: tx, error: txError } = await supabase
-                .from('transactions')
-                .update({ status: status === 'success' ? 'success' : 'failed' })
-                .eq('id', transaction_id)
-                .select('order_id, status')
-                .single();
-
-            if (txError) throw txError;
-            if (!tx || !tx.order_id) throw new Error("Transaction/Order not found");
-
-            // 2. Update Order Status
-            const { error: orderError } = await supabase
-                .from('orders')
-                .update({ status: status === 'success' ? 'paid' : 'failed' })
-                .eq('id', tx.order_id);
-
-            if (orderError) throw orderError;
-
-            // 3. IF SUCCESS: Inventory, Earnings, Email
-            if (status === 'success') {
-                await processSuccessfulPayment(supabase, tx.order_id);
-            }
-
-            return new Response(
-                JSON.stringify({ success: true, message: "Processed" }),
-                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-        }
-
-        // 3. VERIFY TRANSACTION (Manual Check from Frontend)
-        if (action === "verify") {
-            const { order_id } = payload;
-            console.log(`[Verify] Checking status for Order #${order_id}`);
-
-            // A. Find latest PENDING transaction for this order
-            const { data: transaction, error: txFindError } = await supabase
-                .from('transactions')
-                .select('id, status, order_id')
-                .eq('order_id', order_id)
-                .eq('status', 'pending')
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .single();
-
-            if (txFindError && txFindError.code !== 'PGRST116') throw txFindError; // Ignore not found
-
-            // If already success or no pending transaction, check if order is paid
-            if (!transaction) {
-                const { data: order } = await supabase.from('orders').select('status').eq('id', order_id).single();
-                if (order && order.status === 'paid') {
-                    // Already paid, ensuring email is sent might be good, but for now just return success
-                    return new Response(
-                        JSON.stringify({ success: true, status: 'PAID', message: "Order already paid" }),
-                        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-                    );
-                }
-                throw new Error("No pending transaction found for verification");
-            }
-
-            // B. Check Xendit API
-            const XENDIT_SECRET_KEY = Deno.env.get("XENDIT_SECRET_KEY");
-            const external_id = `TRX-${transaction.id}`;
-
-            const xenditRes = await fetch(`https://api.xendit.co/v2/invoices?external_id=${external_id}`, {
-                method: "GET",
-                headers: { "Authorization": "Basic " + btoa(XENDIT_SECRET_KEY + ":") }
-            });
-
-            if (!xenditRes.ok) throw new Error("Failed to fetch from Xendit");
-
-            const xenditData = await xenditRes.json();
-            // Xendit returns array for external_id
-            const invoice = xenditData.length > 0 ? xenditData[0] : null;
-
-            if (!invoice) throw new Error("Invoice not found in Xendit");
-
-            console.log(`[Verify] Xendit Status for ${external_id}: ${invoice.status}`);
-
-            if (invoice.status === "PAID" || invoice.status === "SETTLED") {
-                // UPDATE DB
-                await supabase.from('transactions').update({ status: 'success' }).eq('id', transaction.id);
-                await supabase.from('orders').update({ status: 'paid' }).eq('id', order_id);
-
-                // PROCESS SUCCESS (Inventory, Earnings, Email)
-                const processingResult = await processSuccessfulPayment(supabase, order_id);
-
-                return new Response(
-                    JSON.stringify({
-                        success: true,
-                        status: 'PAID',
-                        message: "Payment verified and updated",
-                        processing: processingResult
-                    }),
-                    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-                );
-            } else if (invoice.status === "EXPIRED") {
-                await supabase.from('transactions').update({ status: 'failed' }).eq('id', transaction.id);
-                await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id);
-
-                return new Response(
-                    JSON.stringify({ success: false, status: 'EXPIRED', message: "Invoice expired" }),
-                    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-                );
-            }
-
-            return new Response(
-                JSON.stringify({ success: false, status: invoice.status, message: "Payment not yet completed" }),
                 { headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }
@@ -214,259 +430,17 @@ serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
 
-    } catch (error) {
-        console.error("Payment Gateway Error:", error);
+    } catch (error: any) {
+        console.error("Payment Gateway Exception:", error);
+        console.error("Stack Trace:", error.stack);
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({
+                error: error.message,
+                details: error.details || "No additional details",
+                stack: error.stack
+            }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
 });
 
-// Helper Function to Logic for processing successful payment
-async function processSuccessfulPayment(supabase: any, order_id: string) {
-    console.log(`[Process] Processing success for Order #${order_id}`);
-
-    // 1. Fetch Order Details (to get booking code and user_id)
-    const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .select("id, booking_code, user_id, voucher_id")
-        .eq("id", order_id)
-        .single();
-
-    if (orderError) {
-        console.error("Error fetching order:", orderError);
-        return { error: "Failed to fetch order", details: orderError };
-    }
-
-    // 2. Fetch User Profile Email (Separate query to be safe)
-    let recipientEmail = null;
-    if (order.user_id) {
-        const { data: profile } = await supabase.from("profiles").select("email").eq("id", order.user_id).single();
-        if (profile) recipientEmail = profile.email;
-    }
-
-    // 3. Fetch Tickets
-    const { data: tickets, error: ticketsError } = await supabase
-        .from("tickets")
-        .select("id, ticket_type_id, qr_code, email") // fetching email from ticket as fallback
-        .eq("order_id", order_id);
-
-    if (ticketsError) {
-        console.error("Error fetching tickets:", ticketsError);
-        return { error: "Failed to fetch tickets", details: ticketsError };
-    }
-
-    if (!tickets || tickets.length === 0) {
-        return { error: "No tickets found for this order" };
-    }
-
-    // Fallback email from first ticket if profile email missing
-    if (!recipientEmail && tickets[0].email) {
-        recipientEmail = tickets[0].email;
-    }
-
-    // 4. Fetch Ticket Types (Unique IDs)
-    // @ts-ignore
-    const typeIds = [...new Set(tickets.map((t: any) => t.ticket_type_id))];
-    const { data: ticketTypes, error: typesError } = await supabase
-        .from("ticket_types")
-        .select("id, name, price, price_net, event_id")
-        .in("id", typeIds);
-
-    if (typesError) {
-        console.error("Error fetching ticket types:", typesError);
-        return { error: "Failed to fetch ticket types", details: typesError };
-    }
-
-    // Map types for easy lookup
-    // @ts-ignore
-    const typesMap = {};
-    ticketTypes?.forEach((tt: any) => { typesMap[tt.id] = tt; });
-
-    // 5. Fetch Event Details (from first ticket type)
-    const eventId = ticketTypes?.[0]?.event_id;
-    if (!eventId) {
-        return { error: "Event ID not found in ticket types" };
-    }
-
-    const { data: eventDetails, error: eventError } = await supabase
-        .from("events")
-        .select("creator_id, title, event_date, event_time, location, poster_url")
-        .eq("id", eventId)
-        .single();
-
-    if (eventError) {
-        console.error("Error fetching event:", eventError);
-        return { error: "Failed to fetch event", details: eventError };
-    }
-
-    // --- LOGIC: Inventory, Earnings, Email ---
-
-    const typeCounts = {};
-    const creatorEarnings = [];
-
-    // Combine data
-    const enrichedTickets = tickets.map((t: any) => {
-        // @ts-ignore
-        const tType = typesMap[t.ticket_type_id];
-        return {
-            ...t,
-            ticket_types: tType
-        };
-    });
-
-    enrichedTickets.forEach((t: any) => {
-        // Inventory
-        const typeId = t.ticket_type_id;
-        // @ts-ignore
-        typeCounts[typeId] = (typeCounts[typeId] || 0) + 1;
-
-        // Earnings
-        if (eventDetails.creator_id) {
-            creatorEarnings.push({
-                creator_id: eventDetails.creator_id,
-                order_id: order_id,
-                ticket_id: t.id,
-                amount: t.ticket_types?.price_net || t.ticket_types?.price || 0,
-                type: 'credit',
-                description: `Ticket Sale: ${t.ticket_types?.name}`
-            });
-        }
-    });
-
-    // B. Insert Creator Earnings
-    if (creatorEarnings.length > 0) {
-        const { error: balanceError } = await supabase
-            .from('creator_balances')
-            .insert(creatorEarnings);
-        if (balanceError) console.error("Error recording earnings:", balanceError);
-    }
-
-    // C. Update Sold Counts
-    for (const [typeId, count] of Object.entries(typeCounts)) {
-        const { error: rpcError } = await supabase.rpc('increment_ticket_sold', {
-            t_id: typeId,
-            quantity: count
-        });
-        if (rpcError) {
-            // Fallback manual update
-            console.error("RPC Error, falling back to manual update:", rpcError);
-            const { data: currentType } = await supabase.from('ticket_types').select('sold').eq('id', typeId).single();
-            if (currentType) {
-                // @ts-ignore
-                await supabase.from('ticket_types').update({ sold: (currentType.sold || 0) + count }).eq('id', typeId);
-            }
-        }
-    }
-    // D. Update Voucher Usage (if any)
-    if (order.voucher_id) {
-        console.log(`[Process] Incrementing usage for Voucher #${order.voucher_id}`);
-        const { error: vRpcError } = await supabase.rpc('increment_voucher_usage', { v_id: order.voucher_id });
-        if (vRpcError) {
-            console.error("Voucher RPC Error, falling back to manual update:", vRpcError);
-            const { data: currentVoucher } = await supabase.from('vouchers').select('used_count').eq('id', order.voucher_id).single();
-            if (currentVoucher) {
-                await supabase.from('vouchers').update({ used_count: (currentVoucher.used_count || 0) + 1 }).eq('id', order.voucher_id);
-            }
-        }
-    }
-
-    // D. Trigger Email Function (DIRECTLY)
-    let emailResult = null;
-    let emailSuccess = false;
-
-    try {
-        console.log("Preparing email for Order", order_id);
-        const resendApiKey = Deno.env.get("RESEND_API_KEY");
-
-        if (!resendApiKey) {
-            throw new Error("RESEND_API_KEY missing");
-        }
-        if (!recipientEmail) {
-            throw new Error("Recipient email not found");
-        }
-
-        const resend = new Resend(resendApiKey);
-
-        const ticketRows = enrichedTickets.map((t: any) => `
-          <div style="border: 1px solid #e2e8f0; padding: 16px; margin-bottom: 16px; border-radius: 12px; background-color: #f8fafc;">
-            <h3 style="margin: 0; color: #1e293b; font-size: 18px;">${t.ticket_types?.name}</h3>
-            <p style="margin: 8px 0; color: #64748b;">Booking Code: <strong>${order.booking_code}</strong></p>
-            <p style="margin: 8px 0; color: #64748b;">QR Code: <strong>${t.qr_code}</strong></p>
-          </div>
-        `).join("");
-
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              @import url('https://fonts.googleapis.com/css2?family=Sniglet:wght@400;800&display=swap');
-              body { font-family: 'Sniglet', system-ui; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .event-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-              .event-image { width: 100%; height: 200px; object-fit: cover; }
-              .content { padding: 24px; }
-              h1 { margin: 0 0 10px; color: #0f172a; }
-              .details { margin-bottom: 24px; color: #475569; }
-              .footer { text-align: center; margin-top: 40px; color: #94a3b8; font-size: 12px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="event-card">
-                ${eventDetails.poster_url ? `<img src="${eventDetails.poster_url}" alt="${eventDetails.title}" class="event-image" />` : ''}
-                <div class="content">
-                  <h1>You're going to ${eventDetails.title}!</h1>
-                  <div class="details">
-                    <p>📍 ${eventDetails.location}</p>
-                    <p>📅 ${new Date(eventDetails.event_date).toLocaleDateString("id-ID", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                    <p>⏰ ${eventDetails.event_time ? eventDetails.event_time.substring(0, 5) : '00:00'} WIB</p>
-                  </div>
-    
-                  <h2 style="color: #0f172a; font-size: 20px; margin-top: 32px;">Your Tickets</h2>
-                  ${ticketRows}
-    
-                  <div style="margin-top: 32px; text-align: center;">
-                    <a href="https://heroestix.com/tickets/${order.booking_code}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">View My Tickets</a>
-                  </div>
-                </div>
-              </div>
-              <div class="footer">
-                <p>&copy; ${new Date().getFullYear()} Heroestix. All rights reserved.</p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
-
-        // Send Email
-        const { data: emailData, error: emailError } = await resend.emails.send({
-            from: "Heroestix <tickets@heroestix.com>",
-            to: [recipientEmail],
-            subject: `Your Tickets for ${eventDetails.title}`,
-            html: htmlContent,
-        });
-
-        if (emailError) {
-            console.error("Resend Error:", emailError);
-            emailResult = emailError;
-        } else {
-            console.log("Email sent successfully:", emailData);
-            emailResult = emailData;
-            emailSuccess = true;
-        }
-
-    } catch (emailErr) {
-        console.error("Failed to process email logic (exception):", emailErr);
-        emailResult = { message: emailErr.message, stack: emailErr.stack };
-    }
-
-    return {
-        earningsRecorded: creatorEarnings.length,
-        inventoryUpdated: Object.keys(typeCounts).length,
-        emailSuccess,
-        emailResult
-    };
-}

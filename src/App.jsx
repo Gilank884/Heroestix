@@ -15,7 +15,6 @@ import SelectTicket from "./user/pages/SelectTicket";
 import Checkout from "./user/pages/Checkout";
 import Payment from "./user/pages/Payment";
 import TransactionDetail from "./user/pages/TransactionDetail";
-import PaymentProcessing from "./user/pages/PaymentProcessing";
 import PaymentReceipt from "./user/pages/PaymentReceipt";
 import MockBayarind from "./user/pages/MockBayarind"; // Mock Import
 import CreatorPage from "./user/pages/CreatorPage";
@@ -391,7 +390,6 @@ export default function App() {
         <Route path="/about-us" element={<AboutUsPage />} />
         <Route path="/daftar" element={<Daftar />} />
         <Route path="/masuk" element={<Masuk />} />
-        <Route path="/masuk" element={<Masuk />} />
         <Route path="/error" element={<Error />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
@@ -400,12 +398,10 @@ export default function App() {
         <Route path="/select-ticket/:id" element={<SelectTicket />} />
         <Route path="/checkout/:id" element={<Checkout />} />
         <Route path="/payment/:id" element={<Payment />} />
-        <Route path="/payment/processing" element={<PaymentProcessing />} />
         <Route path="/payment/receipt" element={<PaymentReceipt />} />
         <Route path="/payment/mock-bayarind" element={<MockBayarind />} />
         <Route path="/transaction-detail/:id" element={<TransactionDetail />} />
         <Route path="/become-creator" element={<BecomeCreator />} />
-        <Route path="/creator/:id" element={<CreatorPage />} />
         <Route path="/creator/:id" element={<CreatorPage />} />
         <Route path="/accept-invite" element={<AcceptInvite />} />
         <Route path="*" element={<Navigate to="/" />} />

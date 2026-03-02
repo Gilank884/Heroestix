@@ -184,12 +184,17 @@ const Events = () => {
                             <img
                                 src={ev.poster_url || '/assets/placeholder.png'}
                                 alt={ev.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${new Date(ev.event_date) < new Date() ? 'grayscale opacity-70' : ''}`}
                             />
-                            <div className="absolute top-2 left-2">
+                            <div className="absolute top-2 left-2 flex flex-col gap-1">
                                 <span className={`px-2.5 py-1 rounded-md text-[10px] font-medium uppercase tracking-wider shadow-sm bg-white text-gray-700`}>
                                     {ev.status === 'active' ? 'Publish' : ev.status}
                                 </span>
+                                {new Date(ev.event_date) < new Date() && (
+                                    <span className="px-2.5 py-1 rounded-md text-[10px] font-medium uppercase tracking-wider shadow-sm bg-red-600 text-white">
+                                        Berakhir
+                                    </span>
+                                )}
                             </div>
                         </div>
 
@@ -205,8 +210,10 @@ const Events = () => {
                                     <span className="truncate">{ev.location}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-gray-500 text-xs font-medium">
-                                    <Calendar size={14} className="text-gray-400" />
-                                    <span>{new Date(ev.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                    <Calendar size={14} className={new Date(ev.event_date) < new Date() ? "text-red-500" : "text-gray-400"} />
+                                    <span className={new Date(ev.event_date) < new Date() ? "text-red-600 font-bold italic" : ""}>
+                                        {new Date(ev.event_date) < new Date() ? "Event Telah Berakhir" : new Date(ev.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-2 text-gray-500 text-xs font-medium">
                                     <Clock size={14} className="text-gray-400" />

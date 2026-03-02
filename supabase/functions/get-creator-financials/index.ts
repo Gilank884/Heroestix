@@ -34,28 +34,82 @@ serve(async (req) => {
 
         const creatorId = user.id;
 
-        // 1. Calculate Total Credits (Income)
-        // We can't easily do a SUM query without a function or grouping, so we'll fetch only the 'amount' column
-        // If data is huge, we might need pagination, but for < 50k rows this is usually fine on Edge.
-        // For truly scalable solutions, a Database Function (RPC) is better, but this solves the 1000 row client limit.
+        // 1. Fetch all events for this creator
+        const { data: eventsData, error: eventsError } = await supabase
+            .from('events')
+            .select('id')
+            .eq('creator_id', creatorId);
 
-        let allBalances = [];
+        if (eventsError) throw eventsError;
+        const eventIds = eventsData.map(e => e.id);
+
+        let totalCredits = 0;
+        let transactionCount = 0;
+
+        if (eventIds.length > 0) {
+            // 2. Fetch all tickets and their associated orders for these events
+            const { data: ticketsWithOrders, error: tError } = await supabase
+                .from('tickets')
+                .select(`
+                    id,
+                    order_id,
+                    orders!inner (id, total, status),
+                    ticket_types!inner (event_id)
+                `)
+                .in('ticket_types.event_id', eventIds)
+                .eq('orders.status', 'paid');
+
+            if (tError) throw tError;
+
+            if (ticketsWithOrders && ticketsWithOrders.length > 0) {
+                // To handle orders with multiple tickets fairly:
+                // 1. Get all unique order IDs
+                const orderIds = [...new Set(ticketsWithOrders.map((t: any) => t.order_id))];
+
+                // 2. Fetch total ticket count for EACH of these orders (to split revenue)
+                // We need to fetch from the tickets table to see how many tickets are in these orders globally
+                const { data: allTicketsInOrders } = await supabase
+                    .from('tickets')
+                    .select('order_id')
+                    .in('order_id', orderIds);
+
+                const orderTicketCounts: Record<string, number> = {};
+                allTicketsInOrders?.forEach((t: any) => {
+                    orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                });
+
+                // 3. Calculate revenue: (Order Total / Total Tickets) - 8500 per ticket
+                let calculatedCredits = 0;
+                ticketsWithOrders.forEach((t: any) => {
+                    const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
+                    const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
+                    calculatedCredits += (shareOfGross - 8500);
+                });
+
+                totalCredits = calculatedCredits;
+                transactionCount = ticketsWithOrders.length;
+            }
+        }
+
+        // 3. Calculate Total Debits (Withdrawals) from creator_balances
+        // We still use creator_balances for debits as these are recorded upon withdrawal approval
+        let allDebits = [];
         let page = 0;
         const pageSize = 1000;
         let hasMore = true;
 
-        // Optimized fetching: only select necessary columns
         while (hasMore) {
             const { data, error } = await supabase
                 .from('creator_balances')
-                .select('amount, type')
+                .select('amount')
                 .eq('creator_id', creatorId)
+                .eq('type', 'debit')
                 .range(page * pageSize, (page + 1) * pageSize - 1);
 
             if (error) throw error;
 
             if (data && data.length > 0) {
-                allBalances = allBalances.concat(data);
+                allDebits = allDebits.concat(data);
                 if (data.length < pageSize) hasMore = false;
                 else page++;
             } else {
@@ -63,18 +117,7 @@ serve(async (req) => {
             }
         }
 
-        const totalCredits = allBalances
-            .filter(b => b.type === 'credit')
-            .reduce((sum, b) => {
-                const amount = Number(b.amount);
-                const netAmount = amount > 8500 ? (amount - 8500) : amount;
-                return sum + netAmount;
-            }, 0);
-
-        const totalDebits = allBalances
-            .filter(b => b.type === 'debit') // withdrawals
-            .reduce((sum, b) => sum + Number(b.amount), 0);
-
+        const totalDebits = allDebits.reduce((sum, b) => sum + Number(b.amount), 0);
         const currentBalance = totalCredits - totalDebits;
 
         return new Response(
@@ -82,7 +125,7 @@ serve(async (req) => {
                 balance: currentBalance,
                 total_income: totalCredits,
                 total_withdrawn: totalDebits,
-                transaction_count: allBalances.length
+                transaction_count: transactionCount
             }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );

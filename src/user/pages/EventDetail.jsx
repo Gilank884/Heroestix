@@ -58,6 +58,7 @@ export default function EventDetail() {
     const [hasInactiveTickets, setHasInactiveTickets] = useState(false);
     const [quantity, setQuantity] = useState(1);
     const [recommendations, setRecommendations] = useState([]);
+    const [isEnded, setIsEnded] = useState(false);
 
     useEffect(() => {
         fetchEventDetail();
@@ -86,6 +87,19 @@ export default function EventDetail() {
                 inactive = tickets.some(t => t.status === 'inactive');
             }
 
+            // Determine if event has ended
+            let ended = false;
+            if (data.event_date) {
+                const eventDate = new Date(data.event_date);
+                if (data.event_time) {
+                    const [hours, minutes] = data.event_time.split(':');
+                    eventDate.setHours(parseInt(hours), parseInt(minutes), 0);
+                } else {
+                    eventDate.setHours(23, 59, 59);
+                }
+                ended = new Date() > eventDate;
+            }
+
             setEvent({
                 ...data,
                 image: data.poster_url,
@@ -93,6 +107,7 @@ export default function EventDetail() {
                 price: displayPrice
             });
             setHasInactiveTickets(inactive);
+            setIsEnded(ended);
 
             fetchRecommendations(data.category, data.id);
 
@@ -290,7 +305,7 @@ export default function EventDetail() {
                                 <img
                                     src={event.image || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop"}
                                     alt={event.title}
-                                    className="w-full h-auto object-cover aspect-[4/3] lg:aspect-auto transition-transform duration-700 group-hover:scale-105"
+                                    className={`w-full h-auto object-cover aspect-[4/3] lg:aspect-auto transition-transform duration-700 group-hover:scale-105 ${isEnded ? 'grayscale opacity-70' : ''}`}
                                 />
                             </div>
 
@@ -332,7 +347,9 @@ export default function EventDetail() {
                                         </div>
                                         <div>
                                             <p className="text-xs text-slate-400 uppercase tracking-wide mb-0.5">Tanggal</p>
-                                            <p className="text-sm text-slate-900 dark:text-slate-100">{event.date}</p>
+                                            <p className={`text-sm ${isEnded ? 'text-red-600 dark:text-red-400 font-bold uppercase italic' : 'text-slate-900 dark:text-slate-100'}`}>
+                                                {isEnded ? "Event Telah Berakhir" : event.date}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-4 group">
@@ -387,10 +404,11 @@ export default function EventDetail() {
 
                                 <button
                                     onClick={handleBuyNow}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl text-sm shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                                    disabled={isEnded}
+                                    className={`w-full ${isEnded ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30'} py-3.5 rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2`}
                                 >
-                                    Beli Tiket
-                                    <ChevronLeft size={16} className="rotate-180" />
+                                    {isEnded ? "Event Telah Berakhir" : "Beli Tiket"}
+                                    {!isEnded && <ChevronLeft size={16} className="rotate-180" />}
                                 </button>
 
                                 <p className="text-center text-[10px] text-slate-400">

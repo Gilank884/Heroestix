@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import {
-    Wallet, Search, Filter, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle2, Building2, TrendingUp, RefreshCw, ShoppingBag, CreditCard, Activity, AlertCircle
+    Wallet, Search, Filter, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle2, Building2, TrendingUp, RefreshCw, ShoppingBag, CreditCard, Activity, AlertCircle, Calendar
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -20,6 +20,8 @@ export default function Cash() {
     const [withdrawals, setWithdrawals] = useState([]);
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     useEffect(() => {
         fetchData();
@@ -29,79 +31,133 @@ export default function Cash() {
         setLoading(true);
         setError(null);
         try {
-            // 1. Fetch all core data in parallel (Client-side aggregation)
-            const [creatorsRes, profilesRes, balancesRes, withdrawalsRes, transactionsRes] = await Promise.all([
+            // 1. Try fetching from Edge Function first for server-side aggregation
+            try {
+                const { data, error: edgeError } = await supabase.functions.invoke('get-admin-financials', {
+                    body: { startDate, endDate }
+                });
+                if (!edgeError && data) {
+                    setMetrics(data.metrics);
+                    setSettlements(data.settlements);
+                    setWithdrawals(data.withdrawals || []);
+                    setLoading(false);
+                    return;
+                }
+                console.warn('Edge Function returned error or no data, falling back to client-side calc:', edgeError);
+            } catch (efErr) {
+                console.warn('Edge Function invoke failed, falling back:', efErr);
+            }
+
+            // 2. Fallback Logic (Client-side aggregation with Fair-Share Logic)
+            const [creatorsRes, profilesRes, ticketsRes, withdrawalsRes] = await Promise.all([
                 supabase.from('creators').select('*'),
                 supabase.from('profiles').select('id, full_name, email'),
-                supabase.from('creator_balances').select('*'),
-                supabase.from('withdrawals').select('*'),
-                supabase.from('transactions').select('*').eq('status', 'success')
+                supabase.from('tickets').select('id, order_id, orders!inner(id, total, status, created_at), ticket_types!inner(events!inner(creator_id))').eq('orders.status', 'paid'),
+                supabase.from('withdrawals').select('*')
             ]);
 
             if (creatorsRes.error) throw creatorsRes.error;
             if (profilesRes.error) throw profilesRes.error;
-            if (balancesRes.error) throw balancesRes.error;
+            if (ticketsRes.error) throw ticketsRes.error;
             if (withdrawalsRes.error) throw withdrawalsRes.error;
 
             const creators = creatorsRes.data || [];
             const profiles = profilesRes.data || [];
-            const balances = balancesRes.data || [];
-            const allWithdrawals = withdrawalsRes.data || [];
-            const transactions = transactionsRes.data || [];
+            const allTickets = ticketsRes.data || [];
+            let allWithdrawals = withdrawalsRes.data || [];
 
-            // 2. Prepare Maps
+            // Client-side date filtering
+            let paidTickets = allTickets;
+            if (startDate || endDate) {
+                const start = startDate ? new Date(startDate) : new Date(0);
+                const end = endDate ? new Date(endDate) : new Date();
+                if (endDate && endDate.length <= 10) end.setHours(23, 59, 59, 999); // Set to end of day for inclusive filtering
+
+                paidTickets = allTickets.filter(t => {
+                    const date = new Date(t.orders.created_at);
+                    return date >= start && date <= end;
+                });
+
+                allWithdrawals = allWithdrawals.filter(w => {
+                    const date = new Date(w.created_at);
+                    return date >= start && date <= end;
+                });
+            }
+
+            const orderIds = [...new Set(paidTickets.map(t => t.order_id))];
+            let orderTicketCounts = {};
+
+            if (orderIds.length > 0) {
+                const { data: countData } = await supabase
+                    .from('tickets')
+                    .select('order_id')
+                    .in('order_id', orderIds);
+
+                countData?.forEach(t => {
+                    orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                });
+            }
+
+            // Maps for fast lookups
             const profileMap = profiles.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
             const creatorMap = creators.reduce((acc, c) => ({
                 ...acc,
                 [c.id]: { ...c, profile: profileMap[c.id] }
             }), {});
 
-            // 3. Global Metrics
-            const totalGross = transactions.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+            let totalGross = 0;
+            let totalNet = 0;
+            const revenueByCreator = {};
+            const grossByCreator = {};
 
-            const totalNet = balances
-                .filter(b => b.type === 'credit')
-                .reduce((sum, b) => {
-                    const amt = Math.max(0, Number(b.amount || 0));
-                    return sum + (amt > 8500 ? (amt - 8500) : amt);
-                }, 0);
+            // Calculate revenue per ticket fairly
+            paidTickets.forEach(t => {
+                const countInOrder = orderTicketCounts[t.order_id] || 1;
+                const shareOfGross = Number(t.orders.total) / countInOrder;
+                const net = shareOfGross - 8500;
+
+                totalNet += net;
+
+                const creatorId = t.ticket_types?.events?.creator_id;
+                if (creatorId) {
+                    grossByCreator[creatorId] = (grossByCreator[creatorId] || 0) + shareOfGross;
+                    revenueByCreator[creatorId] = (revenueByCreator[creatorId] || 0) + net;
+                }
+            });
+
+            // Unique paid order totals for Gross
+            const uniqueOrderTotals = new Map();
+            paidTickets.forEach(t => {
+                uniqueOrderTotals.set(t.order_id, Number(t.orders.total));
+            });
+            totalGross = Array.from(uniqueOrderTotals.values()).reduce((a, b) => a + b, 0);
 
             const disbursed = allWithdrawals
                 .filter(w => w.status === 'approved')
                 .reduce((sum, w) => sum + Number(w.amount || 0), 0);
 
-            // 4. Per Creator Settlements
+            // Per Creator Settlements
             const creatorSettlements = creators.map(creator => {
-                const creatorBalances = balances.filter(b => b.creator_id === creator.id && b.type === 'credit');
-                const creatorRevenue = creatorBalances.reduce((sum, b) => {
-                    const amt = Math.max(0, Number(b.amount || 0));
-                    return sum + (amt > 8500 ? (amt - 8500) : amt);
-                }, 0);
-
-                const creatorDisbursed = allWithdrawals
-                    .filter(w => w.creator_id === creator.id && w.status === 'approved')
-                    .reduce((sum, w) => sum + Number(w.amount || 0), 0);
-
+                const cGross = grossByCreator[creator.id] || 0;
+                const cNet = revenueByCreator[creator.id] || 0;
                 return {
                     id: creator.id,
                     brandName: creator.brand_name || profileMap[creator.id]?.full_name || 'Anonymous',
                     ownerName: profileMap[creator.id]?.full_name || 'Anonymous Owner',
-                    revenue: creatorRevenue,
-                    disbursed: creatorDisbursed
+                    grossRevenue: cGross,
+                    revenue: cNet,
+                    developerProfit: cGross - cNet,
+                    disbursed: allWithdrawals
+                        .filter(w => w.creator_id === creator.id && w.status === 'approved')
+                        .reduce((sum, w) => sum + Number(w.amount || 0), 0)
                 };
             })
                 .filter(s => s.revenue > 0 || s.disbursed > 0)
                 .sort((a, b) => b.revenue - a.revenue);
 
-            // 5. Recent Withdrawals for context
-            const recentWds = allWithdrawals.map(w => ({
-                ...w,
-                creators: creatorMap[w.creator_id]
-            })).slice(0, 50);
-
             setMetrics({ totalGross, totalNet, disbursed });
             setSettlements(creatorSettlements);
-            setWithdrawals(recentWds);
+            setWithdrawals(allWithdrawals.map(w => ({ ...w, creators: creatorMap[w.creator_id] })).slice(0, 50));
 
         } catch (err) {
             console.error('Error fetching data:', err);
@@ -138,7 +194,8 @@ export default function Cash() {
         );
     }
 
-    // Belum Dicairkan calculation: Total Net - Total Disbursed
+    // Final Calculations for UI
+    const totalDevProfit = metrics.totalGross - metrics.totalNet;
     const pendingDisbursement = metrics.totalNet - metrics.disbursed;
 
     const filteredSettlements = settlements.filter(s =>
@@ -158,13 +215,31 @@ export default function Cash() {
                     <h1 className="text-4xl font-medium tracking-tight text-slate-900 italic">Platform <span className="text-blue-600 not-italic">Cash</span></h1>
                     <p className="text-slate-500 font-medium text-sm mt-2">Treasury management and creator settlement metrics (Direct Access).</p>
                 </div>
-                <button
-                    onClick={fetchData}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-600 transition-all active:scale-95 shadow-sm"
-                >
-                    <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-                    Sync Data
-                </button>
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                        <Calendar size={14} className="text-slate-400" />
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="bg-transparent border-none outline-none text-xs font-medium text-slate-600 w-28"
+                        />
+                        <span className="text-slate-300 mx-1">—</span>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="bg-transparent border-none outline-none text-xs font-medium text-slate-600 w-28"
+                        />
+                    </div>
+                    <button
+                        onClick={fetchData}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-600 transition-all active:scale-95 shadow-sm"
+                    >
+                        <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                        Sync Data
+                    </button>
+                </div>
             </div>
 
             {/* Main Stats */}
@@ -177,11 +252,11 @@ export default function Cash() {
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl -mr-32 -mt-32" />
                     <div className="relative z-10 flex items-center gap-6">
                         <div className="w-16 h-16 rounded-2xl bg-white/10 text-white flex items-center justify-center backdrop-blur-md border border-white/10 shadow-lg">
-                            <CreditCard size={28} />
+                            <TrendingUp size={28} />
                         </div>
                         <div>
-                            <p className="text-white/40 text-[10px] font-medium uppercase tracking-widest mb-1">Sudah Dicairkan</p>
-                            <h3 className="text-4xl font-medium tracking-tighter tabular-nums">{rupiah(metrics.disbursed)}</h3>
+                            <p className="text-blue-400 text-[10px] font-medium uppercase tracking-widest mb-1">Total Developer Profit</p>
+                            <h3 className="text-4xl font-medium tracking-tighter tabular-nums">{rupiah(totalDevProfit)}</h3>
                         </div>
                     </div>
                 </motion.div>
@@ -197,7 +272,7 @@ export default function Cash() {
                         <Wallet size={28} />
                     </div>
                     <div className="relative z-10">
-                        <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest mb-1">Belum Dicairkan</p>
+                        <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest mb-1">Total Belum Dicairkan</p>
                         <h3 className="text-4xl font-medium text-slate-900 tracking-tighter tabular-nums">{rupiah(pendingDisbursement)}</h3>
                     </div>
                 </motion.div>
@@ -258,7 +333,9 @@ export default function Cash() {
                         <thead>
                             <tr className="bg-slate-50/50">
                                 <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest">Creator</th>
+                                <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest text-right">Total Gross</th>
                                 <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest text-right">Net Revenue</th>
+                                <th className="px-8 py-5 text-[10px] font-medium text-blue-600 uppercase tracking-widest text-right">Dev Profit</th>
                                 <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest text-right">Disbursed</th>
                                 <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest text-right">Remaining Balance</th>
                             </tr>
@@ -283,8 +360,14 @@ export default function Cash() {
                                             </div>
                                         </div>
                                     </td>
+                                    <td className="px-8 py-6 text-right font-medium text-slate-400 tabular-nums text-xs">
+                                        {rupiah(s.grossRevenue)}
+                                    </td>
                                     <td className="px-8 py-6 text-right font-medium text-slate-900 tabular-nums">
                                         {rupiah(s.revenue)}
+                                    </td>
+                                    <td className="px-8 py-6 text-right font-bold text-blue-600 tabular-nums">
+                                        {rupiah(s.developerProfit || (s.grossRevenue - s.revenue))}
                                     </td>
                                     <td className="px-8 py-6 text-right font-medium text-emerald-600 tabular-nums">
                                         {rupiah(s.disbursed)}

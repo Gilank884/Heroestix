@@ -30,59 +30,60 @@ const DevDashboard = () => {
         setLoading(true);
         try {
             // 1. Fetch Core Totals
-            const [creatorsRes, eventsRes, ticketTypesRes, transactionsRes, profilesRes] = await Promise.all([
+            const [creatorsRes, eventsRes, profilesRes, ticketsRes] = await Promise.all([
                 supabase.from('creators').select('*'),
                 supabase.from('events').select('*'),
-                supabase.from('ticket_types').select('*'),
-                supabase.from('transactions').select('*'),
-                supabase.from('profiles').select('id, full_name')
+                supabase.from('profiles').select('id, full_name'),
+                supabase.from('tickets').select('id, order_id, orders!inner(id, total, status), ticket_types!inner(events!inner(creator_id))').eq('orders.status', 'paid')
             ]);
 
             if (creatorsRes.error) throw creatorsRes.error;
 
             const creators = creatorsRes.data || [];
             const events = eventsRes.data || [];
-            const ticketTypes = ticketTypesRes.data || [];
-            const transactions = transactionsRes.data || [];
             const profiles = profilesRes.data || [];
+            const paidTickets = ticketsRes.data || [];
 
-            // 2. Prepare Maps
+            // 2. Prepare Maps and Fair-Share Revenue
             const profileMap = profiles.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
 
-            // Map event_id to creator_id for revenue calculation
-            const eventToCreatorMap = events.reduce((acc, ev) => ({ ...acc, [ev.id]: ev.creator_id }), {});
+            const orderIds = [...new Set(paidTickets.map(t => t.order_id))];
+            let orderTicketCounts = {};
+            if (orderIds.length > 0) {
+                const { data: countData } = await supabase
+                    .from('tickets')
+                    .select('order_id')
+                    .in('order_id', orderIds);
+                countData?.forEach(t => {
+                    orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                });
+            }
+
+            const revenueByCreator = {};
+            const ticketsSoldByCreator = {};
+
+            paidTickets.forEach(t => {
+                const countInOrder = orderTicketCounts[t.order_id] || 1;
+                const share = Number(t.orders.total) / countInOrder;
+                const net = share - 8500;
+
+                const cId = t.ticket_types?.events?.creator_id;
+                if (cId) {
+                    revenueByCreator[cId] = (revenueByCreator[cId] || 0) + net;
+                    ticketsSoldByCreator[cId] = (ticketsSoldByCreator[cId] || 0) + 1;
+                }
+            });
 
             // 3. Aggregate Performance per Creator
             const creatorPerformance = creators.map(creator => {
                 const creatorEvents = events.filter(ev => ev.creator_id === creator.id);
-
-                // Calculate Total Tickets Sold for this creator's events
-                const totalTicketsSold = creatorEvents.reduce((sum, ev) => {
-                    const eventTicketTypes = ticketTypes.filter(tt => tt.event_id === ev.id);
-                    return sum + eventTicketTypes.reduce((s, tt) => s + (tt.sold || 0), 0);
-                }, 0);
-
-                // Calculate Net Revenue (assuming transactions are linked to events)
-                // Note: This logic assumes we can link transactions back to creators. 
-                // A more robust way would involve orders, but let's try to aggregate from what we have.
-                // For now, we'll estimate revenue based on transactions if they include event/creator context.
-                // In many HaiTicket systems, transactions might have metadata or link to orders.
-                // Let's assume we can't easily jump from Transaction -> Creator without more joins, 
-                // so we'll look for transactions associated with this creator's events if possible.
-                // If we don't have direct link in transactions, we look at ticket_types.sold * price.
-
-                const calculatedRevenue = creatorEvents.reduce((sum, ev) => {
-                    const eventTicketTypes = ticketTypes.filter(tt => tt.event_id === ev.id);
-                    return sum + eventTicketTypes.reduce((s, tt) => s + ((tt.sold || 0) * (tt.price || 0)), 0);
-                }, 0);
-
                 return {
                     id: creator.id,
                     brandName: creator.brand_name || 'Anonymous',
                     ownerName: profileMap[creator.id]?.full_name || 'Anonymous Owner',
                     eventCount: creatorEvents.length,
-                    totalSold: totalTicketsSold,
-                    revenue: calculatedRevenue,
+                    totalSold: ticketsSoldByCreator[creator.id] || 0,
+                    revenue: revenueByCreator[creator.id] || 0,
                     email: creator.email
                 };
             }).sort((a, b) => b.revenue - a.revenue);

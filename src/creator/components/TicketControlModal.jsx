@@ -179,7 +179,7 @@ const TicketControlModal = ({ isOpen, onClose }) => {
 
                 {/* Footer hint */}
                 <div className="p-6 bg-slate-50 text-center">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hai-Ticket Security Protocol v1.0</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Heroestix Security Protocol v1.0</p>
                 </div>
             </div>
         </div>

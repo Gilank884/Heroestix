@@ -43,13 +43,13 @@ const EventNavbar = ({ searchTerm, setSearchTerm }) => {
     return (
         <header
             className="fixed top-6 left-1/2 -translate-x-1/2 z-50 
-                w-[90%] md:w-[95%] max-w-6xl
+                w-[95%] md:w-[98%] max-w-[1400px]
                 transition-all duration-300 ease-in-out
                 rounded-full border border-white/40 shadow-2xl shadow-blue-900/10
                 backdrop-blur-md 
                 py-3 bg-white/80 supports-[backdrop-filter]:bg-white/60"
         >
-            <div className="px-6 md:px-8 flex items-center justify-between h-full">
+            <div className="px-8 md:px-12 flex items-center justify-between h-full">
                 {/* Logo + Search */}
                 <div className="flex items-center gap-4 w-full sm:w-auto">
                     <Link to="/">

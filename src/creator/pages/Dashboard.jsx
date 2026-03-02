@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import useAuthStore from '../../auth/useAuthStore';
 import { supabase } from '../../lib/supabaseClient';
 import {
@@ -20,7 +20,12 @@ import {
     Cell,
     Tooltip as RechartsTooltip,
     ResponsiveContainer,
-    Legend
+    Legend,
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid
 } from 'recharts';
 
 
@@ -35,11 +40,28 @@ const rupiah = (value) => {
     }).format(value || 0);
 };
 
+const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-2xl shadow-blue-500/10 active:scale-95 transition-all">
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">{label}</p>
+                <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-blue-600" />
+                    <p className="text-sm font-black text-slate-900 dark:text-white">
+                        {payload[0].value} <span className="text-slate-400 font-medium">Units</span>
+                    </p>
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 const CreatorDashboard = () => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const [events, setEvents] = useState([]);
-    const [balances, setBalances] = useState([]);
+    const [ticketsData, setTicketsData] = useState([]);
     const [stats, setStats] = useState({
         totalEvents: 0,
         totalTickets: 0,
@@ -72,60 +94,93 @@ const CreatorDashboard = () => {
             if (!verified) { setLoading(false); return; }
 
             // Fetch Events & Transactions
-            const [eventsRes, balancesRes] = await Promise.all([
-                supabase.from('events').select('*, ticket_types(price, quota, sold)').eq('creator_id', user.id),
-                supabase.from('creator_balances').select('*').eq('creator_id', user.id).eq('type', 'credit')
-            ]);
+            const { data: eventsData, error: eventsError } = await supabase
+                .from('events')
+                .select('*, ticket_types(price, quota, sold)')
+                .eq('creator_id', user.id);
 
-            const eventsData = eventsRes.data || [];
-            const balancesData = balancesRes.data || [];
+            if (eventsError) throw eventsError;
+
+            // Fetch Tickets with joined Orders to calculate revenue
+            const eventIds = eventsData.map(e => e.id);
+            let totalRev = 0;
+            let ticketsDataForDemographics = [];
+
+            if (eventIds.length > 0) {
+                const { data: ticketsWithOrders, error: tError } = await supabase
+                    .from('tickets')
+                    .select(`
+                        id,
+                        created_at,
+                        gender,
+                        order_id,
+                        orders!inner (id, total, status),
+                        ticket_types!inner (event_id)
+                    `)
+                    .in('ticket_types.event_id', eventIds)
+                    .eq('orders.status', 'paid');
+
+                if (tError) throw tError;
+
+                if (ticketsWithOrders && ticketsWithOrders.length > 0) {
+                    // To handle orders with multiple tickets fairly:
+                    // 1. Get all unique order IDs
+                    const orderIds = [...new Set(ticketsWithOrders.map(t => t.order_id))];
+
+                    // 2. Fetch total ticket count for EACH of these orders (to split revenue)
+                    const { data: allTicketsInOrders } = await supabase
+                        .from('tickets')
+                        .select('order_id')
+                        .in('order_id', orderIds);
+
+                    const orderTicketCounts = {};
+                    allTicketsInOrders?.forEach(t => {
+                        orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                    });
+
+                    // 3. Calculate revenue: (Order Total / Total Tickets) - 8500 per ticket
+                    let calculatedTotalRev = 0;
+                    ticketsWithOrders.forEach(t => {
+                        const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
+                        const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
+                        calculatedTotalRev += (shareOfGross - 8500);
+                    });
+
+                    totalRev = calculatedTotalRev;
+                    ticketsDataForDemographics = ticketsWithOrders;
+                    setTicketsData(ticketsWithOrders);
+                }
+            }
 
             setEvents(eventsData);
-            setBalances(balancesData);
 
             // Calculate Stats
             let totalSold = 0;
-            let totalRev = balancesData.reduce((acc, curr) => {
-                // Subtract platform fee (8500) from each ticket sale credit
-                return acc + (Number(curr.amount) - 8500);
-            }, 0);
-
             eventsData?.forEach(ev => {
                 ev.ticket_types?.forEach(tt => {
                     totalSold += tt.sold || 0;
                 });
             });
 
-            // Fetch Tickets for Demographics
-            const eventIds = eventsData.map(e => e.id);
+            // Demographics using already fetched data
             let genderResult = [];
+            if (ticketsDataForDemographics.length > 0) {
+                let maleCount = 0;
+                let femaleCount = 0;
 
-            if (eventIds.length > 0) {
-                // To fetch tickets for all events, we need the ticket records tied to ticket_types of these events
-                const { data: ticketsData } = await supabase
-                    .from('tickets')
-                    .select('gender, ticket_types!inner(event_id)')
-                    .in('ticket_types.event_id', eventIds);
+                ticketsDataForDemographics.forEach(ticket => {
+                    const g = ticket.gender?.toLowerCase();
+                    if (g === 'laki - laki' || g === 'laki-laki' || g === 'male') maleCount++;
+                    else if (g === 'perempuan' || g === 'female') femaleCount++;
+                });
 
-                if (ticketsData) {
-                    let maleCount = 0;
-                    let femaleCount = 0;
-
-                    ticketsData.forEach(ticket => {
-                        const g = ticket.gender?.toLowerCase();
-                        if (g === 'laki - laki' || g === 'laki-laki' || g === 'male') maleCount++;
-                        else if (g === 'perempuan' || g === 'female') femaleCount++;
-                    });
-
-                    if (maleCount > 0 || femaleCount > 0) {
-                        genderResult = [
-                            { name: 'Laki - Laki', value: maleCount, color: '#3B82F6' },
-                            { name: 'Perempuan', value: femaleCount, color: '#EC4899' }
-                        ];
-                    }
+                if (maleCount > 0 || femaleCount > 0) {
+                    genderResult = [
+                        { name: 'Laki - Laki', value: maleCount, color: '#3B82F6' },
+                        { name: 'Perempuan', value: femaleCount, color: '#EC4899' }
+                    ];
                 }
             }
-
             setStats({
                 totalEvents: eventsData?.length || 0,
                 totalTickets: totalSold,
@@ -140,7 +195,17 @@ const CreatorDashboard = () => {
         }
     };
 
-
+    // Prepare chart data for Sales Performance (Tickets Sold per Day)
+    const chartData = useMemo(() => {
+        if (!ticketsData.length) return [];
+        const days = {};
+        ticketsData.forEach(t => {
+            const date = new Date(t.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            // Each record in tickets represents a ticket sale
+            days[date] = (days[date] || 0) + 1;
+        });
+        return Object.entries(days).map(([name, value]) => ({ name, value })).slice(-7);
+    }, [ticketsData]);
 
     if (loading) return (
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -262,6 +327,93 @@ const CreatorDashboard = () => {
                     </div>
                 </div>
 
+            </div>
+
+            {/* Sales Performance Chart */}
+            <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-blue-500/10 transition-colors" />
+
+                <div className="flex items-center justify-between mb-10 relative z-10">
+                    <div>
+                        <h3 className="text-2xl font-medium text-slate-900 tracking-tight">Sales Performance</h3>
+                        <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Harian Penjualan Tiket</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="hidden sm:flex flex-col items-end mr-3">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Growth</p>
+                            <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+                                <HiTrendingUp /> +14.2%
+                            </p>
+                        </div>
+                        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm">
+                            <HiTrendingUp size={24} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="h-[380px] w-full relative z-10">
+                    {chartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#2563EB" stopOpacity={0.15} />
+                                        <stop offset="95%" stopColor="#2563EB" stopOpacity={0.01} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="6 6" vertical={false} stroke="#F1F5F9" />
+                                <XAxis
+                                    dataKey="name"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fontSize: 11, fontWeight: 600, fill: '#94A3B8' }}
+                                    dy={15}
+                                />
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fontSize: 11, fontWeight: 600, fill: '#94A3B8' }}
+                                    tickCount={6}
+                                    domain={[0, 'auto']}
+                                    allowDecimals={false}
+                                />
+                                <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: '#CBD5E1', strokeWidth: 1 }} />
+                                <Area
+                                    type="monotone"
+                                    dataKey="value"
+                                    stroke="#2563EB"
+                                    strokeWidth={4}
+                                    fillOpacity={1}
+                                    fill="url(#chartGradient)"
+                                    animationDuration={2000}
+                                    dot={(props) => {
+                                        const { cx, cy, index } = props;
+                                        if (index === chartData.length - 1) {
+                                            return (
+                                                <g key="last-dot">
+                                                    <circle cx={cx} cy={cy} r={8} fill="#2563EB" fillOpacity={0.2} />
+                                                    <circle cx={cx} cy={cy} r={4} fill="#2563EB" stroke="#fff" strokeWidth={2} />
+                                                </g>
+                                            );
+                                        }
+                                        return null;
+                                    }}
+                                    activeDot={{ r: 6, fill: '#2563EB', strokeWidth: 4, stroke: '#fff' }}
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
+                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                                <HiTrendingUp size={32} />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Belum ada data penjualan harian</p>
+                                <p className="text-[10px] text-slate-400 font-medium">Data akan otomatis muncul di sini setelah tiket mulai terjual.</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Operations Table */}
