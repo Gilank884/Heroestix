@@ -71,6 +71,19 @@ serve(async (req: Request) => {
         return new Response("ok", { status: 200, headers: corsHeaders });
     }
 
+    // 0. Path Validation (STRICT SNAP Compliant)
+    const url = new URL(req.url);
+    const pathname = url.pathname;
+
+    // Only accept the exact official SNAP path
+    if (pathname !== "/api/v1.0/transfer-va/payment") {
+        console.error(`[Bayarind] Invalid path attempted: ${pathname}`);
+        return new Response(
+            JSON.stringify({ responseCode: "4040000", responseMessage: "Not Found" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+    }
+
     // 1. Validation: Method & Content-Type
     if (req.method !== "POST") {
         return new Response(
