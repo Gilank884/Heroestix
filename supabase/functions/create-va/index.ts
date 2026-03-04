@@ -191,7 +191,7 @@ serve(async (req: Request) => {
 
         const virtualAccountNo = `${partnerServiceId}${customerNo}`;
         const timestamp = getTimestampWithOffset();
-        const externalId = String(transaction.numeric_id);
+        const externalId = String(transaction.numeric_id).replace(/[^0-9]/g, '').substring(0, 18);
 
         // 5. Build SNAP Create VA Payload
         const snapBody = {
@@ -199,7 +199,7 @@ serve(async (req: Request) => {
             customerNo: customerNo,
             virtualAccountNo: virtualAccountNo,
             virtualAccountName: "Customer VA #" + customerNo.slice(-4),
-            trxId: String(transaction.id),
+            trxId: String(transaction.numeric_id).replace(/[^0-9]/g, '').substring(0, 18),
             totalAmount: {
                 value: parseFloat(amount).toFixed(2),
                 currency: "IDR"
