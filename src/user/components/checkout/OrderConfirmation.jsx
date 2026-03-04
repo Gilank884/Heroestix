@@ -18,11 +18,18 @@ export default function OrderConfirmation({
     platformFee,
     taxAmount,
     eventTax,
-    appliedVoucher
+    appliedVoucher,
+    selectedBank,
+    setSelectedBank
 }) {
     const discountAmount = appliedVoucher?.discount_amount || 0;
     const subtotalAfterDiscount = Math.max(0, totalAmount - discountAmount);
     const finalTotal = subtotalAfterDiscount + platformFee + taxAmount;
+
+    const banks = [
+        { code: "BNI", name: "Bank BNI", logo: "https://upload.wikimedia.org/wikipedia/id/thumb/5/55/BNI_logo.svg/1200px-BNI_logo.svg.png" },
+        { code: "BRI", name: "Bank BRI", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/BRI_Logo.svg/1200px-BRI_Logo.svg.png" }
+    ];
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 md:p-8 space-y-8 animate-fade-in-up">
@@ -105,6 +112,35 @@ export default function OrderConfirmation({
                             <span className="text-xl font-black text-blue-600 dark:text-blue-400">{rupiah(finalTotal)}</span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* Metode Pembayaran Section */}
+            <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h3 className="font-bold text-slate-700 dark:text-slate-300">Pilih Metode Pembayaran (Virtual Account)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {banks.map((bank) => (
+                        <button
+                            key={bank.code}
+                            onClick={() => setSelectedBank(bank.code)}
+                            className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedBank === bank.code
+                                    ? "border-[#1a36c7] bg-blue-50 dark:bg-blue-900/20 shadow-sm"
+                                    : "border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
+                                }`}
+                        >
+                            <div className="w-12 h-12 bg-white rounded-lg p-2 flex items-center justify-center border border-slate-100">
+                                <img src={bank.logo} alt={bank.name} className="max-h-full max-w-full object-contain" />
+                            </div>
+                            <div className="text-left">
+                                <p className="font-bold text-slate-900 dark:text-white leading-tight">{bank.name}</p>
+                                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mt-1">Virtual Account</p>
+                            </div>
+                            <div className={`ml-auto w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedBank === bank.code ? "bg-[#1a36c7] border-[#1a36c7]" : "border-slate-200 dark:border-slate-700"
+                                }`}>
+                                {selectedBank === bank.code && <div className="w-2 h-2 bg-white rounded-full" />}
+                            </div>
+                        </button>
+                    ))}
                 </div>
             </div>
 

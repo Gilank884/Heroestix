@@ -19,6 +19,7 @@ export default function Checkout() {
 
     const [sameAsBuyer, setSameAsBuyer] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
+    const [selectedBank, setSelectedBank] = useState(null);
     const [loading, setLoading] = useState(false);
     const [ticketTypes, setTicketTypes] = useState([]);
     const [eventData, setEventData] = useState(null);
@@ -259,16 +260,14 @@ export default function Checkout() {
 
             if (ticketError) throw ticketError;
 
-            // 3. Call payment-gateway Edge Function to Initiate Transaction
-            console.log("[Order] Initiating order with amount:", finalCalculatedTotal);
-            const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke('payment-gateway', {
+            // 3. Call Bayarind SNAP Edge Function (create-va) to Initiate Transaction
+            console.log("[Order] Initiating order with bank:", selectedBank, "amount:", finalCalculatedTotal);
+
+            const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke('create-va', {
                 body: {
-                    action: 'initiate',
+                    bank_code: selectedBank,
                     order_id: order.id,
-                    amount: finalCalculatedTotal,
-                    customer_email: ticketHolders[0].email, // Use primary contact
-                    customer_name: ticketHolders[0].full_name,
-                    customer_phone: ticketHolders[0].phone
+                    amount: finalCalculatedTotal
                 }
             });
 
@@ -291,9 +290,9 @@ export default function Checkout() {
                 navigate(`/payment/${gatewayData.transaction_id}`, {
                     state: {
                         total: totalAmount + platformFee + taxAmount - (appliedVoucher?.discount_amount || 0),
-                        selectedPayment: "bayarind",
-                        orderId: order_id,
-                        eventTitle: eventData.title,
+                        selectedPayment: "bayarind_va",
+                        orderId: order.id,
+                        eventTitle: eventData?.title || event.title,
                         visitorEmail: ticketHolders[0].email,
                         virtualAccountNo: gatewayData.virtualAccountNo,
                         bankName: gatewayData.bankName,
@@ -377,6 +376,8 @@ export default function Checkout() {
                                     taxAmount={taxAmount}
                                     eventTax={eventTax}
                                     appliedVoucher={appliedVoucher}
+                                    selectedBank={selectedBank}
+                                    setSelectedBank={setSelectedBank}
                                 />
                             )}
                         </div>
@@ -396,7 +397,7 @@ export default function Checkout() {
                                 onPrev={handlePrevStep}
                                 onPay={handleCreateOrder}
                                 loading={loading}
-                                isNextDisabled={false} // Enable button to allow validation check on click
+                                isNextDisabled={currentStep === 2 && !selectedBank} // Disable button if at step 2 and no bank selected
                                 appliedVoucher={appliedVoucher}
                                 onApplyVoucher={handleApplyVoucher}
                                 voucherLoading={voucherLoading}

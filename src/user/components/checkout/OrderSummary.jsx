@@ -173,12 +173,17 @@ export default function OrderSummary({
                     ) : (
                         <>
                             <button
-                                disabled={loading}
+                                disabled={loading || isNextDisabled}
                                 onClick={onPay}
-                                className="w-full bg-[#1b3bb6] hover:bg-[#16319c] dark:bg-blue-600 dark:hover:bg-blue-500 text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 dark:shadow-blue-900/20 disabled:opacity-50"
+                                className="w-full bg-[#1b3bb6] hover:bg-[#16319c] dark:bg-blue-600 dark:hover:bg-blue-500 text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-blue-100 dark:shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading ? "Memproses..." : "Bayar Sekarang"}
                             </button>
+                            {currentStep === 2 && isNextDisabled && (
+                                <p className="text-[10px] text-center text-red-500 font-bold uppercase tracking-tight animate-pulse">
+                                    Silakan pilih metode pembayaran
+                                </p>
+                            )}
                             <button
                                 onClick={onPrev}
                                 className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 py-4 rounded-xl font-bold transition-all hover:bg-slate-50 dark:hover:bg-slate-700"
