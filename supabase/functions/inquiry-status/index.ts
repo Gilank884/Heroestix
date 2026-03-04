@@ -212,7 +212,9 @@ serve(async (req: Request) => {
     }
     customerNo = customerNo.substring(0, 20);
 
-    const targetVirtualAccountNo = (singleTx.va_number || `${partnerServiceId}${customerNo}`).trim();
+    const targetVirtualAccountNo = singleTx.va_number
+      ? singleTx.va_number.trim()
+      : `${partnerServiceId}${customerNo}`;
     const externalId = String(singleTx.numeric_id).replace(/[^0-9]/g, '').substring(0, 18);
     const trxIdPayload = String(singleTx.numeric_id).replace(/[^0-9]/g, '').substring(0, 18); // Revert to numeric for provider match
 

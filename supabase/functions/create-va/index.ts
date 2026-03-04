@@ -190,7 +190,7 @@ serve(async (req: Request) => {
 
         // 4. Generate VA according to Bayarind rules
         // partnerServiceId = bank_id (8 digits, zero padding)
-        const partnerServiceId = bankConfig.bank_id.padStart(8, "0");
+        const partnerServiceId = bankConfig.bank_id.toString().trim();
 
         // customerNo = sub_id (if exists) + unique number (numeric_id)
         // Ensure total length is enough to reach 16 digits VA (total VA = partnerServiceId + customerNo)
