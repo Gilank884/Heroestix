@@ -32,6 +32,25 @@ async function sha256Hex(message: string): Promise<string> {
 }
 
 /**
+ * Recursively sort object keys to ensure deterministic JSON canonicalization.
+ * Required for consistent hashing of the payload across varying engines or dynamic property insertions.
+ */
+function sortJSON(obj: any): any {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(sortJSON);
+    }
+    const sortedKeys = Object.keys(obj).sort();
+    const result: any = {};
+    for (const key of sortedKeys) {
+        result[key] = sortJSON(obj[key]);
+    }
+    return result;
+}
+
+/**
  * Converts a PEM-formatted key to a Uint8Array.
  */
 function pemToBinary(pem: string): Uint8Array {
@@ -170,8 +189,8 @@ serve(async (req: Request) => {
         }
 
         // 4. Generate VA according to Bayarind rules
-        // partnerServiceId = bank_id (8 digits, zero padded to the left)
-        const partnerServiceId = bankConfig.bank_id.padStart(8, "0");
+        // partnerServiceId = bank_id (8 digits, left padding space)
+        const partnerServiceId = bankConfig.bank_id.padStart(8, " ");
 
         // customerNo = sub_id (if exists) + unique number (numeric_id)
         // Ensure total length is enough to reach 16 digits VA (total VA = partnerServiceId + customerNo)
@@ -189,6 +208,9 @@ serve(async (req: Request) => {
             customerNo = numericStr.slice(-8).padStart(8, "0");
         }
 
+        // Safeguard: Ensure customerNo never exceeds 20 characters
+        customerNo = customerNo.substring(0, 20);
+
         const virtualAccountNo = `${partnerServiceId}${customerNo}`;
         const timestamp = getTimestampWithOffset();
         const externalId = String(transaction.numeric_id).replace(/[^0-9]/g, '').substring(0, 18);
@@ -198,7 +220,7 @@ serve(async (req: Request) => {
             partnerServiceId: partnerServiceId,
             customerNo: customerNo,
             virtualAccountNo: virtualAccountNo,
-            virtualAccountName: "Customer VA #" + customerNo.slice(-4),
+            virtualAccountName: ("Customer VA #" + customerNo.slice(-4)).substring(0, 20),
             trxId: String(transaction.numeric_id).replace(/[^0-9]/g, '').substring(0, 18),
             totalAmount: {
                 value: parseFloat(amount).toFixed(2),
@@ -219,7 +241,7 @@ serve(async (req: Request) => {
         // 6. Generate RSA Signature (SNAP B2B Protocol)
         // Formula: POST:/v1.0/transfer-va/create-va:lowercase(hex(sha256(minifiedBody))):timestamp
         // IMPORTANT: Use a single bodyString for both hashing and sending to guarantee consistency
-        const bodyString = JSON.stringify(snapBody);
+        const bodyString = JSON.stringify(sortJSON(snapBody));
         const relativePath = ENDPOINT;
         const hashedBody = await sha256Hex(bodyString);
         const stringToSign = `POST:${relativePath}:${hashedBody.toLowerCase()}:${timestamp}`;
@@ -283,11 +305,16 @@ serve(async (req: Request) => {
         const result = await response.json();
         const responseCode = result.responseCode || "";
         if (responseCode.startsWith("200")) {
+            // Extract insertId (if available) from Bayarind response
+            const insertId = result?.virtualAccountData?.additionalInfo?.insertId ?? result?.virtualAccountData?.insertId ?? null;
+
             // Success
             await supabase
                 .from('transactions')
                 .update({
                     va_number: virtualAccountNo,
+                    provider_reference: insertId, // Keep for backward compatibility 
+                    insert_id: insertId, // As requested
                     payment_provider_data: {
                         ...bankConfig,
                         snap_request: snapBody,
@@ -303,7 +330,8 @@ serve(async (req: Request) => {
                     virtualAccountNo: virtualAccountNo.trim(),
                     amount,
                     order_id,
-                    transaction_id: transaction.id
+                    transaction_id: transaction.id,
+                    insertId: insertId // Expose to client if needed
                 }),
                 { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
