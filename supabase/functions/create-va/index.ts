@@ -189,8 +189,8 @@ serve(async (req: Request) => {
         }
 
         // 4. Generate VA according to Bayarind rules
-        // partnerServiceId = bank_id (8 digits, left padding space)
-        const partnerServiceId = bankConfig.bank_id.padStart(8, " ");
+        // partnerServiceId = bank_id (8 digits, zero padding)
+        const partnerServiceId = bankConfig.bank_id.padStart(8, "0");
 
         // customerNo = sub_id (if exists) + unique number (numeric_id)
         // Ensure total length is enough to reach 16 digits VA (total VA = partnerServiceId + customerNo)
@@ -211,7 +211,7 @@ serve(async (req: Request) => {
         // Safeguard: Ensure customerNo never exceeds 20 characters
         customerNo = customerNo.substring(0, 20);
 
-        const virtualAccountNo = `${partnerServiceId}${customerNo}`;
+        const virtualAccountNo = `${partnerServiceId}${customerNo}`.trim();
         const timestamp = getTimestampWithOffset();
         const externalId = String(transaction.numeric_id).replace(/[^0-9]/g, '').substring(0, 18);
 
@@ -309,19 +309,25 @@ serve(async (req: Request) => {
             const insertId = result?.virtualAccountData?.additionalInfo?.insertId ?? result?.virtualAccountData?.insertId ?? null;
 
             // Success
-            await supabase
+            const { error: updateError } = await supabase
                 .from('transactions')
                 .update({
                     va_number: virtualAccountNo,
-                    provider_reference: insertId, // Keep for backward compatibility 
-                    insert_id: insertId, // As requested
+                    expiry_date: getTimestampWithOffset(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+                    insert_id: insertId, // Explicitly placing it in root as requested
                     payment_provider_data: {
                         ...bankConfig,
+                        insert_id: insertId,
                         snap_request: snapBody,
                         snap_response: result
                     }
                 })
                 .eq('id', transaction.id);
+
+            if (updateError) {
+                console.error("DB Update Error (VA Generation):", updateError);
+                // Optionally throw or return error; we'll log it as critical for now
+            }
 
             return new Response(
                 JSON.stringify({
