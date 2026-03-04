@@ -9,13 +9,16 @@ const corsHeaders = {
 
 
 
-/**
- * Generates an ISO-8601 timestamp in pure UTC.
- * Output: 2026-03-03T09:21:33.123Z
- * EXPERIMENT: Testing if Bayarind server strictly requires verbatim ISO strings to prevent sync drift.
- */
-function getTimestamp(date: Date = new Date()): string {
-    return date.toISOString();
+function getTimestampWithOffset(date: Date = new Date()): string {
+    // Offset +7
+    const offset = 7 * 60; // menit
+    const localTime = new Date(date.getTime() + offset * 60 * 1000);
+
+    const iso = localTime.toISOString();
+
+    // Ganti millisecond dan Z jadi +07:00
+    // Contoh: "2026-03-04T15:37:29.694Z" -> "2026-03-04T15:37:29+07:00"
+    return iso.replace(/\.\d{3}Z$/, "+07:00");
 }
 
 /**
@@ -93,8 +96,8 @@ serve(async (req: Request) => {
         );
 
         const PRIVATE_KEY = Deno.env.get("BAYARIND_PRIVATE_KEY");
-        const BASE_URL = Deno.env.get("BAYARIND_API_URL") || "https://snaptest.bayarind.id";
-        const ENDPOINT = "/v1.0/transfer-va/create-va";
+        const BASE_URL = "https://snaptest.bayarind.id";
+        const ENDPOINT = "/api/v1.0/transfer-va/create-va";
         const API_URL = `${BASE_URL.replace(/\/$/, "")}${ENDPOINT}`;
 
         console.log("🔥 FINAL API URL:", API_URL);
@@ -187,7 +190,7 @@ serve(async (req: Request) => {
         }
 
         const virtualAccountNo = `${partnerServiceId}${customerNo}`;
-        const timestamp = getTimestamp();
+        const timestamp = getTimestampWithOffset();
         const externalId = String(transaction.numeric_id);
 
         // 5. Build SNAP Create VA Payload
@@ -209,7 +212,7 @@ serve(async (req: Request) => {
                     }
                 }
             ],
-            expiredDate: getTimestamp(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+            expiredDate: getTimestampWithOffset(new Date(Date.now() + 24 * 60 * 60 * 1000)),
             additionalInfo: {}
         };
 
