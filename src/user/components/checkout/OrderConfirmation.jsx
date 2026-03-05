@@ -27,8 +27,9 @@ export default function OrderConfirmation({
     const finalTotal = subtotalAfterDiscount + platformFee + taxAmount;
 
     const banks = [
-        { code: "BNI", name: "Bank BNI", logo: "https://upload.wikimedia.org/wikipedia/id/thumb/5/55/BNI_logo.svg/1200px-BNI_logo.svg.png" },
-        { code: "BRI", name: "Bank BRI", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/BRI_Logo.svg/1200px-BRI_Logo.svg.png" }
+        { code: "BNI", name: "Bank BNI", logo: "/Logo/bni.png" },
+        { code: "BRI", name: "Bank BRI", logo: "/Logo/bri.png" },
+        { code: "MANDIRI", name: "Bank Mandiri", logo: "/Logo/mandiri.png" }
     ];
 
     return (
@@ -116,31 +117,75 @@ export default function OrderConfirmation({
             </div>
 
             {/* Metode Pembayaran Section */}
-            <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <h3 className="font-bold text-slate-700 dark:text-slate-300">Pilih Metode Pembayaran (Virtual Account)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {banks.map((bank) => (
-                        <button
-                            key={bank.code}
-                            onClick={() => setSelectedBank(bank.code)}
-                            className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedBank === bank.code
+            <div className="space-y-8 pt-4 border-t border-slate-100 dark:border-slate-800">
+                {/* Virtual Account */}
+                <div className="space-y-4">
+                    <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-1.5 h-4 bg-[#1a36c7] rounded-full"></span>
+                        Virtual Account
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {banks.map((bank) => (
+                            <button
+                                key={bank.code}
+                                onClick={() => setSelectedBank(bank.code)}
+                                className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedBank === bank.code
                                     ? "border-[#1a36c7] bg-blue-50 dark:bg-blue-900/20 shadow-sm"
                                     : "border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
-                                }`}
-                        >
-                            <div className="w-12 h-12 bg-white rounded-lg p-2 flex items-center justify-center border border-slate-100">
-                                <img src={bank.logo} alt={bank.name} className="max-h-full max-w-full object-contain" />
-                            </div>
-                            <div className="text-left">
-                                <p className="font-bold text-slate-900 dark:text-white leading-tight">{bank.name}</p>
-                                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mt-1">Virtual Account</p>
-                            </div>
-                            <div className={`ml-auto w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedBank === bank.code ? "bg-[#1a36c7] border-[#1a36c7]" : "border-slate-200 dark:border-slate-700"
-                                }`}>
-                                {selectedBank === bank.code && <div className="w-2 h-2 bg-white rounded-full" />}
-                            </div>
-                        </button>
-                    ))}
+                                    }`}
+                            >
+                                <div className="w-12 h-12 bg-white rounded-lg p-2 flex items-center justify-center border border-slate-100">
+                                    <img src={bank.logo} alt={bank.name} className="max-h-full max-w-full object-contain" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-bold text-slate-900 dark:text-white leading-tight">{bank.name}</p>
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mt-1">Dicek Otomatis</p>
+                                </div>
+                                <div className={`ml-auto w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedBank === bank.code ? "bg-[#1a36c7] border-[#1a36c7]" : "border-slate-200 dark:border-slate-700"
+                                    }`}>
+                                    {selectedBank === bank.code && <div className="w-2 h-2 bg-white rounded-full" />}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* E-Wallet & QRIS */}
+                <div className="space-y-4">
+                    <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-1.5 h-4 bg-emerald-500 rounded-full"></span>
+                        E-Wallet & QRIS
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[
+                            { code: "QRIS", name: "QRIS", logo: "/Logo/qris.jpg", type: "QR Code" },
+                            { code: "OVO", name: "OVO", logo: "/Logo/ovo.png", type: "E-Wallet" },
+                            { code: "DANA", name: "Dana", logo: "/Logo/dana.png", type: "E-Wallet" },
+                            { code: "LINKAJA", name: "LinkAja", logo: "/Logo/linkaja.png", type: "E-Wallet" },
+                            { code: "SHOPEEPAY", name: "ShopeePay", logo: "/Logo/shopeepay.png", type: "E-Wallet" }
+                        ].map((method) => (
+                            <button
+                                key={method.code}
+                                onClick={() => setSelectedBank(method.code)}
+                                className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedBank === method.code
+                                    ? "border-[#1a36c7] bg-blue-50 dark:bg-blue-900/20 shadow-sm"
+                                    : "border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
+                                    }`}
+                            >
+                                <div className="w-12 h-12 bg-white rounded-lg p-2 flex items-center justify-center border border-slate-100">
+                                    <img src={method.logo} alt={method.name} className="max-h-full max-w-full object-contain" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-bold text-slate-900 dark:text-white leading-tight">{method.name}</p>
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mt-1">{method.type}</p>
+                                </div>
+                                <div className={`ml-auto w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedBank === method.code ? "bg-[#1a36c7] border-[#1a36c7]" : "border-slate-200 dark:border-slate-700"
+                                    }`}>
+                                    {selectedBank === method.code && <div className="w-2 h-2 bg-white rounded-full" />}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 

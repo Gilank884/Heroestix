@@ -2,50 +2,54 @@ import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { transactionService } from "../../services/transactions";
 import { FaCheckCircle, FaTimesCircle, FaSpinner } from "react-icons/fa";
+import { useLocation } from "react-router-dom";
+import { supabase } from "../../lib/supabaseClient";
 
 export default function PaymentReceipt() {
     const [searchParams] = useSearchParams();
+    const location = useLocation();
     // We can look for status from URL or query the DB using reference
     const trxId = searchParams.get("trx_id");
+    const orderId = location.state?.orderId;
     const [dbStatus, setDbStatus] = useState("loading"); // loading, success, failed
 
     useEffect(() => {
-        // If we are in the "Merchant" role receiving a callback/redirect, 
-        // we want to verify the final status from our own database to be sure.
-        // In a real flow, we might poll if the callback is async, but for this mock sync flow:
-        if (!trxId) {
-            setDbStatus("failed");
-            return;
-        }
-
         const checkStatus = async () => {
             try {
-                // We can reuse getTransactions or make a specific getTransactionById
-                // Ideally we need getTransactionById. For now, assuming we might need to add it or search.
-                // But wait, transactionService.getTransactions takes orderId.
-                // We only have trxId here.
-                // Let's rely on the mock callback params or implement a check.
-                // For simplicity in this demo, let's assume successful redirect implies success 
-                // UNLESS we want to be strict.
+                // 1. If we have orderId from state, check DB directly
+                if (orderId) {
+                    const { data, error } = await supabase
+                        .from('orders')
+                        .select('status')
+                        .eq('id', orderId)
+                        .single();
 
-                // Strict way: Call DB.
-                // Since I didn't add getTransactionById, and I don't want to break flow, 
-                // I'll assume if I'm here, the gateway redirected me back.
-                // But usually gateway appends ?status=success or similar.
+                    if (data?.status === 'paid') {
+                        setDbStatus("success");
+                    } else {
+                        setDbStatus("failed");
+                    }
+                    return;
+                }
 
-                // Let's wait a moment to simulate checking
-                setTimeout(() => {
-                    setDbStatus("success");
-                }, 1500);
+                // 2. Fallback to trxId if present
+                if (trxId) {
+                    // Simulate verification for now or query transactions table
+                    setTimeout(() => {
+                        setDbStatus("success");
+                    }, 1000);
+                    return;
+                }
 
+                setDbStatus("failed");
             } catch (error) {
-                console.error(error);
+                console.error("Receipt verification error:", error);
                 setDbStatus("failed");
             }
         };
 
         checkStatus();
-    }, [trxId]);
+    }, [trxId, orderId]);
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6 text-center">
@@ -67,10 +71,10 @@ export default function PaymentReceipt() {
 
                     <div className="flex flex-col gap-3">
                         <Link
-                            to="/profile"
+                            to={`/transaction-detail/${orderId}`}
                             className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition shadow-lg hover:shadow-blue-200"
                         >
-                            View My Tickets
+                            View My Ticket
                         </Link>
                         <Link
                             to="/"

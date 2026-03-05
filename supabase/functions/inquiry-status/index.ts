@@ -379,11 +379,25 @@ serve(async (req: Request) => {
       .eq('id', singleTx.id);
 
     if (updateError) {
-      console.error("DB Update Error:", updateError);
+      console.error("DB Update Error (transactions):", updateError);
       return new Response(
         JSON.stringify({ success: false, error: "Failed to update transaction locally.", details: updateError }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // 8a. If successful, also update the associated Order
+    if (updatePayload.status === "success") {
+      const { error: orderUpdateError } = await supabase
+        .from('orders')
+        .update({ status: 'paid' })
+        .eq('id', singleTx.order_id);
+
+      if (orderUpdateError) {
+        console.error("DB Update Error (orders):", orderUpdateError);
+        // We don't necessarily return error here as the transaction was updated, 
+        // but it's important for the frontend.
+      }
     }
 
     const trxStatus = result?.additionalInfo?.trxStatus;

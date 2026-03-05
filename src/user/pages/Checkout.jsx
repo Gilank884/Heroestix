@@ -287,16 +287,16 @@ export default function Checkout() {
             // Bayarind SNAP B2B returns VA details directly
             if (gatewayData?.success && gatewayData?.virtualAccountNo) {
                 // Navigate to payment page with VA details
-                navigate(`/payment/${gatewayData.transaction_id}`, {
+                navigate(`/payment/${gatewayData.transaction_id || order.id}`, {
                     state: {
-                        total: totalAmount + platformFee + taxAmount - (appliedVoucher?.discount_amount || 0),
+                        total: finalCalculatedTotal,
                         selectedPayment: "bayarind_va",
                         orderId: order.id,
                         eventTitle: eventData?.title || event.title,
                         visitorEmail: ticketHolders[0].email,
                         virtualAccountNo: gatewayData.virtualAccountNo,
-                        bankName: gatewayData.bankName,
-                        expiredDate: gatewayData.expiredDate
+                        bankName: selectedBank,
+                        expiredDate: gatewayData.expiredDate || (new Date(Date.now() + 5 * 60 * 1000)).toISOString()
                     }
                 });
             } else {

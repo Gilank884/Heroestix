@@ -193,6 +193,24 @@ serve(async (req: Request) => {
         }
 
         // 3. Create Transaction to get numeric_id
+        const externalIdHeader = req.headers.get("x-external-id") || crypto.randomUUID();
+
+        const { data: existingExternal } = await supabase
+            .from("transactions")
+            .select("id")
+            .eq("external_id", externalIdHeader)
+            .maybeSingle();
+
+        if (existingExternal) {
+            return new Response(
+                JSON.stringify({
+                    errorCode: "409xx00",
+                    errorMessage: "Conflict"
+                }),
+                { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
         const { data: transaction, error: txError } = await supabase
             .from('transactions')
             .insert([
@@ -200,7 +218,8 @@ serve(async (req: Request) => {
                     order_id: order_id,
                     amount: amount,
                     method: `va_${bank_code.toLowerCase()}`,
-                    status: 'pending'
+                    status: 'pending',
+                    external_id: externalIdHeader
                 }
             ])
             .select()
@@ -212,8 +231,8 @@ serve(async (req: Request) => {
         }
 
         // 4. Generate VA according to Bayarind rules
-        // partnerServiceId = bank_id (8 digits, zero padding)
-        const partnerServiceId = bankConfig.bank_id.toString().trim();
+        // partnerServiceId = bank_id (8 digits, space padding as per SNAP B2B)
+        const partnerServiceId = bankConfig.bank_id.toString().trim().padStart(8, " ");
 
         // customerNo = sub_id (if exists) + unique number (numeric_id)
         // Ensure total length is enough to reach 16 digits VA (total VA = partnerServiceId + customerNo)
@@ -234,7 +253,7 @@ serve(async (req: Request) => {
         // Safeguard: Ensure customerNo never exceeds 20 characters
         customerNo = customerNo.substring(0, 20);
 
-        const virtualAccountNo = `${partnerServiceId}${customerNo}`.trim();
+        const virtualAccountNo = `${partnerServiceId}${customerNo}`;
         const timestamp = getTimestampWithOffset();
         const externalId = String(transaction.numeric_id).replace(/[^0-9]/g, '').substring(0, 18);
 
@@ -257,7 +276,7 @@ serve(async (req: Request) => {
                     }
                 }
             ],
-            expiredDate: getTimestampWithOffset(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+            expiredDate: getTimestampWithOffset(new Date(Date.now() + 5 * 60 * 1000)),
             additionalInfo: {}
         };
 
@@ -357,7 +376,7 @@ serve(async (req: Request) => {
                 .from('transactions')
                 .update({
                     va_number: virtualAccountNo,
-                    expiry_date: getTimestampWithOffset(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+                    expiry_date: getTimestampWithOffset(new Date(Date.now() + 5 * 60 * 1000)),
                     insert_id: insertId, // Explicitly placing it in root as requested
                     payment_provider_data: {
                         ...bankConfig,
