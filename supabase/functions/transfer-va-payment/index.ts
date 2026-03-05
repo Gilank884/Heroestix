@@ -148,7 +148,10 @@ serve(async (req: Request) => {
         if (!isValid) {
             console.error("[Bayarind] Signature verification failed");
             return new Response(
-                JSON.stringify({ responseCode: "4012500", responseMessage: "Invalid Signature" }),
+                JSON.stringify({
+                    errorCode: "401xx00",
+                    errorMessage: "Unauthorized Signature"
+                }),
                 { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }

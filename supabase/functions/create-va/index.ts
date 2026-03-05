@@ -130,7 +130,30 @@ serve(async (req: Request) => {
 
         if (!bank_code || !order_id || !amount) {
             return new Response(
-                JSON.stringify({ error: "Missing required fields: bank_code, order_id, amount" }),
+                JSON.stringify({
+                    errorCode: "400xx02",
+                    errorMessage: "Missing Mandatory Field {bank_code, order_id, amount}"
+                }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
+        if (isNaN(Number(amount))) {
+            return new Response(
+                JSON.stringify({
+                    errorCode: "400xx01",
+                    errorMessage: "Invalid Field Format {amount}"
+                }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
+        if (typeof bank_code !== 'string') {
+            return new Response(
+                JSON.stringify({
+                    errorCode: "400xx01",
+                    errorMessage: "Invalid Field Format {bank_code}"
+                }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }
@@ -283,6 +306,16 @@ serve(async (req: Request) => {
         console.log("=============================");
 
         // 8. Handle Response & Update DB
+        if (response.status === 401) {
+            return new Response(
+                JSON.stringify({
+                    errorCode: "401xx00",
+                    errorMessage: "Unauthorized Signature"
+                }),
+                { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
         if (!response.ok) {
             const errorText = await response.text();
             console.error("=== BAYARIND HTTP ERROR ===");
@@ -304,6 +337,17 @@ serve(async (req: Request) => {
 
         const result = await response.json();
         const responseCode = result.responseCode || "";
+
+        if (responseCode === "4012700") {
+            return new Response(
+                JSON.stringify({
+                    errorCode: "401xx00",
+                    errorMessage: "Unauthorized Signature"
+                }),
+                { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
         if (responseCode.startsWith("200")) {
             // Extract insertId (if available) from Bayarind response
             const insertId = result?.virtualAccountData?.additionalInfo?.insertId ?? result?.virtualAccountData?.insertId ?? null;
