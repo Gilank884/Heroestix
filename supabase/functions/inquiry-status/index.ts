@@ -75,6 +75,36 @@ async function generateRSASignature(stringToSign: string, privateKeyPem: string)
   }
 }
 
+/**
+ * Verifies an RSA-SHA256 signature (Base64).
+ */
+async function verifyRSASignature(signature: string, stringToSign: string, publicKeyPem: string): Promise<boolean> {
+  try {
+    const publicKeyBuffer = pemToBinary(publicKeyPem);
+    const publicKey = await crypto.subtle.importKey(
+      "spki",
+      publicKeyBuffer as any,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+
+    const binarySignature = new Uint8Array(
+      atob(signature).split("").map(c => c.charCodeAt(0))
+    );
+
+    return await crypto.subtle.verify(
+      "RSASSA-PKCS1-v1_5",
+      publicKey,
+      binarySignature as any,
+      new TextEncoder().encode(stringToSign) as any
+    );
+  } catch (err: any) {
+    console.error("[RSA Verify] Error:", err.message);
+    return false;
+  }
+}
+
 serve(async (req: Request) => {
   // Handle CORS
   if (req.method === "OPTIONS") {
@@ -88,18 +118,20 @@ serve(async (req: Request) => {
     );
 
     const PRIVATE_KEY = Deno.env.get("BAYARIND_PRIVATE_KEY");
+    const PUBLIC_KEY = Deno.env.get("BAYARIND_PUBLIC_KEY");
     const BASE_URL = "https://snaptest.bayarind.id";
     const ENDPOINT = "/api/v1.0/transfer-va/status";
     const API_URL = `${BASE_URL.replace(/\/$/, "")}${ENDPOINT}`;
 
-    if (!PRIVATE_KEY) {
-      throw new Error("BAYARIND_PRIVATE_KEY is required in environment variables.");
+    if (!PRIVATE_KEY || !PUBLIC_KEY) {
+      throw new Error("BAYARIND_PRIVATE_KEY and BAYARIND_PUBLIC_KEY are required in environment variables.");
     }
 
     // 1. Parse Request Body
+    const rawBody = await req.text();
     let reqBody;
     try {
-      reqBody = await req.json();
+      reqBody = JSON.parse(rawBody);
     } catch (e) {
       return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: corsHeaders });
     }
@@ -174,7 +206,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const bank_code = singleTx.method.split('_')[1].toUpperCase();
+    const bank_code = singleTx.method?.split('_')[1]?.toUpperCase();
 
     // 3. Fetch Bank Config Details
     const { data: bankConfig, error: configError } = await supabase
@@ -199,7 +231,7 @@ serve(async (req: Request) => {
 
 
     // 4. Construct Inquiry Body
-    const partnerServiceId = bankConfig.bank_id.padStart(8, "0");
+    const partnerServiceId = bankConfig.bank_id.padStart(8, " ");
 
     let customerNo = "";
     const numericStr = String(singleTx.numeric_id);
@@ -215,7 +247,7 @@ serve(async (req: Request) => {
     const targetVirtualAccountNo = singleTx.va_number
       ? singleTx.va_number.trim()
       : `${partnerServiceId}${customerNo}`;
-    const externalId = String(singleTx.numeric_id).replace(/[^0-9]/g, '').substring(0, 18);
+    const externalId = crypto.randomUUID().replace(/-/g, '');
     const trxIdPayload = String(singleTx.numeric_id).replace(/[^0-9]/g, '').substring(0, 18); // Revert to numeric for provider match
 
     const timestamp = getTimestampWithOffset();
@@ -240,10 +272,12 @@ serve(async (req: Request) => {
     const stringToSign = `POST:${ENDPOINT}:${hashedBody.toLowerCase()}:${timestamp}`;
     const rsaSignature = await generateRSASignature(stringToSign, PRIVATE_KEY);
 
-    console.log("=== INQUIRY DEBUG ===");
+    console.log("=== SNAP DEBUG (INQUIRY) ===");
     console.log("BODY STRING:", bodyString);
     console.log("BODY SHA256:", hashedBody);
+    console.log("TIMESTAMP:", timestamp);
     console.log("STRING TO SIGN:", stringToSign);
+    console.log("SIGNATURE:", rsaSignature);
     console.log("=====================");
 
     // 6. Ping Bayarind
@@ -284,36 +318,61 @@ serve(async (req: Request) => {
 
     if (responseCode.startsWith("200")) {
       // Successful Inquiry Mapping
-      const vaData = result.virtualAccountData || {};
+      const vaData = result.virtualAccountData;
+      const addInfo = result.additionalInfo;
+
+      if (!vaData || Object.keys(vaData).length === 0) {
+        console.error("[Bayarind] Successful response code but virtualAccountData is empty:", result);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Empty virtualAccountData from provider",
+            provider_code: responseCode
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       updatePayload.paid_amount = vaData.paidAmount?.value ? parseFloat(vaData.paidAmount.value) : null;
 
-      // Snap Status mapping: "SUCCESS", "FAILED", "PENDING" typically
-      if (vaData.paymentFlagReason?.english === "Success" || vaData.paymentFlagStatus === "00") {
+      // Mapping status using additionalInfo.trxStatus: 00/01=Paid/Success, 03=Pending, 04=Failed
+      const trxStatus = addInfo?.trxStatus;
+      if (trxStatus === "01" || trxStatus === "00") {
         updatePayload.status = "success";
         updatePayload.paid_at = vaData.transactionDate
           ? new Date(vaData.transactionDate).toISOString()
           : new Date().toISOString();
+      } else if (trxStatus === "03") {
+        updatePayload.status = "pending";
+      } else if (trxStatus === "04") {
+        updatePayload.status = "failed";
       }
 
       // Additional standard snaps
       updatePayload.reference_no = vaData.referenceNo || null;
       updatePayload.provider_response_code = responseCode;
-      updatePayload.trx_status = vaData.trxStatus ?? null;
+      updatePayload.trx_status = trxStatus ?? null;
 
-      if (vaData.paymentFlagReason?.english) {
-        updatePayload.trx_message = vaData.paymentFlagReason.english;
+      if (addInfo?.trxMessage) {
+        updatePayload.trx_message = addInfo.trxMessage;
       }
 
       if (vaData.transactionDate) {
         updatePayload.transaction_date = vaData.transactionDate ?? null;
       }
     } else {
+      if (responseCode === "4042414") {
+        updatePayload.status = "success";
+        updatePayload.paid_at = new Date().toISOString();
+      }
       updatePayload.provider_response_code = responseCode;
       updatePayload.trx_message = result.responseMessage || "Provider Failed Response";
     }
 
     // 8. Update DB
+    // Optimization: Combine audit tracking and status update into a single query
+    updatePayload.last_webhook_received_at = new Date();
+
     const { error: updateError } = await supabase
       .from('transactions')
       .update(updatePayload)
@@ -327,9 +386,18 @@ serve(async (req: Request) => {
       );
     }
 
+    const trxStatus = result?.additionalInfo?.trxStatus;
+    const isPaid = trxStatus === "01" || trxStatus === "00";
+    let userMessage = result?.responseMessage || "Status check complete";
+
+    if (trxStatus === "01" || trxStatus === "00") userMessage = "Transaction success";
+    else if (trxStatus === "03") userMessage = "Transaction masih belum dibayar";
+    else if (trxStatus === "04") userMessage = "Transaction failed";
+
     return new Response(
       JSON.stringify({
-        success: responseCode.startsWith("200"),
+        success: isPaid,
+        message: userMessage,
         db_updated: true,
         bayarind_response: result
       }),
