@@ -303,7 +303,7 @@ serve(async (req: Request) => {
 
         console.log("BAYARIND_API_URL:", BASE_URL);
         console.log("FINAL API_URL:", API_URL);
-        const response = await fetch(API_URL, {
+        let response = await fetch(API_URL, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -317,11 +317,31 @@ serve(async (req: Request) => {
             body: bodyString
         });
 
+        // 1x Retry for 5xx errors or connection issues
+        if (response.status >= 500) {
+            console.log(`[Bayarind] Provider error ${response.status}. Retrying 1x...`);
+            response = await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-TIMESTAMP": timestamp,
+                    "X-SIGNATURE": rsaSignature,
+                    "X-PARTNER-ID": bankConfig.partner_id,
+                    "X-EXTERNAL-ID": externalId,
+                    "X-IP-ADDRESS": req.headers.get("x-forwarded-for") || "0.0.0.0",
+                    "CHANNEL-ID": String(bankConfig.channel_id)
+                },
+                body: bodyString
+            });
+        }
+
+        const rawResponseText = await response.text();
+
         // 🔥 TAMBAHKAN INI LANGSUNG SETELAH FETCH
         console.log("=== BAYARIND RAW RESPONSE ===");
         console.log("STATUS:", response.status);
         console.log("HEADERS:", [...response.headers.entries()]);
-        console.log("BODY TEXT:", await response.clone().text());
+        console.log("BODY TEXT:", rawResponseText);
         console.log("=============================");
 
         // 8. Handle Response & Update DB
@@ -336,11 +356,10 @@ serve(async (req: Request) => {
         }
 
         if (!response.ok) {
-            const errorText = await response.text();
             console.error("=== BAYARIND HTTP ERROR ===");
             console.error("STATUS CODE:", response.status);
             console.error("HEADERS:", [...response.headers.entries()]);
-            console.error("RAW BODY:", errorText);
+            console.error("RAW BODY:", rawResponseText);
             console.error("===========================");
 
             return new Response(
@@ -348,13 +367,13 @@ serve(async (req: Request) => {
                     success: false,
                     error: "API Error from Provider",
                     provider_code: response.status,
-                    details: errorText
+                    details: rawResponseText
                 }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }
 
-        const result = await response.json();
+        const result = JSON.parse(rawResponseText);
         const responseCode = result.responseCode || "";
 
         if (responseCode === "4012700") {
@@ -368,6 +387,12 @@ serve(async (req: Request) => {
         }
 
         if (responseCode.startsWith("200")) {
+            // Validate essential structure
+            if (!result.virtualAccountData?.virtualAccountNo) {
+                console.error("[Bayarind] Invalid response structure: Missing virtualAccountNo", result);
+                throw new Error("Invalid response structure from provider");
+            }
+
             // Extract insertId (if available) from Bayarind response
             const insertId = result?.virtualAccountData?.additionalInfo?.insertId ?? result?.virtualAccountData?.insertId ?? null;
 

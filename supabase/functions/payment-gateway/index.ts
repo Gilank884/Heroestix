@@ -8,6 +8,18 @@ const corsHeaders = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+function getTimestamp(now: Date = new Date()) {
+    const tzOffset = -now.getTimezoneOffset();
+    const diff = tzOffset >= 0 ? "+" : "-";
+
+    const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, "0");
+
+    const hours = pad(tzOffset / 60);
+    const minutes = pad(tzOffset % 60);
+
+    return now.toISOString().replace("Z", `${diff}${hours}:${minutes}`);
+}
+
 // --- RSA-SHA256 (SNAP B2B) Helpers ---
 
 /**
@@ -97,9 +109,15 @@ async function verifyRSASignature(signature: string, stringToSign: string, publi
             ["verify"]
         );
 
-        const binarySignature = new Uint8Array(
-            atob(signature).split("").map(c => c.charCodeAt(0))
-        );
+        // 🔥 FIX BASE64 SAFE
+        const cleanSignature = signature
+            .replace(/\s/g, "")
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
+
+        const paddedSignature = cleanSignature + "=".repeat((4 - cleanSignature.length % 4) % 4);
+
+        const binarySignature = Uint8Array.from(atob(paddedSignature), c => c.charCodeAt(0));
 
         return await crypto.subtle.verify(
             "RSASSA-PKCS1-v1_5",
@@ -124,8 +142,19 @@ serve(async (req: any) => {
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
 
-        const PRIVATE_KEY = Deno.env.get("BAYARIND_PRIVATE_KEY");
-        const PUBLIC_KEY = Deno.env.get("BAYARIND_PUBLIC_KEY");
+        const PRIVATE_KEY = Deno.env
+            .get("BAYARIND_PRIVATE_KEY")
+            ?.replace(/\\n/g, "\n")
+            ?.trim();
+        const PUBLIC_KEY = Deno.env
+            .get("BAYARIND_PUBLIC_KEY")
+            ?.replace(/\\n/g, "\n")
+            ?.trim();
+
+        console.log("PRIVATE KEY LENGTH:", PRIVATE_KEY?.length);
+        console.log("PUBLIC KEY FIXED:", PUBLIC_KEY);
+        console.log("PUBLIC KEY LENGTH:", PUBLIC_KEY?.length);
+
         const PARTNER_ID = Deno.env.get("BAYARIND_PARTNER_ID");
         const PARTNER_SERVICE_ID = Deno.env.get("BAYARIND_PARTNER_SERVICE_ID");
         const API_URL = Deno.env.get("BAYARIND_API_URL");
@@ -330,7 +359,7 @@ serve(async (req: any) => {
             // partnerServiceId must be 8 digits left padded with zeros
             const formattedPartnerServiceId = PARTNER_SERVICE_ID.padStart(8, "0");
             const virtualAccountNo = `${formattedPartnerServiceId}${customerNo}`;
-            const timestamp = new Date().toISOString();
+            const timestamp = getTimestamp();
 
             const expiredDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
                 .toLocaleString("sv-SE", { timeZone: "Asia/Jakarta" })
@@ -373,7 +402,7 @@ serve(async (req: any) => {
             const rsaSignature = await generateRSASignature(stringToSign, PRIVATE_KEY);
 
             // E. Call Bayarind API
-            const apiRes = await fetch(API_URL, {
+            let apiRes = await fetch(API_URL, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -385,6 +414,23 @@ serve(async (req: any) => {
                 },
                 body: JSON.stringify(snapBodyObj)
             });
+
+            // 1x Retry for 5xx errors
+            if (apiRes.status >= 500) {
+                console.log(`[Bayarind] Provider error ${apiRes.status}. Retrying 1x...`);
+                apiRes = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-TIMESTAMP": timestamp,
+                        "X-SIGNATURE": rsaSignature,
+                        "X-PARTNER-ID": PARTNER_ID,
+                        "X-EXTERNAL-ID": externalId,
+                        "CHANNEL-ID": BAYARIND_CHANNEL_ID // Merchant Channel ID
+                    },
+                    body: JSON.stringify(snapBodyObj)
+                });
+            }
 
             const apiData = await apiRes.json();
 
@@ -423,13 +469,26 @@ serve(async (req: any) => {
                     expiredDate,
                     transaction_id: transaction.id
                 }),
-                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                {
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                        "X-TIMESTAMP": getTimestamp()
+                    }
+                }
             );
         }
 
         return new Response(
             JSON.stringify({ error: "Invalid Action" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            {
+                status: 400,
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "application/json",
+                    "X-TIMESTAMP": getTimestamp()
+                }
+            }
         );
 
     } catch (error: any) {
@@ -441,7 +500,14 @@ serve(async (req: any) => {
                 details: error.details || "No additional details",
                 stack: error.stack
             }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            {
+                status: 500,
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "application/json",
+                    "X-TIMESTAMP": getTimestamp()
+                }
+            }
         );
     }
 });

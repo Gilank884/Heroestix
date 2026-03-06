@@ -7,6 +7,18 @@ const corsHeaders = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+function getTimestamp(now: Date = new Date()) {
+    const tzOffset = -now.getTimezoneOffset();
+    const diff = tzOffset >= 0 ? "+" : "-";
+
+    const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, "0");
+
+    const hours = pad(tzOffset / 60);
+    const minutes = pad(tzOffset % 60);
+
+    return now.toISOString().replace("Z", `${diff}${hours}:${minutes}`);
+}
+
 /**
  * Generates a Hex-encoded SHA-256 hash of a string.
  */
@@ -35,11 +47,16 @@ function pemToBinary(pem: string): Uint8Array {
     return bytes;
 }
 
+
+
 /**
  * Verifies an RSA-SHA256 signature (Base64).
  */
 async function verifyRSASignature(signature: string, stringToSign: string, publicKeyPem: string): Promise<boolean> {
     try {
+        console.log("RAW SIGNATURE:", signature);
+        console.log("SIGNATURE LENGTH:", signature?.length);
+
         const publicKeyBuffer = pemToBinary(publicKeyPem);
         const publicKey = await crypto.subtle.importKey(
             "spki",
@@ -49,9 +66,15 @@ async function verifyRSASignature(signature: string, stringToSign: string, publi
             ["verify"]
         );
 
-        const binarySignature = new Uint8Array(
-            atob(signature).split("").map(c => c.charCodeAt(0))
-        );
+        // 🔥 FIX BASE64 SAFE
+        const cleanSignature = signature
+            .replace(/\s/g, "")
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
+
+        const paddedSignature = cleanSignature + "=".repeat((4 - cleanSignature.length % 4) % 4);
+
+        const binarySignature = Uint8Array.from(atob(paddedSignature), c => c.charCodeAt(0));
 
         return await crypto.subtle.verify(
             "RSASSA-PKCS1-v1_5",
@@ -60,7 +83,7 @@ async function verifyRSASignature(signature: string, stringToSign: string, publi
             new TextEncoder().encode(stringToSign) as any
         );
     } catch (err: any) {
-        console.error("[RSA Verify] Error:", err.message);
+        console.error("[RSA VERIFY ERROR DETAIL]:", err);
         return false;
     }
 }
@@ -105,7 +128,14 @@ serve(async (req: Request) => {
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
 
-        const PUBLIC_KEY = Deno.env.get("BAYARIND_PUBLIC_KEY");
+        const PUBLIC_KEY = Deno.env
+            .get("BAYARIND_PUBLIC_KEY")
+            ?.replace(/\\n/g, "\n")
+            ?.trim();
+
+        console.log("PUBLIC KEY FIXED:", PUBLIC_KEY);
+        console.log("PUBLIC KEY LENGTH:", PUBLIC_KEY?.length);
+
         const PARTNER_SERVICE_ID = Deno.env.get("BAYARIND_PARTNER_SERVICE_ID");
 
         if (!PUBLIC_KEY || !PARTNER_SERVICE_ID) {
@@ -243,7 +273,14 @@ serve(async (req: Request) => {
                 responseCode: "2002500",
                 responseMessage: "Success"
             }),
-            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            {
+                status: 200,
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "application/json",
+                    "X-TIMESTAMP": getTimestamp()
+                }
+            }
         );
 
     } catch (error: any) {
@@ -253,7 +290,14 @@ serve(async (req: Request) => {
                 responseCode: "5000000",
                 responseMessage: "Internal Server Error"
             }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            {
+                status: 500,
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "application/json",
+                    "X-TIMESTAMP": getTimestamp()
+                }
+            }
         );
     }
 });

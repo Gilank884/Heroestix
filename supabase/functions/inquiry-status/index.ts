@@ -7,11 +7,15 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-function getTimestampWithOffset(date: Date = new Date()): string {
+function getTimestamp(now: Date = new Date()) {
+  // Offset +7
   const offset = 7 * 60; // menit
-  const localTime = new Date(date.getTime() + offset * 60 * 1000);
+  const localTime = new Date(now.getTime() + offset * 60 * 1000);
+
   const iso = localTime.toISOString();
-  // Ganti millisecond dan Z jadi +07:00
+
+  // Ganti millisecond dan Z jadi +07:00 (Sesuai standard bank)
+  // Contoh: "2026-03-04T15:37:29.694Z" -> "2026-03-04T15:37:29+07:00"
   return iso.replace(/\.\d{3}Z$/, "+07:00");
 }
 
@@ -80,6 +84,9 @@ async function generateRSASignature(stringToSign: string, privateKeyPem: string)
  */
 async function verifyRSASignature(signature: string, stringToSign: string, publicKeyPem: string): Promise<boolean> {
   try {
+    console.log("RAW SIGNATURE:", signature);
+    console.log("SIGNATURE LENGTH:", signature?.length);
+
     const publicKeyBuffer = pemToBinary(publicKeyPem);
     const publicKey = await crypto.subtle.importKey(
       "spki",
@@ -89,9 +96,15 @@ async function verifyRSASignature(signature: string, stringToSign: string, publi
       ["verify"]
     );
 
-    const binarySignature = new Uint8Array(
-      atob(signature).split("").map(c => c.charCodeAt(0))
-    );
+    // 🔥 FIX BASE64 SAFE
+    const cleanSignature = signature
+      .replace(/\s/g, "")
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+
+    const paddedSignature = cleanSignature + "=".repeat((4 - cleanSignature.length % 4) % 4);
+
+    const binarySignature = Uint8Array.from(atob(paddedSignature), c => c.charCodeAt(0));
 
     return await crypto.subtle.verify(
       "RSASSA-PKCS1-v1_5",
@@ -100,7 +113,7 @@ async function verifyRSASignature(signature: string, stringToSign: string, publi
       new TextEncoder().encode(stringToSign) as any
     );
   } catch (err: any) {
-    console.error("[RSA Verify] Error:", err.message);
+    console.error("[RSA VERIFY ERROR DETAIL]:", err);
     return false;
   }
 }
@@ -117,8 +130,19 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const PRIVATE_KEY = Deno.env.get("BAYARIND_PRIVATE_KEY");
-    const PUBLIC_KEY = Deno.env.get("BAYARIND_PUBLIC_KEY");
+    const PRIVATE_KEY = Deno.env
+      .get("BAYARIND_PRIVATE_KEY")
+      ?.replace(/\\n/g, "\n")
+      ?.trim();
+    const PUBLIC_KEY = Deno.env
+      .get("BAYARIND_PUBLIC_KEY")
+      ?.replace(/\\n/g, "\n")
+      ?.trim();
+
+    console.log("PRIVATE KEY LENGTH:", PRIVATE_KEY?.length);
+    console.log("PUBLIC KEY FIXED:", PUBLIC_KEY);
+    console.log("PUBLIC KEY LENGTH:", PUBLIC_KEY?.length);
+
     const BASE_URL = "https://snaptest.bayarind.id";
     const ENDPOINT = "/api/v1.0/transfer-va/status";
     const API_URL = `${BASE_URL.replace(/\/$/, "")}${ENDPOINT}`;
@@ -148,7 +172,7 @@ serve(async (req: Request) => {
     // 2. Query Transaction Data
     let query = supabase.from('transactions').select('*');
     if (virtualAccountNo) {
-      query = query.eq('va_number', virtualAccountNo);
+      query = query.ilike('va_number', virtualAccountNo.trim());
     } else {
       query = query.eq('order_id', order_id);
     }
@@ -250,7 +274,7 @@ serve(async (req: Request) => {
     const externalId = crypto.randomUUID().replace(/-/g, '');
     const trxIdPayload = String(singleTx.numeric_id).replace(/[^0-9]/g, '').substring(0, 18); // Revert to numeric for provider match
 
-    const timestamp = getTimestampWithOffset();
+    const timestamp = getTimestamp();
 
     const inquiryId = reqInquiryId || crypto.randomUUID();
 
@@ -261,7 +285,7 @@ serve(async (req: Request) => {
       inquiryRequestId: inquiryId, // Inquiry specific: Must be mathematically unique per inquiry request
       additionalInfo: {
         trxId: trxIdPayload,
-        trxDateInit: singleTx.created_at ? getTimestampWithOffset(new Date(singleTx.created_at)) : timestamp
+        trxDateInit: singleTx.created_at ? getTimestamp(new Date(singleTx.created_at)) : timestamp
       }
     };
 
@@ -281,7 +305,7 @@ serve(async (req: Request) => {
     console.log("=====================");
 
     // 6. Ping Bayarind
-    const response = await fetch(API_URL, {
+    let response = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -294,6 +318,24 @@ serve(async (req: Request) => {
       },
       body: bodyString
     });
+
+    // 1x Retry for 5xx errors
+    if (response.status >= 500) {
+      console.log(`[Bayarind] Provider error ${response.status}. Retrying 1x...`);
+      response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-TIMESTAMP": timestamp,
+          "X-SIGNATURE": rsaSignature,
+          "X-PARTNER-ID": bankConfig.partner_id,
+          "X-EXTERNAL-ID": externalId,
+          "X-IP-ADDRESS": req.headers.get("x-forwarded-for") || "0.0.0.0",
+          "CHANNEL-ID": String(bankConfig.channel_id)
+        },
+        body: bodyString
+      });
+    }
 
     // 7. Handle Bayarind Response
     if (!response.ok) {
@@ -386,7 +428,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // 8a. If successful, also update the associated Order
+    // 8a. If successful, also update the associated Order and Tickets
     if (updatePayload.status === "success") {
       const { error: orderUpdateError } = await supabase
         .from('orders')
@@ -395,10 +437,18 @@ serve(async (req: Request) => {
 
       if (orderUpdateError) {
         console.error("DB Update Error (orders):", orderUpdateError);
-        // We don't necessarily return error here as the transaction was updated, 
-        // but it's important for the frontend.
+      }
+
+      const { error: ticketUpdateError } = await supabase
+        .from('tickets')
+        .update({ status: 'unused' }) // Active/Ready status
+        .eq('order_id', singleTx.order_id);
+
+      if (ticketUpdateError) {
+        console.error("DB Update Error (tickets):", ticketUpdateError);
       }
     }
+
 
     const trxStatus = result?.additionalInfo?.trxStatus;
     const isPaid = trxStatus === "01" || trxStatus === "00";
@@ -415,14 +465,28 @@ serve(async (req: Request) => {
         db_updated: true,
         bayarind_response: result
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "X-TIMESTAMP": getTimestamp()
+        }
+      }
     );
 
   } catch (err: any) {
     console.error("Inquiry Error:", err);
     return new Response(
       JSON.stringify({ success: false, error: "Internal Server Error", details: err.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "X-TIMESTAMP": getTimestamp()
+        }
+      }
     );
   }
 });
