@@ -27,9 +27,9 @@ export default function OrderConfirmation({
     const finalTotal = subtotalAfterDiscount + platformFee + taxAmount;
 
     const banks = [
-        { code: "BNI", name: "Bank BNI", logo: "/Logo/bni.png" },
-        { code: "BRI", name: "Bank BRI", logo: "/Logo/bri.png" },
-        { code: "MANDIRI", name: "Bank Mandiri", logo: "/Logo/mandiri.png" }
+        { code: "BNI", name: "BNI", logo: "/Logo/bni.png" },
+        { code: "BRI", name: "BRI", logo: "/Logo/bri.png" },
+        { code: "MANDIRI", name: "MANDIRI", logo: "/Logo/mandiri.png" }
     ];
 
     return (
@@ -139,7 +139,7 @@ export default function OrderConfirmation({
                                 </div>
                                 <div className="text-left">
                                     <p className="font-bold text-slate-900 dark:text-white leading-tight">{bank.name}</p>
-                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mt-1">Dicek Otomatis</p>
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mt-1">Virtual Account</p>
                                 </div>
                                 <div className={`ml-auto w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedBank === bank.code ? "bg-[#1a36c7] border-[#1a36c7]" : "border-slate-200 dark:border-slate-700"
                                     }`}>
