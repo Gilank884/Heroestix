@@ -43,3 +43,13 @@ entrypoint = "./functions/inquiry-status/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/order-fulfillment/index.ts"
+
+[functions.transfer-va]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/transfer-va/index.ts"
+
+[functions.transfer-va-payment]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/transfer-va-payment/index.ts"

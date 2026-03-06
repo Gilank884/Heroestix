@@ -116,89 +116,102 @@ serve(async (req: Request) => {
         console.log("SIGNATURE HEADER:", signature);
         console.log("TIMESTAMP HEADER:", timestamp);
 
-        if (!timestamp || !signature || !partnerId) {
-            return new Response(
-                JSON.stringify({
-                    responseCode: "4012501",
-                    responseMessage: "Unauthorized Signature: Missing X-TIMESTAMP, X-SIGNATURE or X-PARTNER-ID",
-                    virtualAccountData: {}
-                }),
-                { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
+        // Internal bypass: when called by inquiry-status via fetch with service role key
+        const authHeader = req.headers.get("authorization") || "";
+        const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+        const isInternalCall = signature === "internal-bypass" && authHeader === `Bearer ${SERVICE_KEY}`;
+
+        if (isInternalCall) {
+            console.log("[transfer-va] Internal call from inquiry-status detected — skipping security checks.");
         }
 
-        if (partnerId !== "CHVA01") {
-            return new Response(
-                JSON.stringify({
-                    responseCode: "4012501",
-                    responseMessage: "Unauthorized Signature: Invalid Partner ID",
-                    virtualAccountData: {}
-                }),
-                { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-        }
+        if (!isInternalCall) {
+            if (!timestamp || !signature || !partnerId) {
+                return new Response(
+                    JSON.stringify({
+                        responseCode: "4012501",
+                        responseMessage: "Unauthorized Signature: Missing X-TIMESTAMP, X-SIGNATURE or X-PARTNER-ID",
+                        virtualAccountData: {}
+                    }),
+                    { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
 
-        // Replay Attack Protection
-        const now = Math.floor(Date.now() / 1000);
-        const reqDate = new Date(timestamp);
+            if (partnerId !== "CHVA01") {
+                return new Response(
+                    JSON.stringify({
+                        responseCode: "4012501",
+                        responseMessage: "Unauthorized Signature: Invalid Partner ID",
+                        virtualAccountData: {}
+                    }),
+                    { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
 
-        if (isNaN(reqDate.getTime())) {
-            console.error("[Auth] Invalid Timestamp Format:", timestamp);
-            return new Response(
-                JSON.stringify({
-                    responseCode: "4012501",
-                    responseMessage: "Unauthorized Signature: Invalid timestamp format",
-                    virtualAccountData: {}
-                }),
-                { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-        }
+            // Replay Attack Protection
+            const now = Math.floor(Date.now() / 1000);
+            const reqDate = new Date(timestamp);
 
-        const reqTime = Math.floor(reqDate.getTime() / 1000);
-        const timeDiff = Math.abs(now - reqTime);
+            if (isNaN(reqDate.getTime())) {
+                console.error("[Auth] Invalid Timestamp Format:", timestamp);
+                return new Response(
+                    JSON.stringify({
+                        responseCode: "4012501",
+                        responseMessage: "Unauthorized Signature: Invalid timestamp format",
+                        virtualAccountData: {}
+                    }),
+                    { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
 
-        console.log("[Auth] Timestamp Debug:", {
-            NOW: now,
-            REQ: reqTime,
-            DIFF: timeDiff,
-            TIMESTAMP: timestamp
-        });
+            const reqTime = Math.floor(reqDate.getTime() / 1000);
+            const timeDiff = Math.abs(now - reqTime);
 
-        if (timeDiff > MAX_TIME_DIFF) {
-            console.error("[Auth] Request Expired. Diff:", timeDiff);
-            return new Response(
-                JSON.stringify({
-                    responseCode: "4012501",
-                    responseMessage: "Unauthorized Signature: Request expired",
-                    virtualAccountData: {}
-                }),
-                { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
+            console.log("[Auth] Timestamp Debug:", {
+                NOW: now,
+                REQ: reqTime,
+                DIFF: timeDiff,
+                TIMESTAMP: timestamp
+            });
+
+            if (timeDiff > MAX_TIME_DIFF) {
+                console.error("[Auth] Request Expired. Diff:", timeDiff);
+                return new Response(
+                    JSON.stringify({
+                        responseCode: "4012501",
+                        responseMessage: "Unauthorized Signature: Request expired",
+                        virtualAccountData: {}
+                    }),
+                    { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
         }
 
         const rawBody = await req.text();
 
-        // B2B Signature Verification
-        // Formula: POST:/v1.0/transfer-va/payment:lowercase(sha256(minify(body))):timestamp
-        const minifiedBody = JSON.stringify(JSON.parse(rawBody));
-        const hashedBody = await sha256Hex(minifiedBody);
-        const stringToSign = `POST:/v1.0/transfer-va/payment:${hashedBody.toLowerCase()}:${timestamp}`;
+        if (!isInternalCall) {
+            // B2B Signature Verification
+            // Formula: POST:/api/v1.0/transfer-va/payment:lowercase(sha256(minify(body))):timestamp
+            const minifiedBody = JSON.stringify(JSON.parse(rawBody));
+            const hashedBody = await sha256Hex(minifiedBody);
+            const stringToSign = `POST:/api/v1.0/transfer-va/payment:${hashedBody.toLowerCase()}:${timestamp}`;
 
-        const isValid = await verifyRSASignature(
-            signature!,
-            stringToSign,
-            PUBLIC_KEY
-        );
-        if (!isValid) {
-            console.error("[Auth] RSA Signature Verification Failed.");
-            return new Response(
-                JSON.stringify({
-                    responseCode: "4012501",
-                    responseMessage: "Unauthorized Signature: RSA verification failed",
-                    virtualAccountData: {}
-                }),
-                { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            const isValid = await verifyRSASignature(
+                signature!,
+                stringToSign,
+                PUBLIC_KEY
             );
+            if (!isValid) {
+                console.error("[Auth] RSA Signature Verification Failed.");
+                return new Response(
+                    JSON.stringify({
+                        responseCode: "4012501",
+                        responseMessage: "Unauthorized Signature: RSA verification failed",
+                        virtualAccountData: {}
+                    }),
+                    { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
         }
 
         // =============================
@@ -324,14 +337,32 @@ serve(async (req: Request) => {
         // 4. FIND TRANSACTION
         // =============================
 
-        // Use trimmed VA number for database lookup
-        const { data: transaction, error: findError } = await supabase
-            .from("transactions")
-            .select("*")
-            .eq("va_number", virtualAccountNo.trim())
-            .maybeSingle();
+        let transaction: any = null;
+        let findError: any = null;
+
+        if (isInternalCall && body._internalTxId) {
+            // Internal call: lookup by transaction ID directly (avoids VA number format issues)
+            console.log("[transfer-va] Internal lookup by txId:", body._internalTxId);
+            const result = await supabase
+                .from("transactions")
+                .select("*")
+                .eq("id", body._internalTxId)
+                .maybeSingle();
+            transaction = result.data;
+            findError = result.error;
+        } else {
+            // External call (Bayarind): lookup by VA number
+            const result = await supabase
+                .from("transactions")
+                .select("*")
+                .eq("va_number", virtualAccountNo.trim())
+                .maybeSingle();
+            transaction = result.data;
+            findError = result.error;
+        }
 
         if (findError || !transaction) {
+            console.error("[transfer-va] Transaction not found. VA:", virtualAccountNo.trim(), "txId:", body._internalTxId);
             return new Response(
                 JSON.stringify({
                     responseCode: "4042512",
@@ -360,17 +391,40 @@ serve(async (req: Request) => {
         }
 
         // =============================
-        // 6. CHECK ALREADY PAID
+        // 6. CHECK ALREADY PAID (Idempotent)
         // =============================
 
         if (transaction.status === "success") {
+            console.log("[Bayarind] Transaction already success. Storing callback data (idempotent). Order:", transaction.order_id);
+
+            // Still store payment_provider_data so we have proof Bayarind hit the callback
+            await supabase
+                .from("transactions")
+                .update({ payment_provider_data: body })
+                .eq("id", transaction.id);
+
             return new Response(
                 JSON.stringify({
-                    responseCode: "4092500",
-                    responseMessage: "Conflict (Already Paid)",
-                    virtualAccountData: {}
+                    responseCode: "2002500",
+                    responseMessage: "Success",
+                    virtualAccountData: {
+                        partnerServiceId: partnerServiceId,
+                        customerNo: customerNo,
+                        virtualAccountNo: virtualAccountNo,
+                        virtualAccountName: (virtualAccountName || "Customer").substring(0, 20),
+                        paymentRequestId: paymentRequestId,
+                        paidAmount: {
+                            value: reqAmount.toFixed(2),
+                            currency: "IDR"
+                        },
+                        paymentFlagReason: {
+                            english: "Success",
+                            indonesia: "Sukses"
+                        },
+                        paymentFlagStatus: "00"
+                    }
                 }),
-                { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", "X-TIMESTAMP": getTimestamp() } }
             );
         }
 

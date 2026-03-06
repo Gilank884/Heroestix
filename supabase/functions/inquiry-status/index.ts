@@ -485,46 +485,66 @@ serve(async (req: Request) => {
       }
     };
 
-    // Return inquiry response with 2002600 code
-    // Also include payment_va_response (2002500) if transfer-va/payment callback was received
+    // If payment is successful, internally call transfer-va function to handle 2002500 logic
+    // This is needed because Bayarind's callback URL doesn't match Supabase routing
     let paymentVaResponse: any = null;
 
     if (isPaid) {
-      // Re-fetch transaction to check if transfer-va-payment has been called by Bayarind
-      const { data: freshTx } = await supabase
-        .from('transactions')
-        .select('payment_provider_data, status, paid_amount')
-        .eq('id', singleTx.id)
-        .single();
+      try {
+        // Build SNAP Payment body using ACTUAL DB values (not padded values)
+        const vaData = result.virtualAccountData || {};
+        const addInfo = result.additionalInfo || {};
+        const actualVaNumber = singleTx.va_number || paddedVirtualAccountNo;
+        const actualAmount = singleTx.amount ? parseFloat(singleTx.amount).toFixed(2) : (vaData.paidAmount?.value || "0.00");
 
-      if (freshTx?.payment_provider_data) {
-        // Bayarind DID call our transfer-va/payment endpoint — use real data
-        paymentVaResponse = {
-          responseCode: "2002500",
-          responseMessage: "Success",
-          virtualAccountData: {
-            partnerServiceId: paddedPartnerServiceId,
-            customerNo: paddedCustomerNo,
-            virtualAccountNo: paddedVirtualAccountNo,
-            virtualAccountName: freshTx.payment_provider_data.virtualAccountName || "Customer",
-            paymentRequestId: freshTx.payment_provider_data.paymentRequestId || "",
-            paidAmount: {
-              value: freshTx.paid_amount ? parseFloat(freshTx.paid_amount).toFixed(2) : "0.00",
-              currency: "IDR"
-            },
-            paymentFlagReason: {
-              english: "Success",
-              indonesia: "Sukses"
-            },
-            paymentFlagStatus: "00"
+        const paymentBody = {
+          _internalTxId: singleTx.id,
+          partnerServiceId: paddedPartnerServiceId,
+          customerNo: paddedCustomerNo,
+          virtualAccountNo: actualVaNumber,
+          virtualAccountName: vaData.virtualAccountName || "Customer",
+          paymentRequestId: vaData.paymentRequestId || "",
+          trxId: addInfo.trxId || String(singleTx.numeric_id),
+          trxDateTime: vaData.transactionDate || vaData.trxDateTime || getTimestamp(),
+          paidAmount: {
+            value: actualAmount,
+            currency: "IDR"
+          },
+          referenceNo: vaData.referenceNo || "",
+          flagAdvise: "N",
+          additionalInfo: {
+            insertId: addInfo.insertId || "",
+            tagId: addInfo.tagId || "",
+            flagType: "11"
           }
         };
+
+        console.log("[Inquiry] Triggering transfer-va for payment confirmation...");
+        console.log("[Inquiry] Payment body:", JSON.stringify(paymentBody));
+
+        const { data: tvData, error: tvError } = await supabase.functions.invoke('transfer-va', {
+          body: paymentBody,
+          headers: {
+            "x-timestamp": getTimestamp(),
+            "x-signature": "internal-bypass",
+            "x-partner-id": "CHVA01"
+          }
+        });
+
+        console.log("[Inquiry] transfer-va response:", tvData);
+        console.log("[Inquiry] transfer-va error:", tvError);
+
+        if (tvData && !tvError) {
+          paymentVaResponse = tvData;
+        }
+      } catch (err: any) {
+        console.error("[Inquiry] Error calling transfer-va:", err.message, err.stack);
       }
     }
 
     return new Response(
       JSON.stringify({
-        ...inquiryResponse, // Root fields keep inquiry code (2002600)
+        ...inquiryResponse,
         success: isPaid,
         message: userMessage,
         db_updated: true,
