@@ -268,9 +268,7 @@ serve(async (req: Request) => {
     }
     customerNo = customerNo.substring(0, 20);
 
-    const targetVirtualAccountNo = singleTx.va_number
-      ? singleTx.va_number.trim()
-      : `${partnerServiceId}${customerNo}`;
+    const targetVirtualAccountNo = singleTx.va_number || `${partnerServiceId}${customerNo}`;
     const externalId = crypto.randomUUID().replace(/-/g, '');
     const trxIdPayload = String(singleTx.numeric_id).replace(/[^0-9]/g, '').substring(0, 18); // Revert to numeric for provider match
 
@@ -402,6 +400,17 @@ serve(async (req: Request) => {
       if (vaData.transactionDate) {
         updatePayload.transaction_date = vaData.transactionDate ?? null;
       }
+
+      // Robust mapping for SNAP fields
+      const referenceNo = vaData.referenceNo || addInfo?.referenceNo || result.externalId;
+      const trxIdVal = addInfo?.trxId || vaData.trxId || result.trxId;
+      const trxDateTime = vaData.transactionDate || addInfo?.trxDateTime || new Date().toISOString();
+
+      updatePayload.transaction_date = trxDateTime;
+      updatePayload.bank_reference = referenceNo || null;
+      updatePayload.bank_trx_id = trxIdVal || null;
+      updatePayload.payment_channel = "VA";
+      updatePayload.reference_no = referenceNo || null;
     } else {
       if (responseCode === "4042414") {
         updatePayload.status = "success";
@@ -458,12 +467,48 @@ serve(async (req: Request) => {
     else if (trxStatus === "03") userMessage = "Transaction masih belum dibayar";
     else if (trxStatus === "04") userMessage = "Transaction failed";
 
+    // Ensure SNAP padding requirements for response
+    const paddedPartnerServiceId = partnerServiceId.slice(-8).padStart(8, ' ');
+    const paddedCustomerNo = customerNo || "";
+    const paddedVirtualAccountNo = `${paddedPartnerServiceId}${paddedCustomerNo}`;
+
+    // Build the inquiry response with original Bayarind responseCode (2002600)
+    const inquiryResponse = {
+      ...result,
+      responseCode: result.responseCode || (isPaid ? "2002600" : "4042414"),
+      responseMessage: result.responseMessage || userMessage,
+      virtualAccountData: {
+        ...(result.virtualAccountData || {}),
+        partnerServiceId: paddedPartnerServiceId,
+        virtualAccountNo: paddedVirtualAccountNo,
+        customerNo: paddedCustomerNo
+      }
+    };
+
+    // Build the payment_va_response with responseCode 2002500 (per SNAP Payment spec)
+    const paymentVaResponse = isPaid ? {
+      responseCode: "2002500",
+      responseMessage: "Success",
+      virtualAccountData: {
+        ...(result.virtualAccountData || {}),
+        partnerServiceId: paddedPartnerServiceId,
+        customerNo: paddedCustomerNo,
+        virtualAccountNo: paddedVirtualAccountNo,
+        paymentFlagReason: {
+          english: "Success",
+          indonesia: "Sukses"
+        },
+        paymentFlagStatus: "00"
+      }
+    } : inquiryResponse;
+
     return new Response(
       JSON.stringify({
+        ...inquiryResponse, // Root fields keep inquiry code (2002600)
         success: isPaid,
         message: userMessage,
         db_updated: true,
-        bayarind_response: result
+        payment_va_response: paymentVaResponse // Payment code (2002500) when successful
       }),
       {
         status: 200,

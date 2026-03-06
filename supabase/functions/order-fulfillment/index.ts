@@ -20,24 +20,41 @@ serve(async (req) => {
         );
 
         const payload = await req.json();
-        console.log("[Fulfillment] Received Webhook Payload:", payload);
+        console.log("[Fulfillment] Received Webhook Payload:", JSON.stringify(payload, null, 2));
 
         // Supabase Webhook payload structure
         const { type, table, record, old_record } = payload;
 
-        if (type !== "UPDATE" || table !== "orders") {
-            return new Response(JSON.stringify({ message: "Ignore: Not an order update" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        // Table-specific logic to extract orderId
+        let order_id = null;
+        let shouldProcess = false;
+
+        if (table === "orders") {
+            // Trigger: Order status changed to 'paid'
+            const isPaidNow = record.status === "paid";
+            const wasNotPaidBefore = !old_record || old_record.status !== "paid";
+            if (isPaidNow && wasNotPaidBefore) {
+                order_id = record.id;
+                shouldProcess = true;
+            }
+        } else if (table === "transactions") {
+            // Trigger: Transaction status changed to 'success'
+            const isSuccessNow = record.status === "success";
+            const wasNotSuccessBefore = !old_record || old_record.status !== "success";
+            if (isSuccessNow && wasNotSuccessBefore) {
+                order_id = record.order_id;
+                shouldProcess = true;
+            }
         }
 
-        // Trigger logic: status changed to 'paid'
-        if (record.status === "paid" && old_record.status !== "paid") {
-            const order_id = record.id;
-            console.log(`[Fulfillment] Processing fulfillment for Order #${order_id}`);
-
+        if (shouldProcess && order_id) {
+            console.log(`[Fulfillment] Triggering fulfillment for Order #${order_id} (via ${table})`);
             const result = await processSuccessfulPayment(supabase, order_id);
+            console.log(`[Fulfillment] Process result for Order #${order_id}:`, JSON.stringify(result));
             return new Response(JSON.stringify({ message: "Success", result }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
 
+        console.log(`[Fulfillment] Ignore: Criteria not met. Table: ${table}, Status: ${record.status}`);
         return new Response(JSON.stringify({ message: "Ignore: Criteria not met" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     } catch (error: any) {
@@ -176,57 +193,34 @@ async function processSuccessfulPayment(supabase: any, order_id: string) {
         }
     }
 
-    // D. Send Email
+    // D. Trigger Email Notification (Invoke send-ticket-email)
     let emailResult = null;
     let emailSuccess = false;
 
     try {
-        const resendApiKey = Deno.env.get("RESEND_API_KEY");
-        if (!resendApiKey) throw new Error("RESEND_API_KEY missing");
-        if (!recipientEmail) throw new Error("Recipient email missing");
-
-        const resend = new Resend(resendApiKey);
-
-        const ticketRows = enrichedTickets.map((t: any) => `
-          <div style="border: 1px solid #e2e8f0; padding: 16px; margin-bottom: 16px; border-radius: 12px; background-color: #f8fafc;">
-            <h3 style="margin: 0; color: #1e293b; font-size: 18px;">${t.ticket_types?.name}</h3>
-            <p style="margin: 8px 0; color: #64748b;">Booking Code: <strong>${order.booking_code}</strong></p>
-            <p style="margin: 8px 0; color: #64748b;">QR Code: <strong>${t.qr_code}</strong></p>
-          </div>
-        `).join("");
-
-        const htmlContent = `
-          <html>
-          <body style="font-family: sans-serif;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h1>You're going to ${eventDetails.title}!</h1>
-              <p>📍 ${eventDetails.location}</p>
-              <p>📅 ${new Date(eventDetails.event_date).toLocaleDateString("id-ID")}</p>
-              <h2>Your Tickets</h2>
-              ${ticketRows}
-              <div style="margin-top: 32px; text-align: center;">
-                <a href="https://heroestix.com/tickets/${order.booking_code}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">View My Tickets</a>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
-
-        const { data, error } = await resend.emails.send({
-            from: "Heroestix <tickets@heroestix.com>",
-            to: [recipientEmail],
-            subject: `Your Tickets for ${eventDetails.title}`,
-            html: htmlContent,
+        console.log(`[Fulfillment] Triggering email for Order #${order_id}`);
+        // Call send-ticket-email function internally
+        const functionUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-ticket-email`;
+        const response = await fetch(functionUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
+            },
+            body: JSON.stringify({ order_id })
         });
 
-        if (error) {
-            emailResult = error;
-        } else {
-            emailResult = data;
+        const result = await response.json();
+        if (response.ok && result.success) {
             emailSuccess = true;
+            emailResult = result.data;
+            console.log(`[Fulfillment] Email triggered successfully for Order #${order_id}`);
+        } else {
+            emailResult = result || "Unknown error";
+            console.error(`[Fulfillment] Failed to trigger email for Order #${order_id}:`, emailResult);
         }
     } catch (e: any) {
-        console.error("Email exception:", e);
+        console.error("[Fulfillment] Email trigger exception:", e);
         emailResult = e.message;
     }
 

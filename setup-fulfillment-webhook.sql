@@ -15,9 +15,9 @@ AFTER UPDATE ON public.orders
 FOR EACH ROW
 WHEN (NEW.status = 'paid' AND (OLD.status IS DISTINCT FROM 'paid'))
 EXECUTE FUNCTION supabase_functions.http_request(
-  'https://YOUR_PROJECT_REF.supabase.co/functions/v1/order-fulfillment',
+  'https://qftuhnkzyegcxfozdfyz.supabase.co/functions/v1/order-fulfillment',
   'POST',
-  '{"Content-Type":"application/json", "Authorization":"Bearer YOUR_SERVICE_ROLE_KEY"}',
+  '{"Content-Type":"application/json", "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdHVobmt6eWVnY3hmb3pkZnl6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODk2ODQ0MCwiZXhwIjoyMDg0NTQ0NDQwfQ.NV0zopPt792MtBVsE0ERekmlz9Mfio45yUHdNuNlYM4"}',
   '{}'
 );
 

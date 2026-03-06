@@ -22,7 +22,18 @@ const handler = async (req: Request): Promise<Response> => {
     const payload = await req.json();
     console.log("Email Function Invoked. Payload:", JSON.stringify(payload));
 
-    const { order_id, email: reqEmail } = payload as OrderRequest;
+    // Support both direct calls and Supabase Webhook payloads
+    let order_id: string;
+    let reqEmail: string | undefined;
+
+    if (payload.record && payload.record.id) {
+      // Supabase Webhook payload
+      order_id = payload.record.id;
+    } else {
+      // Direct call
+      order_id = payload.order_id;
+      reqEmail = payload.email;
+    }
 
     if (!order_id) {
       console.error("Missing order_id in payload");
@@ -47,12 +58,16 @@ const handler = async (req: Request): Promise<Response> => {
           ticket_types (
             name,
             events (
+              title,
               name,
+              event_date,
               date,
+              event_time,
               start_time,
               end_time,
               location,
-              image_url
+              image_url,
+              poster_url
             )
           )
         )
@@ -70,9 +85,12 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Order not found");
     }
 
-    // Determine recipient email
-    const email = reqEmail || order.profiles?.email;
-    console.log("Determined Recipient Email:", email);
+    // Determine recipient email:
+    // 1. Provided in request
+    // 2. From user profile
+    // 3. Fallback: from first ticket (handles guest checkouts)
+    const email = reqEmail || order.profiles?.email || order.tickets?.[0]?.email;
+    console.log(`[Email] Recipient chosen: ${email} (from: ${reqEmail ? 'request' : order.profiles?.email ? 'profile' : 'ticket'})`);
 
     if (!email) {
       console.error("No email found for order:", order_id);
@@ -83,6 +101,12 @@ const handler = async (req: Request): Promise<Response> => {
     if (!event) {
       throw new Error("Event details not found");
     }
+
+    // Normalize event data (handle title/name, date/event_date variants)
+    const eventDisplayName = event.title || event.name || "Event";
+    const eventDisplayDate = event.event_date || event.date;
+    const eventDisplayStartTime = event.event_time || event.start_time;
+    const eventDisplayImage = event.poster_url || event.image_url;
 
     // 2. Generate HTML Content
     const ticketRows = order.tickets.map((t: any) => `
@@ -113,13 +137,13 @@ const handler = async (req: Request): Promise<Response> => {
       <body>
         <div class="container">
           <div class="event-card">
-            ${event.image_url ? `<img src="${event.image_url}" alt="${event.name}" class="event-image" />` : ''}
+            ${eventDisplayImage ? `<img src="${eventDisplayImage}" alt="${eventDisplayName}" class="event-image" />` : ''}
             <div class="content">
-              <h1>You're going to ${event.name}!</h1>
+              <h1>You're going to ${eventDisplayName}!</h1>
               <div class="details">
                 <p>📍 ${event.location}</p>
-                <p>📅 ${new Date(event.date).toLocaleDateString("id-ID", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                <p>⏰ ${event.start_time} - ${event.end_time}</p>
+                <p>📅 ${eventDisplayDate ? new Date(eventDisplayDate).toLocaleDateString("id-ID", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}</p>
+                ${eventDisplayStartTime ? `<p>⏰ ${eventDisplayStartTime}${event.end_time ? ` - ${event.end_time}` : ''}</p>` : ''}
               </div>
 
               <h2 style="color: #0f172a; font-size: 20px; margin-top: 32px;">Your Tickets</h2>
@@ -142,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: "Heroestix <tickets@heroestix.com>", // Update domain if needed
       to: [email],
-      subject: `Your Tickets for ${event.name}`,
+      subject: `Your Tickets for ${eventDisplayName}`,
       html: htmlContent,
     });
 
@@ -156,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),

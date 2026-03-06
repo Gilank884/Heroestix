@@ -243,11 +243,23 @@ serve(async (req: Request) => {
         }
 
         // 7. Success Action: Update tables
+        // Robust mapping for SNAP fields
+        const additionalInfo = body.additionalInfo || {};
+        const referenceNo = body.referenceNo || additionalInfo.referenceNo || body.externalId;
+        const trxIdVal = body.trxId || additionalInfo.trxId;
+        const trxDateTime = body.trxDateTime || additionalInfo.trxDateTime || new Date().toISOString();
+
         const { error: txUpdateError } = await supabase
             .from('transactions')
             .update({
                 status: 'success',
                 paid_at: new Date().toISOString(),
+                paid_amount: paidValue,
+                bank_reference: referenceNo,
+                bank_trx_id: trxIdVal,
+                payment_channel: "VA",
+                transaction_date: trxDateTime,
+                reference_no: referenceNo,
                 payment_provider_data: body // Store full SNAP payload for logging
             })
             .eq('id', transaction.id);
@@ -267,11 +279,51 @@ serve(async (req: Request) => {
             throw orderUpdateError;
         }
 
-        // 8. Success Response
+        // Activate tickets
+        const { error: ticketUpdateError } = await supabase
+            .from('tickets')
+            .update({ status: 'unused' })
+            .eq('order_id', transaction.order_id);
+
+        if (ticketUpdateError) {
+            console.error("[Bayarind] DB Update Error (tickets):", ticketUpdateError);
+        }
+
+        console.log("[Bayarind] Payment success. Order:", transaction.order_id, "| Tickets activated.");
+
+        // 8. Success Response (SNAP Spec compliant)
+        const paddedPartnerServiceId = (body.partnerServiceId || PARTNER_SERVICE_ID || "").slice(-8).padStart(8, ' ');
+        const paddedCustomerNo = body.customerNo || "";
+        const paddedVirtualAccountNo = `${paddedPartnerServiceId}${paddedCustomerNo}`;
+
+        const snapResponse = {
+            responseCode: "2002500",
+            responseMessage: "Success",
+            virtualAccountData: {
+                partnerServiceId: paddedPartnerServiceId,
+                customerNo: paddedCustomerNo,
+                virtualAccountNo: paddedVirtualAccountNo,
+                virtualAccountName: (body.virtualAccountName || "Customer").substring(0, 20),
+                paymentRequestId: body.paymentRequestId || "",
+                paidAmount: {
+                    value: paidValue.toFixed(2),
+                    currency: "IDR"
+                },
+                paymentFlagReason: {
+                    english: "Success",
+                    indonesia: "Sukses"
+                },
+                paymentFlagStatus: "00"
+            }
+        };
+
         return new Response(
             JSON.stringify({
-                responseCode: "2002500",
-                responseMessage: "Success"
+                ...snapResponse,
+                success: true,
+                message: "Transaction success",
+                db_updated: true,
+                payment_va_response: snapResponse
             }),
             {
                 status: 200,

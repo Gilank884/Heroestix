@@ -389,15 +389,22 @@ serve(async (req: Request) => {
             flagAdvise: body.flagAdvise
         });
 
+        // Robust mapping for SNAP fields (Bayarind might vary root vs additionalInfo)
+        const referenceNo = body.referenceNo || additionalInfo.referenceNo || body.externalId;
+        const trxIdVal = body.trxId || additionalInfo.trxId;
+        const trxDateTime = body.trxDateTime || additionalInfo.trxDateTime || new Date().toISOString();
+
         const { error: updateError } = await supabase
             .from("transactions")
             .update({
                 status: "success",
                 paid_at: new Date().toISOString(),
                 paid_amount: reqAmount,
-                bank_reference: body.referenceNo,
-                bank_trx_id: body.trxId,
+                bank_reference: referenceNo,
+                bank_trx_id: trxIdVal,
                 payment_channel: "VA",
+                transaction_date: trxDateTime,
+                reference_no: referenceNo,
                 payment_provider_data: body // Store full SNAP payload for audit
             })
             .eq("id", transaction.id)
