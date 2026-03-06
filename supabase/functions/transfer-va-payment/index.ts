@@ -317,14 +317,10 @@ serve(async (req: Request) => {
             }
         };
 
+        console.log("[Bayarind] Payment callback responseCode: 2002500 | Order:", transaction.order_id, "| Tickets activated.");
+
         return new Response(
-            JSON.stringify({
-                ...snapResponse,
-                success: true,
-                message: "Transaction success",
-                db_updated: true,
-                payment_va_response: snapResponse
-            }),
+            JSON.stringify(snapResponse),
             {
                 status: 200,
                 headers: {

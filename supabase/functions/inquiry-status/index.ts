@@ -485,22 +485,42 @@ serve(async (req: Request) => {
       }
     };
 
-    // Build the payment_va_response with responseCode 2002500 (per SNAP Payment spec)
-    const paymentVaResponse = isPaid ? {
-      responseCode: "2002500",
-      responseMessage: "Success",
-      virtualAccountData: {
-        ...(result.virtualAccountData || {}),
-        partnerServiceId: paddedPartnerServiceId,
-        customerNo: paddedCustomerNo,
-        virtualAccountNo: paddedVirtualAccountNo,
-        paymentFlagReason: {
-          english: "Success",
-          indonesia: "Sukses"
-        },
-        paymentFlagStatus: "00"
+    // Return inquiry response with 2002600 code
+    // Also include payment_va_response (2002500) if transfer-va/payment callback was received
+    let paymentVaResponse: any = null;
+
+    if (isPaid) {
+      // Re-fetch transaction to check if transfer-va-payment has been called by Bayarind
+      const { data: freshTx } = await supabase
+        .from('transactions')
+        .select('payment_provider_data, status, paid_amount')
+        .eq('id', singleTx.id)
+        .single();
+
+      if (freshTx?.payment_provider_data) {
+        // Bayarind DID call our transfer-va/payment endpoint — use real data
+        paymentVaResponse = {
+          responseCode: "2002500",
+          responseMessage: "Success",
+          virtualAccountData: {
+            partnerServiceId: paddedPartnerServiceId,
+            customerNo: paddedCustomerNo,
+            virtualAccountNo: paddedVirtualAccountNo,
+            virtualAccountName: freshTx.payment_provider_data.virtualAccountName || "Customer",
+            paymentRequestId: freshTx.payment_provider_data.paymentRequestId || "",
+            paidAmount: {
+              value: freshTx.paid_amount ? parseFloat(freshTx.paid_amount).toFixed(2) : "0.00",
+              currency: "IDR"
+            },
+            paymentFlagReason: {
+              english: "Success",
+              indonesia: "Sukses"
+            },
+            paymentFlagStatus: "00"
+          }
+        };
       }
-    } : inquiryResponse;
+    }
 
     return new Response(
       JSON.stringify({
@@ -508,7 +528,7 @@ serve(async (req: Request) => {
         success: isPaid,
         message: userMessage,
         db_updated: true,
-        payment_va_response: paymentVaResponse // Payment code (2002500) when successful
+        ...(paymentVaResponse ? { payment_va_response: paymentVaResponse } : {})
       }),
       {
         status: 200,
