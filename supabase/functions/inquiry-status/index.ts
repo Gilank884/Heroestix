@@ -525,27 +525,20 @@ serve(async (req: Request) => {
         const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
         const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-        // Use functions.supabase.co domain so the function receives pathname /api/v1.0/...
-        const FUNCTIONS_URL = SUPABASE_URL.replace('.supabase.co', '.functions.supabase.co');
-        const tvResponse = await fetch(`${FUNCTIONS_URL}/api/v1.0/transfer-va/payment`, {
-          method: "POST",
+        const { data: tvResponseData, error: tvError } = await supabase.functions.invoke('api', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${SERVICE_KEY}`,
-            "apikey": SERVICE_KEY,
             "x-timestamp": getTimestamp(),
             "x-signature": "internal-bypass",
             "x-partner-id": "CHVA01"
           },
-          body: JSON.stringify(paymentBody)
+          body: paymentBody
         });
 
-        console.log("[Inquiry] transfer-va HTTP status:", tvResponse.status);
-        const tvText = await tvResponse.text();
-        console.log("[Inquiry] transfer-va raw body:", tvText);
+        console.log("[Inquiry] API invoke response:", tvResponseData, "| error:", tvError);
 
-        if (tvResponse.ok && tvText) {
-          paymentVaResponse = JSON.parse(tvText);
+        if (!tvError && tvResponseData) {
+          paymentVaResponse = tvResponseData;
         }
       } catch (err: any) {
         console.error("[Inquiry] Error calling transfer-va:", err.message, err.stack);

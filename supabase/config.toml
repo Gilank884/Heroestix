@@ -8,7 +8,7 @@ entrypoint = "./functions/payment-gateway/index.ts"
 
 [functions.send-ticket-email]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 entrypoint = "./functions/send-ticket-email/index.ts"
 
 [functions.send-otp]
@@ -53,3 +53,13 @@ entrypoint = "./functions/transfer-va/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/transfer-va-payment/index.ts"
+
+[functions.api]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/api/index.ts"
+
+[functions.api]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/api/index.ts"

@@ -167,20 +167,8 @@ async function processSuccessfulPayment(supabase: any, order_id: string) {
         if (balanceError) console.error("Error recording earnings:", balanceError);
     }
 
-    // B. Update Sold Counts
-    for (const [typeId, count] of Object.entries(typeCounts)) {
-        const { error: rpcError } = await supabase.rpc('increment_ticket_sold', {
-            t_id: typeId,
-            quantity: count
-        });
-        if (rpcError) {
-            console.error("RPC Error, falling back to manual update:", rpcError);
-            const { data: currentType } = await supabase.from('ticket_types').select('sold').eq('id', typeId).single();
-            if (currentType) {
-                await supabase.from('ticket_types').update({ sold: (currentType.sold || 0) + count }).eq('id', typeId);
-            }
-        }
-    }
+    // B. Sold Counts (Delegated to transfer-va-payment for immediate update)
+    console.log(`[Process] Skipping inventory update in fulfillment, handled by payment gateway.`);
 
     // C. Update Voucher Usage
     if (order.voucher_id) {

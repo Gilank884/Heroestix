@@ -397,29 +397,20 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
         const triggerEmail = async () => {
             console.log(`[Bayarind] 📧 🚀 Triggering email for Order ${transaction.order_id}...`);
             try {
-                const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-                const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-                const functionsUrl = `${SUPABASE_URL}/functions/v1/send-ticket-email`;
-
-                const emailTrigger = await fetch(functionsUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SERVICE_KEY}`
-                    },
-                    body: JSON.stringify({ order_id: transaction.order_id })
+                const { data, error } = await supabase.functions.invoke('send-ticket-email', {
+                    body: { order_id: transaction.order_id }
                 });
 
-                const triggerText = await emailTrigger.text();
-                if (emailTrigger.ok) {
-                    console.log(`[Bayarind] ✅ Email trigger SUCCESS. Status: ${emailTrigger.status}, Response: ${triggerText}`);
+                if (error) {
+                    console.error(`[Bayarind] ❌ Email trigger FAILED:`, error);
                 } else {
-                    console.error(`[Bayarind] ❌ Email trigger FAILED. Status: ${emailTrigger.status}, Error: ${triggerText}`);
+                    console.log(`[Bayarind] ✅ Email trigger SUCCESS:`, data);
                 }
             } catch (err: any) {
                 console.error(`[Bayarind] 💥 Email trigger EXCEPTION:`, err.message);
             }
         };
+
 
         // =============================
         // 6. CHECK ALREADY PAID (Idempotent)
@@ -520,16 +511,60 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
         }
 
         // Activate tickets (unused = active, ready for check-in)
-        const { error: ticketUpdateError } = await supabase
+        const { data: activatedTickets, error: ticketUpdateError } = await supabase
             .from("tickets")
             .update({ status: "unused" })
-            .eq("order_id", transaction.order_id);
+            .eq("order_id", transaction.order_id)
+            .select("ticket_type_id");
 
         if (ticketUpdateError) {
             console.error("[Bayarind] DB Error (tickets):", ticketUpdateError);
         }
 
-        console.log("[Bayarind] Payment success. Order:", transaction.order_id, "| Tickets activated.");
+        // =============================
+        // DIRECT INVENTORY UPDATE (Quota)
+        // =============================
+        if (activatedTickets && activatedTickets.length > 0) {
+            console.log(`[Bayarind] 📦 Updating inventory for ${activatedTickets.length} tickets...`);
+
+            // Count tickets per type
+            const typeCounts: Record<string, number> = {};
+            activatedTickets.forEach((t: any) => {
+                typeCounts[t.ticket_type_id] = (typeCounts[t.ticket_type_id] || 0) + 1;
+            });
+
+            // Update sold count for each ticket type
+            for (const [typeId, count] of Object.entries(typeCounts)) {
+                try {
+                    // Fetch current sold count
+                    const { data: currentType, error: fetchError } = await supabase
+                        .from('ticket_types')
+                        .select('sold, name')
+                        .eq('id', typeId)
+                        .single();
+
+                    if (!fetchError && currentType) {
+                        const newSold = (currentType.sold || 0) + count;
+                        const { error: updateQuotaError } = await supabase
+                            .from('ticket_types')
+                            .update({ sold: newSold })
+                            .eq('id', typeId);
+
+                        if (updateQuotaError) {
+                            console.error(`[Bayarind] ❌ Failed to update quota for ${currentType.name}:`, updateQuotaError);
+                        } else {
+                            console.log(`[Bayarind] ✅ Quota updated for ${currentType.name}: ${currentType.sold} -> ${newSold}`);
+                        }
+                    } else {
+                        console.error(`[Bayarind] ❌ Failed to fetch ticket type ${typeId} for quota update:`, fetchError);
+                    }
+                } catch (e: any) {
+                    console.error(`[Bayarind] 💥 Exception during inventory update for ${typeId}:`, e.message);
+                }
+            }
+        }
+
+        console.log("[Bayarind] Payment success. Order:", transaction.order_id, "| Tickets activated and quota updated.");
 
         // 7.1 TRIGGER EMAIL
         await triggerEmail();
@@ -600,8 +635,8 @@ serve(async (req: Request) => {
     const url = new URL(req.url);
     console.log(`[api] Incoming request: ${req.method} ${url.pathname}`);
 
-    // Route: /api/v1.0/transfer-va/payment
-    if (url.pathname === "/api/v1.0/transfer-va/payment") {
+    // Route: /api/v1.0/transfer-va/payment (or internal bypass from inquiry-status)
+    if (url.pathname.endsWith("/transfer-va/payment") || req.headers.get("x-signature") === "internal-bypass") {
         return handleTransferVAPayment(req);
     }
 

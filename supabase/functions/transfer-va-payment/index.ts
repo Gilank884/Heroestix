@@ -302,16 +302,60 @@ serve(async (req: Request) => {
         }
 
         // Activate tickets
-        const { error: ticketUpdateError } = await supabase
+        const { data: activatedTickets, error: ticketUpdateError } = await supabase
             .from('tickets')
             .update({ status: 'unused' })
-            .eq('order_id', transaction.order_id);
+            .eq('order_id', transaction.order_id)
+            .select('ticket_type_id');
 
         if (ticketUpdateError) {
             console.error("[Bayarind] DB Update Error (tickets):", ticketUpdateError);
         }
 
-        console.log("[Bayarind] Payment success. Order:", transaction.order_id, "| Tickets activated.");
+        // =============================
+        // DIRECT INVENTORY UPDATE (Quota)
+        // =============================
+        if (activatedTickets && activatedTickets.length > 0) {
+            console.log(`[Bayarind] 📦 Updating inventory for ${activatedTickets.length} tickets...`);
+
+            // Count tickets per type
+            const typeCounts: Record<string, number> = {};
+            activatedTickets.forEach((t: any) => {
+                typeCounts[t.ticket_type_id] = (typeCounts[t.ticket_type_id] || 0) + 1;
+            });
+
+            // Update sold count for each ticket type
+            for (const [typeId, count] of Object.entries(typeCounts)) {
+                try {
+                    // Fetch current sold count
+                    const { data: currentType, error: fetchError } = await supabase
+                        .from('ticket_types')
+                        .select('sold, name')
+                        .eq('id', typeId)
+                        .single();
+
+                    if (!fetchError && currentType) {
+                        const newSold = (currentType.sold || 0) + count;
+                        const { error: updateError } = await supabase
+                            .from('ticket_types')
+                            .update({ sold: newSold })
+                            .eq('id', typeId);
+
+                        if (updateError) {
+                            console.error(`[Bayarind] ❌ Failed to update quota for ${currentType.name}:`, updateError);
+                        } else {
+                            console.log(`[Bayarind] ✅ Quota updated for ${currentType.name}: ${currentType.sold} -> ${newSold}`);
+                        }
+                    } else {
+                        console.error(`[Bayarind] ❌ Failed to fetch ticket type ${typeId} for quota update:`, fetchError);
+                    }
+                } catch (e: any) {
+                    console.error(`[Bayarind] 💥 Exception during inventory update for ${typeId}:`, e.message);
+                }
+            }
+        }
+
+        console.log("[Bayarind] Payment success processing complete. Order:", transaction.order_id);
 
         // TRIGGER EMAIL
         await triggerEmail();
