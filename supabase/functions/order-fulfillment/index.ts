@@ -198,26 +198,19 @@ async function processSuccessfulPayment(supabase: any, order_id: string) {
     let emailSuccess = false;
 
     try {
-        console.log(`[Fulfillment] Triggering email for Order #${order_id}`);
-        // Call send-ticket-email function internally
-        const functionUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-ticket-email`;
-        const response = await fetch(functionUrl, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
-            },
-            body: JSON.stringify({ order_id })
+        console.log(`[Fulfillment] Triggering email for Order #${order_id}...`);
+
+        const { data, error } = await supabase.functions.invoke("send-ticket-email", {
+            body: { order_id }
         });
 
-        const result = await response.json();
-        if (response.ok && result.success) {
+        if (!error) {
             emailSuccess = true;
-            emailResult = result.data;
+            emailResult = data;
             console.log(`[Fulfillment] Email triggered successfully for Order #${order_id}`);
         } else {
-            emailResult = result || "Unknown error";
-            console.error(`[Fulfillment] Failed to trigger email for Order #${order_id}:`, emailResult);
+            emailResult = error;
+            console.error(`[Fulfillment] Failed to trigger email for Order #${order_id}:`, error);
         }
     } catch (e: any) {
         console.error("[Fulfillment] Email trigger exception:", e);

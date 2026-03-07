@@ -229,24 +229,14 @@ serve(async (req: Request) => {
         const triggerEmail = async () => {
             console.log(`[Bayarind] 📧 🚀 Triggering email for Order ${transaction.order_id}...`);
             try {
-                const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-                const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-                const functionsUrl = `${SUPABASE_URL}/functions/v1/send-ticket-email`;
-
-                const emailTrigger = await fetch(functionsUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SERVICE_KEY}`
-                    },
-                    body: JSON.stringify({ order_id: transaction.order_id })
+                const { data, error } = await supabase.functions.invoke('send-ticket-email', {
+                    body: { order_id: transaction.order_id }
                 });
 
-                const triggerText = await emailTrigger.text();
-                if (emailTrigger.ok) {
-                    console.log(`[Bayarind] ✅ Email trigger SUCCESS. Status: ${emailTrigger.status}, Response: ${triggerText}`);
+                if (error) {
+                    console.error(`[Bayarind] ❌ Email trigger FAILED:`, error);
                 } else {
-                    console.error(`[Bayarind] ❌ Email trigger FAILED. Status: ${emailTrigger.status}, Error: ${triggerText}`);
+                    console.log(`[Bayarind] ✅ Email trigger SUCCESS:`, data);
                 }
             } catch (err: any) {
                 console.error(`[Bayarind] 💥 Email trigger EXCEPTION:`, err.message);
