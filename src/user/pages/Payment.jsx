@@ -56,6 +56,8 @@ export default function Payment() {
     const [statusChecking, setStatusChecking] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+    const [showCopyToast, setShowCopyToast] = useState(false);
+
     useEffect(() => {
         if (!orderId || !virtualAccountNo) {
             navigate(`/`);
@@ -131,7 +133,8 @@ export default function Payment() {
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
-        alert("Nomor Virtual Account disalin!");
+        setShowCopyToast(true);
+        setTimeout(() => setShowCopyToast(false), 2000);
     };
 
     const handleCheckStatus = async () => {
@@ -169,8 +172,18 @@ export default function Payment() {
     };
 
     return (
-        <div className="bg-white min-h-screen font-sans text-slate-900">
+        <div className="bg-white min-h-screen font-sans text-slate-900 relative">
             <EventNavbar />
+
+            {/* Custom Toast for Copy */}
+            <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300 ${showCopyToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+                <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-full shadow-xl flex items-center gap-3 font-semibold text-sm">
+                    <div className="bg-emerald-500 rounded-full p-1">
+                        <CheckCircle size={14} className="text-white" />
+                    </div>
+                    Nomor Virtual Account disalin!
+                </div>
+            </div>
 
             <PaymentSuccessModal
                 isOpen={showSuccessModal}

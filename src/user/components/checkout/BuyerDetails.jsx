@@ -239,8 +239,12 @@ export default function BuyerDetails({
                                 </div>
                                 <input
                                     type="tel"
+                                    maxLength="15"
                                     value={holder.phone}
-                                    onChange={e => updateHolder(index, 'phone', e.target.value)}
+                                    onChange={e => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 15);
+                                        updateHolder(index, 'phone', val);
+                                    }}
                                     placeholder="Masukkan nomor telepon"
                                     className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:bg-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 ${showValidationErrors && !holder.phone ? 'border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700'
                                         }`}

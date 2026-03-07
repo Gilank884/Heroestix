@@ -8,9 +8,6 @@ const corsHeaders = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-console.log("PUBLIC KEY LENGTH:", Deno.env.get("BAYARIND_PUBLIC_KEY")?.length);
-console.log("PUBLIC KEY CONTENT:", Deno.env.get("BAYARIND_PUBLIC_KEY"));
-
 const MAX_TIME_DIFF = 300; // 5 menit
 
 function getTimestamp(now: Date = new Date()) {
@@ -46,8 +43,6 @@ function pemToBinary(pem: string): Uint8Array {
     }
     return bytes;
 }
-
-
 
 async function verifyRSASignature(signature: string, stringToSign: string, publicKeyPem: string): Promise<boolean> {
     try {
@@ -86,19 +81,17 @@ async function verifyRSASignature(signature: string, stringToSign: string, publi
     }
 }
 
-serve(async (req: Request) => {
+// =============================================
+// HANDLER: /api/v1.0/transfer-va/payment
+// =============================================
 
-    if (req.method === "OPTIONS") {
-        return new Response("ok", { status: 200, headers: corsHeaders });
-    }
-
+async function handleTransferVAPayment(req: Request): Promise<Response> {
     try {
         const PUBLIC_KEY = Deno.env
             .get("BAYARIND_PUBLIC_KEY")
             ?.replace(/\\n/g, "\n")
             ?.trim();
 
-        console.log("PUBLIC KEY FIXED:", PUBLIC_KEY);
         console.log("PUBLIC KEY LENGTH:", PUBLIC_KEY?.length);
 
         if (!PUBLIC_KEY) {
@@ -122,15 +115,15 @@ serve(async (req: Request) => {
         const isInternalCall = signature === "internal-bypass" && authHeader === `Bearer ${SERVICE_KEY}`;
 
         const userAgent = req.headers.get("user-agent") || "unknown";
-        console.log(`[transfer-va] ========== REQUEST ==========`);
-        console.log(`[transfer-va] Source: ${isInternalCall ? "🔗 INTERNAL (inquiry-status)" : "🌐 EXTERNAL (Bayarind callback)"}`);
-        console.log(`[transfer-va] User-Agent: ${userAgent}`);
-        console.log(`[transfer-va] Signature: ${signature?.substring(0, 30)}...`);
-        console.log(`[transfer-va] Partner-ID: ${partnerId}`);
-        console.log(`[transfer-va] ============================`);
+        console.log(`[api/transfer-va/payment] ========== REQUEST ==========`);
+        console.log(`[api/transfer-va/payment] Source: ${isInternalCall ? "🔗 INTERNAL (inquiry-status)" : "🌐 EXTERNAL (Bayarind callback)"}`);
+        console.log(`[api/transfer-va/payment] User-Agent: ${userAgent}`);
+        console.log(`[api/transfer-va/payment] Signature: ${signature?.substring(0, 30)}...`);
+        console.log(`[api/transfer-va/payment] Partner-ID: ${partnerId}`);
+        console.log(`[api/transfer-va/payment] ============================`);
 
         if (isInternalCall) {
-            console.log("[transfer-va] Skipping security checks for internal call.");
+            console.log("[api/transfer-va/payment] Skipping security checks for internal call.");
         }
 
         if (!isInternalCall) {
@@ -350,7 +343,7 @@ serve(async (req: Request) => {
 
         if (isInternalCall && body._internalTxId) {
             // Internal call: lookup by transaction ID directly (avoids VA number format issues)
-            console.log("[transfer-va] Internal lookup by txId:", body._internalTxId);
+            console.log("[api/transfer-va/payment] Internal lookup by txId:", body._internalTxId);
             const result = await supabase
                 .from("transactions")
                 .select("*")
@@ -370,7 +363,7 @@ serve(async (req: Request) => {
         }
 
         if (findError || !transaction) {
-            console.error("[transfer-va] Transaction not found. VA:", virtualAccountNo.trim(), "txId:", body._internalTxId);
+            console.error("[api/transfer-va/payment] Transaction not found. VA:", virtualAccountNo.trim(), "txId:", body._internalTxId);
             return new Response(
                 JSON.stringify({
                     responseCode: "4042512",
@@ -556,4 +549,29 @@ serve(async (req: Request) => {
             }
         );
     }
+}
+
+// =============================================
+// ROUTER: Dispatch based on URL path
+// =============================================
+
+serve(async (req: Request) => {
+    // Handle CORS preflight
+    if (req.method === "OPTIONS") {
+        return new Response("ok", { status: 200, headers: corsHeaders });
+    }
+
+    const url = new URL(req.url);
+    console.log(`[api] Incoming request: ${req.method} ${url.pathname}`);
+
+    // Route: /api/v1.0/transfer-va/payment
+    if (url.pathname === "/api/v1.0/transfer-va/payment") {
+        return handleTransferVAPayment(req);
+    }
+
+    // 404 for unmatched routes
+    return new Response(
+        JSON.stringify({ responseCode: "4040000", responseMessage: "Not Found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
 });
