@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import EventNavbar from "../../components/Layout/EventNavbar";
 import Footer from "../../components/Layout/Footer";
 import { HiOutlineDuplicate } from "react-icons/hi";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Mail, Loader2 } from "lucide-react";
 import { emailService } from "../../services/email";
 import { supabase } from "../../lib/supabaseClient";
 import QRCode from "react-qr-code";
@@ -17,29 +17,78 @@ const rupiah = (value) => {
     }).format(value);
 };
 
-const PaymentSuccessModal = ({ isOpen, onSeeTicket }) => {
+const PaymentSuccessModal = ({ isOpen, onSeeTicket, emailStatus, emailErrorMessage }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 border border-slate-100 dark:border-slate-800">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800" style={{ animation: 'zoomIn 0.3s ease-out' }}>
                 <div className="p-8 text-center">
-                    <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6" style={{ animation: 'bounceIn 0.5s ease-out 0.2s both' }}>
                         <CheckCircle size={40} />
                     </div>
                     <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Pembayaran Sukses!</h3>
-                    <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8">
+                    <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-4">
                         Terima kasih! Pembayaran Anda telah kami terima dan tiket Anda telah diverifikasi.
                     </p>
+
+                    {/* Email Status Indicator */}
+                    <div className={`flex items-center justify-center gap-2 mb-6 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-500 ${emailStatus === 'sending'
+                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                        : emailStatus === 'sent'
+                            ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400'
+                        }`}>
+                        {emailStatus === 'sending' ? (
+                            <>
+                                <Loader2 size={18} className="animate-spin" />
+                                <span>Mengirim tiket ke email Anda...</span>
+                            </>
+                        ) : emailStatus === 'sent' ? (
+                            <>
+                                <Mail size={18} />
+                                <span>Tiket sedang diproses dan dikirim ke email ✓</span>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="flex items-center gap-2">
+                                    <Mail size={18} />
+                                    <span>Gagal mengirim email</span>
+                                </div>
+                                {emailErrorMessage && (
+                                    <span className="text-[10px] opacity-80 font-medium leading-tight max-w-[200px] text-center">
+                                        {emailErrorMessage}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     <button
                         onClick={onSeeTicket}
                         className="w-full py-4 rounded-2xl font-bold bg-[#1b3bb6] text-white hover:bg-[#16319c] shadow-lg shadow-blue-600/20 active:scale-[0.98] transition-all"
                     >
-                        Lihat Tiket Saya
+                        🎫 Lihat Tiket Saya
                     </button>
                 </div>
             </div>
+
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes zoomIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                @keyframes bounceIn {
+                    0% { opacity: 0; transform: scale(0.3); }
+                    50% { transform: scale(1.1); }
+                    70% { transform: scale(0.95); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+            `}</style>
         </div>
     );
 };
@@ -55,8 +104,19 @@ export default function Payment() {
     const [loading, setLoading] = useState(false);
     const [statusChecking, setStatusChecking] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [emailStatus, setEmailStatus] = useState('idle'); // idle, sending, sent, failed
+    const [emailErrorMessage, setEmailErrorMessage] = useState('');
 
-    const [showCopyToast, setShowCopyToast] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+    const [toastMsg, setToastMsg] = useState("");
+    const [toastType, setToastType] = useState("success"); // success or warning
+
+    const triggerToast = (msg, type = "success") => {
+        setToastMsg(msg);
+        setToastType(type);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+    };
 
     useEffect(() => {
         if (!orderId || !virtualAccountNo) {
@@ -90,7 +150,7 @@ export default function Payment() {
                 (payload) => {
                     console.log('[Realtime] Order update:', payload);
                     if (payload.new.status === 'paid') {
-                        setShowSuccessModal(true);
+                        handlePaymentSuccess();
                     }
                 }
             )
@@ -111,13 +171,28 @@ export default function Payment() {
         };
     }, [orderId, virtualAccountNo, expiredDate, navigate, showSuccessModal, statusChecking]);
 
+    // Show success modal when payment is detected
+    const handlePaymentSuccess = () => {
+        if (showSuccessModal) return; // prevent duplicate
+
+        console.log(`[Payment] 🎉 Realtime: Payment success detected for Order #${orderId}. Showing modal...`);
+        setShowSuccessModal(true);
+        setEmailStatus('sending'); // Start with sending phase for better UX
+
+        // Show success phase
+        setTimeout(() => {
+            setEmailStatus('sent');
+            console.log(`[Payment] ✅ Payment successful. System is processing ticket delivery.`);
+        }, 1500);
+    };
+
     const handleCheckStatusSilent = async () => {
         try {
             const { data } = await supabase.functions.invoke('inquiry-status', {
                 body: { order_id: orderId }
             });
             if (data?.success) {
-                setShowSuccessModal(true);
+                handlePaymentSuccess();
             }
         } catch (err) {
             console.error("Silent status check error:", err);
@@ -133,8 +208,7 @@ export default function Payment() {
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
-        setShowCopyToast(true);
-        setTimeout(() => setShowCopyToast(false), 2000);
+        triggerToast("Nomor Virtual Account disalin!", "success");
     };
 
     const handleCheckStatus = async () => {
@@ -152,19 +226,18 @@ export default function Payment() {
             console.log("[Status Check] Response:", data);
 
             if (data?.success) {
-                // Show custom popup instead of alert
-                setShowSuccessModal(true);
+                handlePaymentSuccess();
             } else {
-                alert(data?.message || "Pembayaran belum diterima. Silakan selesaikan pembayaran Anda.");
+                triggerToast(data?.message || "Pembayaran belum diterima. Silakan selesaikan pembayaran Anda.", "warning");
             }
         } catch (err) {
             console.error("Status check error:", err);
             // Fallback: check DB directly
             const { data: order } = await supabase.from('orders').select('status').eq('id', orderId).single();
             if (order?.status === 'paid') {
-                setShowSuccessModal(true);
+                handlePaymentSuccess();
             } else {
-                alert("Gagal mengecek status: " + (err.message || "Terjadi kesalahan"));
+                triggerToast("Gagal mengecek status: " + (err.message || "Terjadi kesalahan"), "warning");
             }
         } finally {
             setStatusChecking(false);
@@ -175,19 +248,27 @@ export default function Payment() {
         <div className="bg-white min-h-screen font-sans text-slate-900 relative">
             <EventNavbar />
 
-            {/* Custom Toast for Copy */}
-            <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300 ${showCopyToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
-                <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-full shadow-xl flex items-center gap-3 font-semibold text-sm">
-                    <div className="bg-emerald-500 rounded-full p-1">
-                        <CheckCircle size={14} className="text-white" />
+            {/* Unified Toast System */}
+            <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+                <div className={`${toastType === 'warn' ? 'bg-amber-600' : 'bg-slate-900'} dark:bg-white text-white dark:text-slate-900 px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 font-bold text-sm border border-slate-800 dark:border-slate-200`}>
+                    <div className={`${toastType === 'warn' ? 'bg-amber-400' : 'bg-emerald-500'} rounded-full p-1.5 shrink-0`}>
+                        {toastType === 'warn' ? (
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        ) : (
+                            <CheckCircle size={16} className="text-white" />
+                        )}
                     </div>
-                    Nomor Virtual Account disalin!
+                    {toastMsg}
                 </div>
             </div>
 
             <PaymentSuccessModal
                 isOpen={showSuccessModal}
                 orderId={orderId}
+                emailStatus={emailStatus}
+                emailErrorMessage={emailErrorMessage}
                 onSeeTicket={() => navigate(`/transaction-detail/${orderId}`)}
             />
 

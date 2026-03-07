@@ -279,9 +279,41 @@ serve(async (req: any) => {
             const tagId = payload.additionalInfo?.tagId || payload.tagId;
             const paidAmount = payload.paidAmount;
 
+            // =============================
+            // TRIGGER EMAIL HELPER
+            // =============================
+            const triggerEmail = async () => {
+                console.log(`[Bayarind] 📧 🚀 Triggering email for Order ${transaction.order_id}...`);
+                try {
+                    const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+                    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+                    const functionsUrl = `${SUPABASE_URL}/functions/v1/send-ticket-email`;
+
+                    const emailTrigger = await fetch(functionsUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SERVICE_KEY}`
+                        },
+                        body: JSON.stringify({ order_id: transaction.order_id })
+                    });
+
+                    const triggerText = await emailTrigger.text();
+                    if (emailTrigger.ok) {
+                        console.log(`[Bayarind] ✅ Email trigger SUCCESS. Status: ${emailTrigger.status}, Response: ${triggerText}`);
+                    } else {
+                        console.error(`[Bayarind] ❌ Email trigger FAILED. Status: ${emailTrigger.status}, Error: ${triggerText}`);
+                    }
+                } catch (err: any) {
+                    console.error(`[Bayarind] 💥 Email trigger EXCEPTION:`, err.message);
+                }
+            };
+
             // 1. Idempotency Check
             const storedTagId = transaction.payment_provider_data?.tagId;
             if (transaction.status === 'success' || (tagId && storedTagId === tagId)) {
+                console.log("[Bayarind] Transaction already success (idempotent). Triggering email check...");
+                await triggerEmail();
                 return new Response(
                     JSON.stringify({ responseCode: "2002500", responseMessage: "Success" }),
                     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -330,6 +362,9 @@ serve(async (req: any) => {
             await supabase.from('tickets').update({ status: 'unused' }).eq('order_id', transaction.order_id);
 
             console.log("[Bayarind] Payment success. Order:", transaction.order_id, "| Tickets activated.");
+
+            // TRIGGER EMAIL
+            await triggerEmail();
 
             const paddedPartnerServiceId = (payload.partnerServiceId || PARTNER_SERVICE_ID || "").slice(-8).padStart(8, ' ');
             const paddedCustomerNo = payload.customerNo || "";

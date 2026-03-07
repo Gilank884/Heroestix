@@ -71,6 +71,14 @@ export default function SelectTicket() {
     const [selectedTickets, setSelectedTickets] = useState({}); // { ticketTypeId: count }
     const [loading, setLoading] = useState(true);
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+    const [toastMsg, setToastMsg] = useState("");
+
+    const triggerToast = (msg) => {
+        setToastMsg(msg);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+    };
 
     useEffect(() => {
         fetchEventAndTickets();
@@ -117,7 +125,7 @@ export default function SelectTicket() {
             const currentTotal = Object.values(prev).reduce((a, b) => a + b, 0);
 
             if (delta > 0 && currentTotal >= 5) {
-                alert("Maksimal pembelian adalah 5 tiket per akun.");
+                triggerToast("Maksimal pembelian adalah 5 tiket per akun.");
                 return prev;
             }
 
@@ -147,7 +155,19 @@ export default function SelectTicket() {
     const totalAmount = ticketTypes.reduce((acc, tt) => acc + (selectedTickets[tt.id] || 0) * (tt.price_gross || tt.price), 0);
 
     return (
-        <div className="bg-[#f8fafc] dark:bg-slate-950 min-h-screen font-sans text-slate-900 dark:text-slate-100">
+        <div className="bg-[#f8fafc] dark:bg-slate-950 min-h-screen font-sans text-slate-900 dark:text-slate-100 relative">
+            {/* Unified Toast System */}
+            <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+                <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 font-bold text-sm border border-slate-800 dark:border-slate-200">
+                    <div className="bg-amber-500 rounded-full p-1.5 shrink-0">
+                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    {toastMsg}
+                </div>
+            </div>
+
             <Navbar alwaysScrolled={true} />
 
             <LoginPromptModal

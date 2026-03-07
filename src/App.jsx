@@ -18,6 +18,7 @@ import TransactionDetail from "./user/pages/TransactionDetail";
 import PaymentReceipt from "./user/pages/PaymentReceipt";
 import MockBayarind from "./user/pages/MockBayarind"; // Mock Import
 import CreatorPage from "./user/pages/CreatorPage";
+import ResetPassword from "./user/pages/ResetPassword";
 
 import PrivacyPolicy from "./user/pages/PrivacyPolicy";
 import TermsOfService from "./user/pages/TermsOfService";
@@ -107,10 +108,15 @@ export default function App() {
         const refresh_token = params.get("refresh_token");
 
         if (access_token && refresh_token) {
+          const type = params.get("type");
           const { error } = await supabase.auth.setSession({ access_token, refresh_token });
           if (!error) {
-            console.log("Session restored successfully from hash.");
-            // Clean hash without leaving a '#'
+            console.log("Session restored successfully from hash. Type:", type);
+            if (type === "recovery") {
+              console.log("Recovery session detected in restoreSession, NOT clearing hash to allow onAuthStateChange to catch it.");
+              return true;
+            }
+            // Clean hash without leaving a '#' for normal sessions
             window.history.replaceState(null, null, window.location.pathname + window.location.search);
             return true; // Signal success
           } else {
@@ -258,6 +264,14 @@ export default function App() {
     // 1. Listen for changes FIRST (to catch INITIAL_SESSION or sign-ins)
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth State Change:", event);
+      const isRecovery = event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && window.location.hash.includes("type=recovery"));
+
+      if (isRecovery && window.location.pathname !== "/reset-password") {
+        console.log("Password recovery event detected, redirecting to /reset-password");
+        window.location.href = window.location.origin + "/reset-password" + window.location.hash;
+        return;
+      }
+
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
         checkRedirect(session);
       }
@@ -404,6 +418,7 @@ export default function App() {
         <Route path="/become-creator" element={<BecomeCreator />} />
         <Route path="/creator/:id" element={<CreatorPage />} />
         <Route path="/accept-invite" element={<AcceptInvite />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>

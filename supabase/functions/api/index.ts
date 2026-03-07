@@ -392,9 +392,38 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
         }
 
         // =============================
+        // TRIGGER EMAIL HELPER
+        // =============================
+        const triggerEmail = async () => {
+            console.log(`[Bayarind] 📧 🚀 Triggering email for Order ${transaction.order_id}...`);
+            try {
+                const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+                const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+                const functionsUrl = `${SUPABASE_URL}/functions/v1/send-ticket-email`;
+
+                const emailTrigger = await fetch(functionsUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SERVICE_KEY}`
+                    },
+                    body: JSON.stringify({ order_id: transaction.order_id })
+                });
+
+                const triggerText = await emailTrigger.text();
+                if (emailTrigger.ok) {
+                    console.log(`[Bayarind] ✅ Email trigger SUCCESS. Status: ${emailTrigger.status}, Response: ${triggerText}`);
+                } else {
+                    console.error(`[Bayarind] ❌ Email trigger FAILED. Status: ${emailTrigger.status}, Error: ${triggerText}`);
+                }
+            } catch (err: any) {
+                console.error(`[Bayarind] 💥 Email trigger EXCEPTION:`, err.message);
+            }
+        };
+
+        // =============================
         // 6. CHECK ALREADY PAID (Idempotent)
         // =============================
-
         if (transaction.status === "success") {
             console.log("[Bayarind] Transaction already success. Storing callback data (idempotent). Order:", transaction.order_id);
 
@@ -403,6 +432,9 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
                 .from("transactions")
                 .update({ payment_provider_data: body })
                 .eq("id", transaction.id);
+
+            // 🔥 TRIGGER EMAIL EVEN IF ALREADY SUCCESS (Fix for inquiry-first flows)
+            await triggerEmail();
 
             return new Response(
                 JSON.stringify({
@@ -498,6 +530,10 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
         }
 
         console.log("[Bayarind] Payment success. Order:", transaction.order_id, "| Tickets activated.");
+
+        // 7.1 TRIGGER EMAIL
+        await triggerEmail();
+
 
         // =============================
         // 8. SUCCESS RESPONSE (SNAP Spec)

@@ -19,35 +19,49 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const payload = await req.json();
-    console.log("Email Function Invoked. Payload:", JSON.stringify(payload));
+    const rawBody = await req.text();
+    console.log("Raw Payload:", rawBody);
+
+    let payload;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch (e) {
+      console.error("Failed to parse JSON:", rawBody);
+      return new Response(JSON.stringify({ error: "Invalid JSON body", details: rawBody }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    console.log("🚀 [Email] Function Invoked. Payload:", JSON.stringify(payload));
 
     // Support both direct calls and Supabase Webhook payloads
     let order_id: string;
     let reqEmail: string | undefined;
 
     if (payload.record && payload.record.id) {
-      // Supabase Webhook payload
       order_id = payload.record.id;
     } else {
-      // Direct call
       order_id = payload.order_id;
       reqEmail = payload.email;
     }
 
     if (!order_id) {
-      console.error("Missing order_id in payload");
-      throw new Error("Missing order_id");
+      console.error("❌ [Email] Missing order_id in payload");
+      return new Response(JSON.stringify({ error: "Missing order_id" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    console.log(`🔍 [Email] Fetching data for Order ID: ${order_id}...`);
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error("❌ [Email] RESEND_API_KEY is not set");
+      return new Response(JSON.stringify({ error: "RESEND_API_KEY not configured" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const resend = new Resend(resendApiKey);
 
-    // 1. Fetch Order Details with Tickets & Event Info & User Profile
+    // 1. Fetch Order Details
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select(`
@@ -59,14 +73,9 @@ const handler = async (req: Request): Promise<Response> => {
             name,
             events (
               title,
-              name,
               event_date,
-              date,
               event_time,
-              start_time,
-              end_time,
               location,
-              image_url,
               poster_url
             )
           )
@@ -76,33 +85,23 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (orderError) {
-      console.error("Error fetching order:", orderError);
-      throw new Error("Order not found or database error");
+      console.error("❌ [Email] DB Error:", orderError);
+      return new Response(JSON.stringify({ error: "Order not found", details: orderError }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (!order) {
-      console.error("Order not found (empty data) for ID:", order_id);
-      throw new Error("Order not found");
-    }
-
-    // Determine recipient email:
-    // 1. Provided in request
-    // 2. From user profile
-    // 3. Fallback: from first ticket (handles guest checkouts)
     const email = reqEmail || order.profiles?.email || order.tickets?.[0]?.email;
-    console.log(`[Email] Recipient chosen: ${email} (from: ${reqEmail ? 'request' : order.profiles?.email ? 'profile' : 'ticket'})`);
+    console.log(`📧 [Email] Recipient: ${email}`);
 
     if (!email) {
-      console.error("No email found for order:", order_id);
-      throw new Error("No email address found for this order");
+      console.error("❌ [Email] No recipient found");
+      return new Response(JSON.stringify({ error: "No email address found" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const event = order.tickets?.[0]?.ticket_types?.events;
     if (!event) {
-      throw new Error("Event details not found");
+      return new Response(JSON.stringify({ error: "Event details not found" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Normalize event data (handle title/name, date/event_date variants)
     const eventDisplayName = event.title || event.name || "Event";
     const eventDisplayDate = event.event_date || event.date;
     const eventDisplayStartTime = event.event_time || event.start_time;
@@ -162,29 +161,31 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    // 3. Send Email
+    // 2. Send Email
+    console.log(`📤 [Email] Sending via Resend to ${email}...`);
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "Heroestix <tickets@heroestix.com>", // Update domain if needed
+      from: "Heroestix <tickets@heroestix.com>",
       to: [email],
       subject: `Your Tickets for ${eventDisplayName}`,
-      html: htmlContent,
+      html: htmlContent, // uses existing variable
     });
 
     if (emailError) {
-      console.error("Resend Error:", emailError);
-      throw emailError;
+      console.error("❌ [Email] Resend Error:", JSON.stringify(emailError));
+      return new Response(JSON.stringify({ error: "Resend Error", details: emailError }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    console.log(`✅ [Email Success] Sent to ${email} for Order: ${order_id}. Resend ID: ${emailData?.id}`);
     return new Response(
       JSON.stringify({ success: true, data: emailData }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error: any) {
-    console.error("Error:", error);
+    console.error("Unexpected Error in Edge Function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: error.message, stack: error.stack }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 };

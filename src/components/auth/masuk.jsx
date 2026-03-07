@@ -16,6 +16,8 @@ const Masuk = ({ role = "user" }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState(urlError === "unregistered" ? "Akun anda belum registrasi. Silahkan daftar terlebih dahulu." : "");
+    const [successMsg, setSuccessMsg] = useState("");
+    const [view, setView] = useState("login"); // login, forgot
     const { user: storeUser, isAuthenticated, login, isChecking } = useAuthStore();
 
     // Redirection is now handled by App.jsx or the Guards. 
@@ -87,6 +89,24 @@ const Masuk = ({ role = "user" }) => {
         setLoading(false);
     };
 
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setErrorMsg("");
+        setSuccessMsg("");
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: "https://heroestix.com/reset-password",
+        });
+
+        if (error) {
+            setErrorMsg(error.message);
+        } else {
+            setSuccessMsg("Tautan reset password telah dikirim ke email anda.");
+        }
+        setLoading(false);
+    };
+
 
     const isInternalPortal = role === "creator" || role === "developer";
 
@@ -106,65 +126,114 @@ const Masuk = ({ role = "user" }) => {
                             {isInternalPortal ? `${role.toUpperCase()} ACCESS` : "Beli Tiket Event"}
                         </div>
                         <h1 className="text-2xl font-medium text-slate-900 dark:text-white tracking-tight">
-                            {isInternalPortal ? "Masuk Portal" : "Selamat Datang"}
+                            {view === "forgot" ? "Lupa Kata Sandi" : (isInternalPortal ? "Masuk Portal" : "Selamat Datang")}
                         </h1>
                         <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-1">
-                            Silakan masuk menggunakan akun Heroestix Anda
+                            {view === "forgot" ? "Masukkan email anda untuk menerima tautan reset password" : "Silakan masuk menggunakan akun Heroestix Anda"}
                         </p>
                     </div>
 
-                    {/* Error */}
+                    {/* Feedback Messages */}
                     {errorMsg && (
                         <div className="bg-red-50 border border-red-100 text-red-600 text-[12px] px-4 py-3 rounded-xl mb-8 flex items-center gap-3">
                             <span className="font-medium">{errorMsg}</span>
                         </div>
                     )}
-
-                    {/* FORM */}
-                    <form onSubmit={handleLogin} className="space-y-5">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Email</label>
-                            <input
-                                type="email"
-                                placeholder="nama@email.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                            />
+                    {successMsg && (
+                        <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 text-[12px] px-4 py-3 rounded-xl mb-8 flex items-center gap-3">
+                            <span className="font-medium">{successMsg}</span>
                         </div>
+                    )}
 
-                        <div className="space-y-1.5">
-                            <div className="flex justify-between items-center ml-1">
-                                <label className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500">Sandi</label>
-                                <button type="button" className="text-[10px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 uppercase tracking-widest">Lupa?</button>
-                            </div>
-                            <div className="relative">
+                    {/* FORMS */}
+                    {view === "login" ? (
+                        <form onSubmit={handleLogin} className="space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Email</label>
                                 <input
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    type="email"
+                                    placeholder="nama@email.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 pr-12"
+                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
-                                >
-                                    {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                                </button>
                             </div>
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full bg-blue-600 text-white py-4 rounded-2xl font-medium text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50 mt-4 flex items-center justify-center"
-                        >
-                            {loading ? "Menghubungkan..." : "Masuk Sekarang"}
-                        </button>
-                    </form>
+
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between items-center ml-1">
+                                    <label className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500">Sandi</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setView("forgot");
+                                            setErrorMsg("");
+                                            setSuccessMsg("");
+                                        }}
+                                        className="text-[10px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 uppercase tracking-widest"
+                                    >
+                                        Lupa?
+                                    </button>
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 pr-12"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                                    >
+                                        {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                    </button>
+                                </div>
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-medium text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50 mt-4 flex items-center justify-center"
+                            >
+                                {loading ? "Menghubungkan..." : "Masuk Sekarang"}
+                            </button>
+                        </form>
+                    ) : (
+                        <form onSubmit={handleForgotPassword} className="space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">Email</label>
+                                <input
+                                    type="email"
+                                    placeholder="nama@email.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    className="w-full rounded-2xl px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white text-sm outline-none transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-medium text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50 mt-4 flex items-center justify-center"
+                            >
+                                {loading ? "Mengirim Tautan..." : "Kirim Tautan Reset"}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setView("login");
+                                    setErrorMsg("");
+                                    setSuccessMsg("");
+                                }}
+                                className="w-full text-[12px] font-bold text-slate-400 dark:text-slate-500 hover:text-blue-600 transition-colors py-2 uppercase tracking-widest"
+                            >
+                                Kembali ke Masuk
+                            </button>
+                        </form>
+                    )}
 
                 </div>
 

@@ -28,6 +28,18 @@ export default function Checkout() {
     const [showValidationErrors, setShowValidationErrors] = useState(false);
     const [appliedVoucher, setAppliedVoucher] = useState(null);
     const [voucherLoading, setVoucherLoading] = useState(false);
+    const [showTermsToast, setShowTermsToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+
+    // Auto-hide toast
+    useEffect(() => {
+        if (showTermsToast) {
+            const timer = setTimeout(() => {
+                setShowTermsToast(false);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showTermsToast]);
 
 
     // State for multiple ticket holders
@@ -136,6 +148,11 @@ export default function Checkout() {
     // Step 2 Validation: Check if all required fields are filled for ALL holders
     const isNextDisabled = !termsAgreed || ticketHolders.some(h => !h.full_name || !h.email || !h.phone);
 
+    const triggerToast = (msg) => {
+        setToastMessage(msg);
+        setShowTermsToast(true);
+    };
+
     const handleApplyVoucher = async (code) => {
         if (!code) {
             setAppliedVoucher(null);
@@ -155,11 +172,8 @@ export default function Checkout() {
 
             console.log("[Voucher] Full response:", response);
 
-            // Check if the function returned an error
             if (response.error) {
-                // Try to read the error message from the response body
                 let errorMessage = "Gagal memvalidasi voucher";
-
                 if (response.response) {
                     try {
                         const errorBody = await response.response.json();
@@ -168,18 +182,16 @@ export default function Checkout() {
                         console.error("[Voucher] Failed to parse error response:", e);
                     }
                 }
-
                 console.error("[Voucher] Error:", errorMessage);
-                alert(errorMessage);
+                triggerToast(errorMessage);
                 return;
             }
 
-            // Success case
             console.log("[Voucher] Success:", response.data);
             setAppliedVoucher(response.data);
         } catch (error) {
             console.error("[Voucher] Exception:", error);
-            alert(error.message || "Gagal memvalidasi voucher");
+            triggerToast(error.message || "Gagal memvalidasi voucher");
         } finally {
             setVoucherLoading(false);
         }
@@ -187,11 +199,15 @@ export default function Checkout() {
 
     const handleCreateOrder = async () => {
         if (isNextDisabled) {
-            alert("Harap lengkapi data semua pengunjung.");
+            setShowValidationErrors(true);
+            if (!termsAgreed) {
+                triggerToast("Harap setujui Syarat & Ketentuan untuk melanjutkan.");
+            } else {
+                triggerToast("Harap lengkapi data pengunjung (Nama, Email, dan No. HP).");
+            }
             return;
         }
 
-        // Ensure user is logged in or get user from session
         let currentUser = user;
         if (!currentUser) {
             const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -199,18 +215,16 @@ export default function Checkout() {
         }
 
         if (!currentUser) {
-            alert("Sesi anda telah berakhir. Silakan login kembali.");
+            triggerToast("Sesi anda telah berakhir. Silakan login kembali.");
             return;
         }
 
         const bookingCode = `HT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
         const discountAmount = appliedVoucher?.discount_amount || 0;
         const finalCalculatedTotal = Math.max(0, totalAmount - discountAmount) + platformFee + taxAmount;
 
         setLoading(true);
         try {
-            // 1. Create Order
             const { data: order, error: orderError } = await supabase
                 .from("orders")
                 .insert({
@@ -226,17 +240,13 @@ export default function Checkout() {
 
             if (orderError) throw orderError;
 
-            // 2. Create Tickets for each type and quantity using SPECIFIC holder data
             const ticketsToCreate = ticketHolders.map(holder => {
-                // Generate Custom QR Code: HRT + 5 Random + First/Last Event Char
                 const prefix = "HRT";
                 const randomChars = [...Array(5)].map(() => Math.random().toString(36)[2]).join('').toUpperCase();
-
                 const eventTitle = event?.title || eventData?.title || "EVENT";
                 const cleanTitle = eventTitle.trim();
                 const firstChar = cleanTitle.charAt(0).toUpperCase();
                 const lastChar = cleanTitle.charAt(cleanTitle.length - 1).toUpperCase();
-
                 const customQrCode = `${prefix}${randomChars}${firstChar}${lastChar}`;
 
                 return {
@@ -260,9 +270,6 @@ export default function Checkout() {
 
             if (ticketError) throw ticketError;
 
-            // 3. Call Bayarind SNAP Edge Function (create-va) to Initiate Transaction
-            console.log("[Order] Initiating order with bank:", selectedBank, "amount:", finalCalculatedTotal);
-
             const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke('create-va', {
                 body: {
                     bank_code: selectedBank,
@@ -272,21 +279,15 @@ export default function Checkout() {
             });
 
             if (gatewayError) {
-                console.error("[Order] Gateway error:", gatewayError);
-                // Try to get detailed error from context
                 let detail = gatewayError.message;
                 if (gatewayError.context && gatewayError.context.error) {
                     detail = `${gatewayError.context.error}\n${gatewayError.context.details || ''}`;
                 }
-                alert("Gagal membuat pembayaran: " + detail);
+                triggerToast("Gagal membuat pembayaran: " + detail);
                 throw gatewayError;
             }
 
-            console.log("[Order] Gateway success:", gatewayData);
-
-            // Bayarind SNAP B2B returns VA details directly
             if (gatewayData?.success && gatewayData?.virtualAccountNo) {
-                // Navigate to payment page with VA details
                 navigate(`/payment/${gatewayData.transaction_id || order.id}`, {
                     state: {
                         total: finalCalculatedTotal,
@@ -304,7 +305,7 @@ export default function Checkout() {
             }
 
         } catch (error) {
-            alert("Error creating order: " + error.message);
+            triggerToast("Error creating order: " + error.message);
             setLoading(false);
         }
     };
@@ -312,12 +313,10 @@ export default function Checkout() {
     const handleNextStep = () => {
         if (isNextDisabled) {
             setShowValidationErrors(true);
-
-            // More specific error message
             if (!termsAgreed) {
-                alert("Harap setujui Syarat & Ketentuan untuk melanjutkan.");
+                triggerToast("Harap setujui Syarat & Ketentuan untuk melanjutkan.");
             } else {
-                alert("Harap lengkapi data pengunjung (Nama, Email, dan No. HP).");
+                triggerToast("Harap lengkapi data pengunjung (Nama, Email, dan No. HP).");
             }
             return;
         }
@@ -331,7 +330,19 @@ export default function Checkout() {
     };
 
     return (
-        <div className="bg-[#f8fafc] dark:bg-slate-950 min-h-screen font-sans text-slate-900 dark:text-slate-100">
+        <div className="bg-[#f8fafc] dark:bg-slate-950 min-h-screen font-sans text-slate-900 dark:text-slate-100 relative">
+            {/* Attractive Validation Toast */}
+            <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ${showTermsToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+                <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 font-bold text-sm border border-slate-800 dark:border-slate-200">
+                    <div className="bg-amber-500 rounded-full p-1.5 shrink-0 animate-pulse">
+                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    {toastMessage}
+                </div>
+            </div>
+
             <Navbar alwaysScrolled={true} />
 
             <div className="pt-28 pb-20">
