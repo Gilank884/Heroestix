@@ -204,17 +204,26 @@ export default function App() {
             console.log(`[checkRedirect] Role: ${role}, Subdomain: ${isCreatorSub ? "creator" : (isDevSub ? "dev" : "base")}, Path: ${window.location.pathname}, ExplicitAuth: ${isExplicitAuth}`);
 
             if (role === "creator") {
-              // Rule: Redirect to portal if (fresh login) OR (on dev sub) OR (on base sub AND trying to access auth paths)
-              const needsPortal = isExplicitAuth || isDevSub || (isBaseDomain && isAuthPath);
+              const isCreatorGateway = authMode === "creator";
+              // Rule: Redirect to portal if (fresh login via creator gateway) OR (on dev sub) OR (on base sub AND trying to access auth paths AND used creator gateway)
+              const needsPortal = (isExplicitAuth && isCreatorGateway) || isDevSub || (isBaseDomain && isAuthPath && isCreatorGateway);
 
               if (needsPortal) {
                 const target = getSubdomainUrl("creator", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
                 const targetOrigin = new URL(target).origin;
                 if (window.location.origin !== targetOrigin) {
-                  console.log("[checkRedirect] Redirecting creator to portal. Reason: " + (isExplicitAuth ? "ExplicitAuth" : (isDevSub ? "isDevSub" : "isAuthPath")));
+                  console.log("[checkRedirect] Redirecting creator to portal. Reason: Gateway=" + authMode);
                   window.location.href = target;
                   return;
                 }
+              }
+
+              // Special Case: Creator logged in via User gateway but is currently on a portal subdomain
+              if (authMode === "user" && (isCreatorSub || isDevSub)) {
+                console.log("[checkRedirect] Creator via User gateway detected on subdomain. Redirecting to base domain.");
+                const target = getSubdomainUrl(null, isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
+                window.location.href = target;
+                return;
               }
 
               // If we are on creator sub and somehow hit an auth path, send to dashboard
@@ -224,32 +233,40 @@ export default function App() {
                 return;
               }
             } else if (role === "developer") {
-              const needsPortal = isExplicitAuth || isCreatorSub || (isBaseDomain && isAuthPath);
+              const isDevGateway = authMode === "developer";
+              const needsPortal = (isExplicitAuth && isDevGateway) || isCreatorSub || (isBaseDomain && isAuthPath && isDevGateway);
 
               if (needsPortal) {
                 const target = getSubdomainUrl("dev", isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
                 const targetOrigin = new URL(target).origin;
                 if (window.location.origin !== targetOrigin) {
-                  console.log("[checkRedirect] Redirecting developer to portal. Reason: " + (isExplicitAuth ? "ExplicitAuth" : (isCreatorSub ? "isCreatorSub" : "isAuthPath")));
+                  console.log("[checkRedirect] Redirecting developer to portal. Reason: Gateway=" + authMode);
                   window.location.href = target;
                   return;
                 }
               }
+
+              // Special Case: Developer logged in via User gateway but is currently on a portal subdomain
+              if (authMode === "user" && (isCreatorSub || isDevSub)) {
+                console.log("[checkRedirect] Developer via User gateway detected on subdomain. Redirecting to base domain.");
+                const target = getSubdomainUrl(null, isLocalhost ? `#access_token=${session.access_token}&refresh_token=${session.refresh_token}` : "");
+                window.location.href = target;
+                return;
+              }
+
               if (isDevSub && isAuthPath) {
                 console.log("[checkRedirect] Already on dev sub but on auth path, sending home...");
                 window.location.href = "/";
                 return;
               }
-            } else if (role === "user") {
-              // Users on auth paths get sent home
-              if (isBaseDomain && isAuthPath) {
-                console.log("[checkRedirect] User on auth path, sending to home...");
-                window.location.href = "/";
-                return;
-              }
-              // NOTE: We removed the aggressive portal-to-baseDomain forced redirect here.
-              // This allows users to land on creator.heroestix.com/ and see a "Become a Creator" UI
-              // rather than being abruptly kicked back to the home page without explanation.
+            }
+
+            // Universal Fallback: If any authenticated user is on an auth path on the base domain, 
+            // and hasn't been redirected to a portal, send them home.
+            if (isBaseDomain && isAuthPath) {
+              console.log("[checkRedirect] Authenticated user on auth path (base domain). Redirecting to home.");
+              window.location.href = "/";
+              return;
             }
           }
         } finally {

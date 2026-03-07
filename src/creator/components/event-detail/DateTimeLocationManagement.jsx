@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import { ChevronDown, MapPin, Map, Info, Save, CheckCircle2 } from 'lucide-react';
 import { INDONESIA_REGIONS } from '../../../constants/locations';
+import Toast from '../../../components/ui/Toast';
 
 const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate }) => {
     const [saving, setSaving] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
+    const [showToast, setShowToast] = useState(false);
     const [formData, setFormData] = useState({
         event_date: '',
         event_time: '',
@@ -43,9 +44,6 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
             // Consolidate location for display elsewhere if needed
             const consolidatedLocation = `${formData.detail_address || ''}, ${formData.regency || ''}, ${formData.province || ''}`.replace(/^, |, $/g, '').trim();
 
-            // Only update columns that actually exist in the DB
-            // We omit detail_address, gmaps_link, event_end_date, event_end_time 
-            // as they don't exist yet in the events table
             const {
                 province,
                 regency,
@@ -68,9 +66,8 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
 
             if (error) throw error;
 
-            setShowSuccess(true);
+            setShowToast(true);
             if (onUpdate) onUpdate();
-            setTimeout(() => setShowSuccess(false), 3000);
         } catch (error) {
             alert('Gagal menyimpan perubahan: ' + error.message);
         } finally {
@@ -79,16 +76,16 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-8">
+            <Toast
+                show={showToast}
+                message="Jadwal & lokasi event berhasil diperbarui!"
+                onClose={() => setShowToast(false)}
+            />
+
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-50 flex items-center justify-between">
                     <h3 className="text-sm font-black text-gray-900">Pengaturan Waktu & Lokasi</h3>
-                    {showSuccess && (
-                        <div className="flex items-center gap-2 text-green-600 text-xs font-bold animate-in fade-in slide-in-from-right-2">
-                            <CheckCircle2 size={14} />
-                            Tersimpan!
-                        </div>
-                    )}
                 </div>
 
                 <div className="p-8 space-y-8">

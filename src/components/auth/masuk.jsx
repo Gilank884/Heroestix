@@ -28,7 +28,7 @@ const Masuk = ({ role = "user" }) => {
         setLoading(true);
         setErrorMsg("");
         console.log("Attempting manual login for email:", email);
-        localStorage.setItem("auth_mode", "login");
+        localStorage.setItem("auth_mode", role);
 
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
             email,
@@ -67,22 +67,22 @@ const Masuk = ({ role = "user" }) => {
             login(authData.user, authData.session.access_token, profileRole);
 
             // Redirection is now handled centrally by App.jsx or explicitly here ONLY if it's a cross-subdomain bridge
-            if (profileRole === "creator") {
+            if (profileRole === "creator" && role === "creator") {
                 const target = getSubdomainUrl("creator", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
-                console.log(`[Masuk] Creator login detected. Redirecting to: ${target}`);
+                console.log(`[Masuk] Creator login detected via Creator Gateway. Redirecting to: ${target}`);
                 window.location.href = target;
-            } else if (profileRole === "developer") {
+            } else if (profileRole === "developer" && role === "developer") {
                 const target = getSubdomainUrl("dev", isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
-                console.log(`[Masuk] Developer login detected. Redirecting to: ${target}`);
+                console.log(`[Masuk] Developer login detected via Dev Gateway. Redirecting to: ${target}`);
                 window.location.href = target;
             } else {
                 const target = getSubdomainUrl(null, isLocalhost ? `#access_token=${authData.session.access_token}&refresh_token=${authData.session.refresh_token}` : "");
                 const targetOrigin = new URL(target).origin;
                 if (window.location.origin !== targetOrigin) {
-                    console.log(`[Masuk] Regular user login. Redirecting to base domain originating from portal: ${target}`);
+                    console.log(`[Masuk] Login via ${role} gateway. Redirecting to base domain: ${target}`);
                     window.location.href = target;
                 } else {
-                    console.log("[Masuk] Regular user login on base domain. App.jsx will handle navigation.");
+                    console.log(`[Masuk] Login via ${role} gateway on base domain. App.jsx will handle navigation.`);
                 }
             }
         }
@@ -123,7 +123,7 @@ const Masuk = ({ role = "user" }) => {
                     <div className="text-center mb-10">
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-medium uppercase tracking-widest mb-6">
                             <div className="w-1 h-1 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
-                            {isInternalPortal ? `${role.toUpperCase()} ACCESS` : "Beli Tiket Event"}
+                            {isInternalPortal ? `${role.toUpperCase()} ACCESS` : "Hello Heroes"}
                         </div>
                         <h1 className="text-2xl font-medium text-slate-900 dark:text-white tracking-tight">
                             {view === "forgot" ? "Lupa Kata Sandi" : (isInternalPortal ? "Masuk Portal" : "Selamat Datang")}

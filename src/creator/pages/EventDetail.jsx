@@ -64,75 +64,116 @@ const EventDetail = () => {
     if (!event) return <div className="p-10 text-center text-red-500">Event not found</div>;
 
     return (
-        <div className="p-8 space-y-6 animate-in fade-in duration-500">
-            {/* Page Title */}
-            <h1 className="text-lg text-gray-900">Detail Event</h1>
+        <div className="space-y-8 pb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* LEFT COLUMN: Dynamic Content */}
+                <div className="lg:col-span-9 order-2 lg:order-1">
+                    <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm min-h-[500px]">
+                        {/* Dynamic Content */}
+                        <div>
+                            {/* General Info Tab */}
+                            {activeTab === 'Informasi Umum' && (
+                                <GeneralInfoManagement
+                                    eventId={eventId}
+                                    eventData={event}
+                                    onUpdate={() => {
+                                        const fetchEvent = async () => {
+                                            const { data } = await supabase
+                                                .from('events')
+                                                .select('*')
+                                                .eq('id', eventId)
+                                                .single();
+                                            if (data) setEvent(data);
+                                        };
+                                        fetchEvent();
+                                    }}
+                                />
+                            )}
 
-            {/* Tabs */}
-            <div className="flex items-center gap-8 border-b border-gray-200">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`pb-4 text-[11px] transition-all relative
-                            ${activeTab === tab ? 'text-[#1a36c7]' : 'text-gray-400 hover:text-gray-600'}
-                        `}
-                    >
-                        {tab}
-                        {activeTab === tab && (
-                            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#1a36c7]" />
-                        )}
-                    </button>
-                ))}
+                            {/* Date & Location Tab */}
+                            {activeTab === 'Tanggal Dan Lokasi' && (
+                                <DateTimeLocationManagement
+                                    eventId={eventId}
+                                    eventData={event}
+                                    onUpdate={() => {
+                                        const fetchEvent = async () => {
+                                            const { data } = await supabase
+                                                .from('events')
+                                                .select('*')
+                                                .eq('id', eventId)
+                                                .single();
+                                            if (data) setEvent(data);
+                                        };
+                                        fetchEvent();
+                                    }}
+                                />
+                            )}
+
+                            {/* Tax Tab */}
+                            {activeTab === 'Pajak Hiburan' && (
+                                <TaxManagementSection eventId={eventId} />
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* RIGHT COLUMN: Sidebar Tabs */}
+                <aside className="lg:col-span-3 order-1 lg:order-2 space-y-4 lg:sticky lg:top-8">
+                    <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4 px-2">Navigation</p>
+                        <div className="space-y-2">
+                            {tabs.map((tab) => {
+                                const isActive = activeTab === tab;
+                                let Icon = Info;
+                                if (tab === "Tanggal Dan Lokasi") Icon = Calendar;
+                                if (tab === "Pajak Hiburan") Icon = Tag;
+
+                                return (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        className={`
+                                            w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 group
+                                            ${isActive
+                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 ring-4 ring-blue-50'
+                                                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100'}
+                                        `}
+                                    >
+                                        <div className={`
+                                            w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300
+                                            ${isActive ? 'bg-white/20' : 'bg-slate-100 text-slate-400 group-hover:bg-white group-hover:shadow-sm'}
+                                        `}>
+                                            <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                                        </div>
+                                        <span className="text-sm font-semibold tracking-tight">{tab}</span>
+                                        {isActive && (
+                                            <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Quick Help Card */}
+                    <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-3xl p-6 text-white shadow-xl relative overflow-hidden group">
+                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-500" />
+                        <div className="relative z-10 space-y-4">
+                            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                                <Info size={18} className="text-blue-400" />
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="font-bold text-sm">Butuh Bantuan?</h4>
+                                <p className="text-[11px] text-slate-400 leading-relaxed">Kelola event Anda dengan mudah. Jika ada kendala, hubungi tim support kami.</p>
+                            </div>
+                            <button className="w-full py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-all border border-white/10">
+                                Buka Pusat Bantuan
+                            </button>
+                        </div>
+                    </div>
+                </aside>
             </div>
-
-            {/* Dynamic Content */}
-            <div className="space-y-6">
-                {/* General Info Tab */}
-                {activeTab === 'Informasi Umum' && (
-                    <GeneralInfoManagement
-                        eventId={eventId}
-                        eventData={event}
-                        onUpdate={() => {
-                            const fetchEvent = async () => {
-                                const { data } = await supabase
-                                    .from('events')
-                                    .select('*')
-                                    .eq('id', eventId)
-                                    .single();
-                                if (data) setEvent(data);
-                            };
-                            fetchEvent();
-                        }}
-                    />
-                )}
-
-                {/* Date & Location Tab */}
-                {activeTab === 'Tanggal Dan Lokasi' && (
-                    <DateTimeLocationManagement
-                        eventId={eventId}
-                        eventData={event}
-                        onUpdate={() => {
-                            // Re-fetch event data to reflect changes in other tabs if needed
-                            const fetchEvent = async () => {
-                                const { data } = await supabase
-                                    .from('events')
-                                    .select('*')
-                                    .eq('id', eventId)
-                                    .single();
-                                if (data) setEvent(data);
-                            };
-                            fetchEvent();
-                        }}
-                    />
-                )}
-
-                {/* Tax Tab */}
-                {activeTab === 'Pajak Hiburan' && (
-                    <TaxManagementSection eventId={eventId} />
-                )}
-            </div>
-        </div >
+        </div>
     );
 };
 

@@ -27,7 +27,10 @@ import {
     Shield,
     BarChart3,
     PieChart,
-    QrCode
+    QrCode,
+    Search,
+    Bell,
+    User
 } from 'lucide-react';
 import useAuthStore from '../../auth/useAuthStore';
 import { supabase } from '../../lib/supabaseClient';
@@ -57,7 +60,7 @@ const EventManagementLayout = ({ children }) => {
 
                 const { data, error } = await supabase
                     .from('events')
-                    .select('*')
+                    .select('*, creators(brand_name)')
                     .eq('id', eventId)
                     .single();
 
@@ -215,8 +218,47 @@ const EventManagementLayout = ({ children }) => {
                     </button>
                 </header>
 
+                {/* Top Header - Desktop Only */}
+                <header className="hidden lg:flex items-center justify-between px-8 py-5 bg-white border-b border-slate-200">
+                    <div className="flex-1 max-w-xl">
+                        <div className="relative group">
+                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                            <input
+                                type="text"
+                                placeholder="Cari di management portal..."
+                                className="w-full bg-slate-100/50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none text-slate-600 font-medium"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        <button className="relative p-2.5 text-slate-400 hover:bg-slate-50 rounded-xl transition-all">
+                            <Bell size={20} />
+                            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 border-2 border-white rounded-full" />
+                        </button>
+
+                        <div className="h-8 w-px bg-slate-200" />
+
+                        <div className="flex items-center gap-3 pl-2">
+                            <div className="flex flex-col items-end">
+                                <span className="text-sm font-semibold text-slate-900 leading-none">
+                                    {eventData?.creators?.brand_name || 'Creator'}
+                                </span>
+                                <span className="text-[10px] text-slate-400 uppercase tracking-wider mt-1">
+                                    {user?.email}
+                                </span>
+                            </div>
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#1a36c7] to-blue-400 p-[2px] shadow-sm">
+                                <div className="w-full h-full bg-white rounded-[9px] flex items-center justify-center overflow-hidden">
+                                    <User size={18} className="text-[#1a36c7]" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
                 <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
-                    <div className="h-full">
+                    <div className="p-8 md:p-12 lg:p-14 max-w-[1600px] mx-auto">
                         {children}
                     </div>
                 </main>

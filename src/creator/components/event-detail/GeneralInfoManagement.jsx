@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import { Upload, Image as ImageIcon, Save, CheckCircle2, Tag, FileText } from 'lucide-react';
 import { CATEGORIES } from '../../../constants/categories';
+import Toast from '../../../components/ui/Toast';
 
 const GeneralInfoManagement = ({ eventId, eventData: initialData, onUpdate }) => {
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
+    const [showToast, setShowToast] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -49,7 +50,6 @@ const GeneralInfoManagement = ({ eventId, eventData: initialData, onUpdate }) =>
         try {
             const fileExt = newBannerFile.name.split('.').pop();
             const fileName = `${Date.now()}.${fileExt}`;
-            // Simplify path to match CreateEvent convention but specifically for this event
             const filePath = `events/${eventId}/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
@@ -86,9 +86,8 @@ const GeneralInfoManagement = ({ eventId, eventData: initialData, onUpdate }) =>
 
             if (error) throw error;
 
-            setShowSuccess(true);
+            setShowToast(true);
             if (onUpdate) onUpdate();
-            setTimeout(() => setShowSuccess(false), 3000);
             setNewBannerFile(null); // Reset file selection after save
         } catch (error) {
             alert('Gagal menyimpan perubahan: ' + error.message);
@@ -100,16 +99,16 @@ const GeneralInfoManagement = ({ eventId, eventData: initialData, onUpdate }) =>
     const activeCategory = CATEGORIES.find(c => c.id === formData.category);
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-8">
+            <Toast
+                show={showToast}
+                message="Informasi umum event berhasil diperbarui!"
+                onClose={() => setShowToast(false)}
+            />
+
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-50 flex items-center justify-between">
                     <h3 className="text-sm font-black text-gray-900">Informasi Umum</h3>
-                    {showSuccess && (
-                        <div className="flex items-center gap-2 text-green-600 text-xs font-bold animate-in fade-in slide-in-from-right-2">
-                            <CheckCircle2 size={14} />
-                            Tersimpan!
-                        </div>
-                    )}
                 </div>
 
                 <div className="p-8 space-y-10">
