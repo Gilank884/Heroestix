@@ -143,6 +143,9 @@ const CreateEvent = () => {
                     location: consolidatedLocation || eventData.location,
                     provinsi: province,
                     kabupaten: regency,
+                    gmaps_link: gmaps_link,
+                    event_end_date: event_end_date,
+                    event_end_time: event_end_time,
                     poster_url: posterUrl,
                     creator_id: creatorId,
                     status: 'active'
@@ -252,7 +255,7 @@ const CreateEvent = () => {
                 </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col">
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
                 {/* Section Header */}
                 <div className="px-10 py-6 border-b border-slate-100 bg-white">
                     <h2 className="text-xl font-bold text-slate-900">{step === 1 ? 'Informasi Umum' : 'Detail Tiket'}</h2>
@@ -320,7 +323,7 @@ const CreateEvent = () => {
                             </div>
 
                             {/* Sales Period */}
-                            <div className="bg-slate-50 rounded-[2.5rem] p-10 space-y-6 border border-slate-100">
+                            <div className="bg-slate-50 rounded-2xl p-10 space-y-6 border border-slate-100">
                                 <h3 className="text-xs font-black uppercase tracking-widest text-[#1a36c7] flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-[#1a36c7]" />
                                     Periode Penjualan Inventory

@@ -88,7 +88,7 @@ const Navbar = ({ alwaysScrolled = false, searchTerm, onSearchChange }) => {
         >
             <div className="px-8 md:px-12 flex items-center justify-between">
                 {/* Logo Section - Professional Blue */}
-                <div className="flex items-center gap-8 md:gap-14">
+                <div className="flex items-center gap-6 md:gap-14">
                     <Link to="/" className="flex-shrink-0 flex items-center gap-3 group/logo">
                         <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center transform group-hover/logo:rotate-12 transition-transform duration-300 shadow-lg shadow-blue-600/30">
                             <img
@@ -126,9 +126,9 @@ const Navbar = ({ alwaysScrolled = false, searchTerm, onSearchChange }) => {
                 </div>
 
                 {/* Right Side: Navigation + Auth / CTA */}
-                <div className="flex items-center gap-8">
+                <div className="flex items-center gap-6">
                     {/* Navigation Menu - Desktop */}
-                    <nav className="hidden md:flex items-center gap-8">
+                    <nav className="hidden md:flex items-center gap-6">
                         {navLinks.map((item) => (
                             item.isExternal ? (
                                 <a
@@ -189,7 +189,7 @@ const Navbar = ({ alwaysScrolled = false, searchTerm, onSearchChange }) => {
                                 {/* Dropdown Menu - Sleek Dark/Professional */}
                                 <div className="
                                 absolute right-0 mt-4 w-60
-                                rounded-[2rem] bg-white dark:bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 dark:border-slate-800
+                                rounded-2xl bg-white dark:bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 dark:border-slate-800
                                 opacity-0 invisible group-hover:opacity-100 group-hover:visible
                                 transition-all duration-200 transform origin-top-right scale-95 group-hover:scale-100
                                 overflow-hidden p-2

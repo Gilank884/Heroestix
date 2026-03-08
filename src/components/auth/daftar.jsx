@@ -198,9 +198,9 @@ const Daftar = ({ role = "user" }) => {
             </div>
 
             <div className={`w-full ${isCreator ? "max-w-2xl" : "max-w-[420px]"} relative z-10`}>
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
                     {/* Header */}
-                    <div className="p-8 md:p-10 text-center border-b border-slate-50 dark:border-slate-800">
+                    <div className="p-6 md:p-10 text-center border-b border-slate-50 dark:border-slate-800">
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-black uppercase tracking-widest mb-6">
                             <div className="w-1 h-1 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
                             {isOtpStage ? "EMAIL VERIFICATION" : (isCreator ? "CREATOR REGISTRATION" : "USER REGISTRATION")}
@@ -215,7 +215,7 @@ const Daftar = ({ role = "user" }) => {
                         </p>
                     </div>
 
-                    <div className="p-8 md:p-10">
+                    <div className="p-6 md:p-10">
                         {/* Error Alert */}
                         {errorMsg && (
                             <div className="bg-red-50 border border-red-100 text-red-600 text-[12px] px-4 py-3 rounded-xl mb-8 flex items-center gap-3">

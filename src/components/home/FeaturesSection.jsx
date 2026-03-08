@@ -50,7 +50,7 @@ const features = [
 export default function FeaturesSection() {
     return (
         <section className="w-full py-16 px-4 md:px-12 bg-transparent">
-            <div className="max-w-7xl mx-auto rounded-[2.5rem] bg-[#020617] border border-white/5 overflow-hidden flex flex-col md:flex-row shadow-2xl">
+            <div className="max-w-7xl mx-auto rounded-2xl bg-[#020617] border border-white/5 overflow-hidden flex flex-col md:flex-row shadow-2xl">
                 {/* Left Side - Text Content */}
                 <div className="w-full md:w-5/12 p-10 md:p-16 flex flex-col justify-center text-white relative overflow-hidden">
                     {/* Background decoration */}
@@ -79,10 +79,10 @@ export default function FeaturesSection() {
                 </div>
 
                 {/* Right Side - Feature Grid */}
-                <div className="w-full md:w-7/12 bg-white/[0.02] p-8 md:p-12 border-l border-white/5">
+                <div className="w-full md:w-7/12 bg-white/[0.02] p-6 md:p-12 border-l border-white/5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {features.map((feature, index) => (
-                            <div key={index} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-6 shadow-sm hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 h-full flex flex-col group">
+                            <div key={index} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 shadow-sm hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 h-full flex flex-col group">
                                 <div className={`w-12 h-12 rounded-2xl ${feature.bgColor} flex items-center justify-center mb-5 shrink-0 shadow-lg shadow-blue-500/10 transition-transform duration-300 group-hover:scale-110`}>
                                     {feature.icon}
                                 </div>

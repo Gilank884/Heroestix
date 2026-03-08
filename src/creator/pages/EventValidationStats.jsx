@@ -107,129 +107,139 @@ export default function EventValidationStats() {
     if (!isVerified) return <VerificationPending />;
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Manajemen Kehadiran</span>
-                    </div>
-                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight text-center md:text-left">
-                        Statistik Check-in
-                    </h2>
-                    <p className="text-slate-500 text-sm text-center md:text-left">Pantau perkembangan kedatangan pengunjung secara real-time.</p>
-                </div>
-            </div>
-
-            {/* Main Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                        <Users size={20} />
-                    </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Tiket</p>
-                        <h4 className="text-3xl font-bold text-slate-900 tabular-nums">{stats.total}</h4>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
-                        <CheckCircle2 size={20} />
-                    </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Sudah Masuk</p>
-                        <h4 className="text-3xl font-bold text-green-600 tabular-nums">{stats.checkedIn}</h4>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
-                        <Clock size={20} />
-                    </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Belum Datang</p>
-                        <h4 className="text-3xl font-bold text-orange-600 tabular-nums">{stats.remaining}</h4>
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Progress Card */}
-                <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm space-y-8">
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                            <h3 className="text-lg font-bold text-slate-900">Progres Kehadiran</h3>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Persentase Kedatangan</p>
-                        </div>
-                        <div className="text-3xl font-bold text-blue-600">
-                            {checkInRate.toFixed(1)}%
-                        </div>
-                    </div>
-
-                    <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-out"
-                            style={{ width: `${checkInRate}%` }}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 text-center">Status Kehadiran</p>
-                            <div className="flex items-center justify-center gap-2 text-slate-900">
-                                <TrendingUp size={14} className="text-green-500" />
-                                <span className="font-bold text-sm">Stabil</span>
+        <div className="space-y-8 pb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Main Content Area */}
+                <div className="lg:col-span-9 order-2 lg:order-1 space-y-6">
+                    {/* Main Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                                <Users size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Tiket</p>
+                                <h4 className="text-3xl font-bold text-slate-900 tabular-nums">{stats.total}</h4>
                             </div>
                         </div>
-                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 text-center">Sisa Kuota</p>
-                            <div className="flex items-center justify-center gap-2 text-slate-900">
-                                <Users size={14} className="text-blue-500" />
-                                <span className="font-bold text-sm">{stats.remaining} Orang</span>
+
+                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
+                                <CheckCircle2 size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Sudah Masuk</p>
+                                <h4 className="text-3xl font-bold text-green-600 tabular-nums">{stats.checkedIn}</h4>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
+                                <Clock size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Belum Datang</p>
+                                <h4 className="text-3xl font-bold text-orange-600 tabular-nums">{stats.remaining}</h4>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Category Breakdown */}
-                <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-1 h-5 bg-blue-600 rounded-full" />
-                        <h3 className="text-lg font-bold text-slate-900">Berdasarkan Kategori</h3>
-                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Progress Card */}
+                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-8">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <h3 className="text-lg font-bold text-slate-900">Progres Kehadiran</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Persentase Kedatangan</p>
+                                </div>
+                                <div className="text-3xl font-bold text-blue-600">
+                                    {checkInRate.toFixed(1)}%
+                                </div>
+                            </div>
 
-                    <div className="space-y-5">
-                        {stats.byType.length > 0 ? stats.byType.map((type, idx) => {
-                            const rate = (type.checkedIn / type.total) * 100;
-                            return (
-                                <div key={idx} className="space-y-2">
-                                    <div className="flex justify-between items-end">
-                                        <div>
-                                            <p className="font-semibold text-slate-800 text-sm">{type.name}</p>
-                                            <p className="text-[10px] text-slate-400 font-medium">
-                                                {type.checkedIn} masuk / {type.total} terjual
-                                            </p>
-                                        </div>
-                                        <p className="text-xs font-bold text-blue-600">{rate.toFixed(0)}%</p>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100">
-                                        <div
-                                            className="h-full bg-blue-500 transition-all duration-500"
-                                            style={{ width: `${rate}%` }}
-                                        />
+                            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-out"
+                                    style={{ width: `${checkInRate}%` }}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 text-center">Status Kehadiran</p>
+                                    <div className="flex items-center justify-center gap-2 text-slate-900">
+                                        <TrendingUp size={14} className="text-green-500" />
+                                        <span className="font-bold text-sm">Stabil</span>
                                     </div>
                                 </div>
-                            );
-                        }) : (
-                            <div className="py-10 text-center text-slate-300 flex flex-col items-center gap-3">
-                                <PieChart size={32} />
-                                <p className="text-xs font-bold uppercase tracking-widest">Data tidak tersedia</p>
+                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 text-center">Sisa Kuota</p>
+                                    <div className="flex items-center justify-center gap-2 text-slate-900">
+                                        <Users size={14} className="text-blue-500" />
+                                        <span className="font-bold text-sm">{stats.remaining} Orang</span>
+                                    </div>
+                                </div>
                             </div>
-                        )}
+                        </div>
+
+                        {/* Category Breakdown */}
+                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-1 h-5 bg-blue-600 rounded-full" />
+                                <h3 className="text-lg font-bold text-slate-900">Berdasarkan Kategori</h3>
+                            </div>
+
+                            <div className="space-y-5">
+                                {stats.byType.length > 0 ? stats.byType.map((type, idx) => {
+                                    const rate = (type.checkedIn / type.total) * 100;
+                                    return (
+                                        <div key={idx} className="space-y-2">
+                                            <div className="flex justify-between items-end">
+                                                <div>
+                                                    <p className="font-semibold text-slate-800 text-sm">{type.name}</p>
+                                                    <p className="text-[10px] text-slate-400 font-medium">
+                                                        {type.checkedIn} masuk / {type.total} terjual
+                                                    </p>
+                                                </div>
+                                                <p className="text-xs font-bold text-blue-600">{rate.toFixed(0)}%</p>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                                                <div
+                                                    className="h-full bg-blue-500 transition-all duration-500"
+                                                    style={{ width: `${rate}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                }) : (
+                                    <div className="py-10 text-center text-slate-300 flex flex-col items-center gap-3">
+                                        <PieChart size={32} />
+                                        <p className="text-xs font-bold uppercase tracking-widest">Data tidak tersedia</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                {/* Right Column: Sidebar */}
+                <aside className="lg:col-span-3 order-1 lg:order-2 space-y-6 lg:sticky lg:top-6">
+                    {/* Header Info Card */}
+                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div className="relative z-10 space-y-5">
+                            <h5 className="text-base font-black text-slate-900 tracking-tight border-b border-slate-100 pb-3">Statistik Check-in</h5>
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Manajemen Kehadiran</span>
+                                </div>
+                                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                    Pantau perkembangan kedatangan pengunjung secara real-time.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
             </div>
         </div>
     );

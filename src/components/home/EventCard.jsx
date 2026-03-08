@@ -22,7 +22,7 @@ const EventCard = ({ id, image, title, date, location, price, status, variant, c
     // Render "Load More" card variant
     if (variant === "more") {
         return (
-            <div className="bg-slate-900/5 dark:bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center p-8 text-center hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 cursor-pointer group shadow-sm">
+            <div className="bg-slate-900/5 dark:bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center p-6 text-center hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 cursor-pointer group shadow-sm">
                 <div className="w-12 h-12 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-600 dark:group-hover:bg-blue-500 group-hover:text-white shadow-md transition-all duration-500">
                     <ChevronRight className="text-slate-400 dark:text-slate-300 group-hover:text-white" size={24} />
                 </div>

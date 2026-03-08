@@ -60,7 +60,10 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
                     ...updateData,
                     location: consolidatedLocation || formData.location, // We use consolidated as venue+address fallback
                     provinsi: province,
-                    kabupaten: regency
+                    kabupaten: regency,
+                    gmaps_link: gmaps_link,
+                    event_end_date: event_end_date,
+                    event_end_time: event_end_time
                 })
                 .eq('id', eventId);
 
@@ -88,7 +91,7 @@ const DateTimeLocationManagement = ({ eventId, eventData: initialData, onUpdate 
                     <h3 className="text-sm font-black text-gray-900">Pengaturan Waktu & Lokasi</h3>
                 </div>
 
-                <div className="p-8 space-y-8">
+                <div className="p-6 space-y-8">
                     {/* Waktu Section */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">

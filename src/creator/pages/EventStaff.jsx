@@ -167,18 +167,11 @@ const EventStaff = () => {
     };
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
-            <PageHeader
-                title="Manajemen"
-                highlight="Staff"
-                subtitle="Pengaturan Akses Staff Event"
-                icon={Users}
-            />
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Invite Form */}
-                <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
+        <div className="space-y-8 pb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Main Content Area */}
+                <div className="lg:col-span-9 order-2 lg:order-1 space-y-8">
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
                         <div>
                             <h3 className="text-lg font-bold text-slate-900 mb-1">Undang Staff Baru</h3>
                             <p className="text-xs text-slate-400">Kirim undangan via email untuk memberikan akses manajemen event ini.</p>
@@ -216,57 +209,7 @@ const EventStaff = () => {
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* Staff List */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Active Staff */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-1 h-5 bg-green-500 rounded-full" />
-                            <h3 className="text-lg font-bold text-slate-900">Staff Aktif</h3>
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold">{staffList.length}</span>
-                        </div>
-
-                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                            {staffList.length > 0 ? (
-                                <div className="divide-y divide-slate-50">
-                                    {staffList.map((staff) => (
-                                        <div key={staff.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold overflow-hidden">
-                                                    {staff.profiles?.avatar_url ? (
-                                                        <img src={staff.profiles.avatar_url} alt={staff.profiles.full_name} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        staff.profiles?.full_name?.charAt(0) || 'S'
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-slate-900 text-sm">{staff.profiles?.full_name || 'Tanpa Nama'}</p>
-                                                    <p className="text-xs text-slate-500">{staff.profiles?.email}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                                                    {staff.role}
-                                                </span>
-                                                <button
-                                                    onClick={() => handleRemoveStaff(staff.id)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="p-8 text-center text-slate-400 text-sm">Belum ada staff aktif.</div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Pending Invitations */}
+                    {/* Pending Invitations moved down within main content */}
                     {invitations.length > 0 && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
@@ -275,7 +218,7 @@ const EventStaff = () => {
                                 <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold">{invitations.length}</span>
                             </div>
 
-                            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                 <div className="divide-y divide-slate-50">
                                     {invitations.map((invite) => (
                                         <div key={invite.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
@@ -315,7 +258,94 @@ const EventStaff = () => {
                             </div>
                         </div>
                     )}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-1 h-5 bg-green-500 rounded-full" />
+                            <h3 className="text-lg font-bold text-slate-900">Staff Aktif</h3>
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold">{staffList.length}</span>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            {staffList.length > 0 ? (
+                                <div className="divide-y divide-slate-50">
+                                    {staffList.map((staff) => (
+                                        <div key={staff.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold overflow-hidden">
+                                                    {staff.profiles?.avatar_url ? (
+                                                        <img src={staff.profiles.avatar_url} alt={staff.profiles.full_name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        staff.profiles?.full_name?.charAt(0) || 'S'
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-900 text-sm">{staff.profiles?.full_name || 'Tanpa Nama'}</p>
+                                                    <p className="text-xs text-slate-500">{staff.profiles?.email}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                                    {staff.role}
+                                                </span>
+                                                <button
+                                                    onClick={() => handleRemoveStaff(staff.id)}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-6 text-center text-slate-400 text-sm">Belum ada staff aktif.</div>
+                            )}
+                        </div>
+                    </div>
                 </div>
+
+                {/* Right Column: Sidebar */}
+                <aside className="lg:col-span-3 order-1 lg:order-2 space-y-6 lg:sticky lg:top-6">
+                    {/* Invite Form Card */}
+                    <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 space-y-5">
+                        <div>
+                            <h3 className="text-base font-black text-slate-900 tracking-tight border-b border-slate-100 pb-3">Undang Staff Baru</h3>
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed pt-3">Kirim undangan via email untuk memberikan akses manajemen event ini.</p>
+                        </div>
+
+                        <form onSubmit={handleInvite} className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Staff</label>
+                                <div className="relative">
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <input
+                                        type="email"
+                                        required
+                                        value={inviteEmail}
+                                        onChange={(e) => setInviteEmail(e.target.value)}
+                                        placeholder="contoh@email.com"
+                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={isInviting || !inviteEmail}
+                                className="w-full py-3 bg-[#1a36c7] text-white rounded-xl font-bold text-xs hover:bg-[#152ba3] transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
+                            >
+                                {isInviting ? 'Mengirim...' : <><Send size={16} /> Kirim Undangan</>}
+                            </button>
+                        </form>
+
+                        {inviteStatus && (
+                            <div className={`p-4 rounded-xl border flex items-start gap-3 ${inviteStatus.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}`}>
+                                {inviteStatus.type === 'success' ? <CheckCircle2 size={18} className="shrink-0 mt-0.5" /> : <XCircle size={18} className="shrink-0 mt-0.5" />}
+                                <p className="text-xs font-medium">{inviteStatus.message}</p>
+                            </div>
+                        )}
+                    </div>
+                </aside>
             </div>
         </div>
     );

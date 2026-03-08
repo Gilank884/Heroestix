@@ -221,7 +221,7 @@ const CreatorDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Overview Table */}
-                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm lg:col-span-2">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-2xl font-medium text-slate-900 tracking-tight">Overview</h3>
@@ -280,7 +280,7 @@ const CreatorDashboard = () => {
                 </div>
 
                 {/* Demographics Area */}
-                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm lg:col-span-1 flex flex-col">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-1 flex flex-col">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-xl font-medium text-slate-900 tracking-tight">Demografi</h3>
@@ -330,7 +330,7 @@ const CreatorDashboard = () => {
             </div>
 
             {/* Sales Performance Chart */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-blue-500/10 transition-colors" />
 
                 <div className="flex items-center justify-between mb-10 relative z-10">
@@ -417,7 +417,7 @@ const CreatorDashboard = () => {
             </div>
 
             {/* Operations Table */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center justify-between mb-10">
                     <div>
                         <h3 className="text-2xl font-medium text-slate-900 tracking-tight">Active Operations</h3>

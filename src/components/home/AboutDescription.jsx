@@ -125,8 +125,8 @@ const AboutDescription = () => {
                 </div>
 
                 <div ref={imageRef} className="relative">
-                    <div className="absolute -inset-4 bg-gradient-to-tr from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-[2.5rem] -rotate-2"></div>
-                    <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 aspect-[4/3] group z-10 bg-white dark:bg-slate-900">
+                    <div className="absolute -inset-4 bg-gradient-to-tr from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-2xl -rotate-2"></div>
+                    <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 aspect-[4/3] group z-10 bg-white dark:bg-slate-900">
                         <img
                             src="/assets/become.png"
                             alt="Become a Heroestix Creator"

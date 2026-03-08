@@ -237,7 +237,7 @@ export default function EventCash() {
     if (!isVerified) return <VerificationPending />;
 
     return (
-        <div className="p-8 max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="p-6 max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-1">
@@ -262,7 +262,7 @@ export default function EventCash() {
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Balance Card */}
-                <div className="lg:col-span-2 bg-slate-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden group shadow-2xl shadow-slate-900/20">
+                <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-10 text-white relative overflow-hidden group shadow-2xl shadow-slate-900/20">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-indigo-600/30 transition-all duration-700" />
 
                     <div className="relative z-10 space-y-8">
@@ -281,7 +281,7 @@ export default function EventCash() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-8 pt-8 border-t border-white/10">
+                        <div className="grid grid-cols-2 gap-6 pt-8 border-t border-white/10">
                             <div>
                                 <div className="flex items-center gap-2 mb-1.5">
                                     <ArrowDownLeft size={14} className="text-green-400" />
@@ -301,7 +301,7 @@ export default function EventCash() {
                 </div>
 
                 {/* Event Info Card */}
-                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col justify-between overflow-hidden relative group">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between overflow-hidden relative group">
                     <div className="space-y-6">
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 bg-indigo-50 rounded-xl text-indigo-600">
@@ -342,7 +342,7 @@ export default function EventCash() {
             </div>
 
             {/* Tables Section */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Withdrawal History */}
                 <div className="space-y-6">
                     <div className="flex items-center justify-between px-2">
@@ -353,7 +353,7 @@ export default function EventCash() {
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recent Activity</p>
                     </div>
 
-                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 border-b border-slate-100">
@@ -412,7 +412,7 @@ export default function EventCash() {
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Incoming Sales</p>
                     </div>
 
-                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden text-[13px]">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-[13px]">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 border-b border-slate-100">
@@ -461,8 +461,8 @@ export default function EventCash() {
             {isRequestModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsRequestModalOpen(false)} />
-                    <div className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
-                        <div className="p-8 border-b border-slate-50 bg-slate-50/50">
+                    <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
+                        <div className="p-6 border-b border-slate-50 bg-slate-50/50">
                             <h2 className="text-2xl font-black text-slate-900">Pencairan <span className="text-indigo-600 italic">Saldo</span></h2>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-2">
                                 <Info size={12} className="text-amber-500" />
@@ -470,7 +470,7 @@ export default function EventCash() {
                             </p>
                         </div>
 
-                        <form onSubmit={handleRequestWithdrawal} className="p-8 space-y-6">
+                        <form onSubmit={handleRequestWithdrawal} className="p-6 space-y-6">
                             <div className="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex items-center justify-between">
                                 <div>
                                     <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Saldo Event Tersedia</p>

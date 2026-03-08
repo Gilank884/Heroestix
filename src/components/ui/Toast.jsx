@@ -15,7 +15,7 @@ const Toast = ({ show, message, type = 'success', onClose }) => {
         <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ease-in-out ${show ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8 pointer-events-none'}`}>
             <div className={`
                 ${type === 'warning' ? 'bg-amber-600' : 'bg-slate-900'} 
-                text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-4 font-bold text-sm border border-slate-800 backdrop-blur-md bg-opacity-95
+                text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 font-bold text-sm border border-slate-800 backdrop-blur-md bg-opacity-95
             `}>
                 <div className={`${type === 'warning' ? 'bg-amber-400' : 'bg-emerald-500'} rounded-full p-2 shrink-0 shadow-lg`}>
                     {type === 'warning' ? (

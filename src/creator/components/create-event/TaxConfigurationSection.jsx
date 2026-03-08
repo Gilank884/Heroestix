@@ -3,7 +3,7 @@ import { Info } from 'lucide-react';
 
 const TaxConfigurationSection = ({ taxData, setTaxData }) => {
     return (
-        <div className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-10 space-y-8 shadow-sm transition-all hover:border-slate-200">
+        <div className="bg-white border-2 border-slate-100 rounded-2xl p-10 space-y-8 shadow-sm transition-all hover:border-slate-200">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-slate-900">Pajak Hiburan</h2>
             </div>
@@ -47,7 +47,7 @@ const TaxConfigurationSection = ({ taxData, setTaxData }) => {
 
                 <div className="space-y-4">
                     <h4 className="text-sm font-black uppercase tracking-widest text-slate-400 ml-1">Tampilan Detail Pesanan</h4>
-                    <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 space-y-6">
+                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 space-y-6">
                         <h5 className="font-bold text-slate-900">Detail Pesanan</h5>
 
                         <div className="flex gap-4">

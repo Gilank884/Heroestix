@@ -90,9 +90,9 @@ const AboutHero = () => {
 
                 {/* RIGHT: HERO IMAGE */}
                 <div ref={imageRef} className="relative w-full aspect-square md:aspect-[4/3] lg:aspect-square flex items-center justify-center">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-purple-500/20 rounded-[3rem] rotate-6 blur-md"></div>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-purple-500/20 rounded-2xl rotate-6 blur-md"></div>
 
-                    <div className="relative w-full h-full rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl bg-slate-900/50 backdrop-blur-sm group">
+                    <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900/50 backdrop-blur-sm group">
                         <img
                             src="/Logo/Hero.png"
                             alt="About Heroestix"

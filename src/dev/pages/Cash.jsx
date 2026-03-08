@@ -178,7 +178,7 @@ export default function Cash() {
 
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-8 text-center">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-6 text-center">
                 <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-2">
                     <AlertCircle size={32} />
                 </div>
@@ -247,7 +247,7 @@ export default function Cash() {
                 <motion.div
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-slate-900 p-8 rounded-[2.5rem] text-white relative overflow-hidden group border border-white/5 shadow-2xl shadow-slate-900/10"
+                    className="bg-slate-900 p-6 rounded-2xl text-white relative overflow-hidden group border border-white/5 shadow-2xl shadow-slate-900/10"
                 >
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl -mr-32 -mt-32" />
                     <div className="relative z-10 flex items-center gap-6">
@@ -265,7 +265,7 @@ export default function Cash() {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 relative group overflow-hidden"
+                    className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-6 relative group overflow-hidden"
                 >
                     <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full blur-3xl -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700" />
                     <div className="relative z-10 w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-sm">
@@ -280,7 +280,7 @@ export default function Cash() {
 
             {/* Minor Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-80">
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between">
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center">
                             <ShoppingBag size={20} />
@@ -292,7 +292,7 @@ export default function Cash() {
                     </div>
                     <div className="text-xs font-medium text-slate-300 italic">Database Sum</div>
                 </div>
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between">
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center">
                             <TrendingUp size={20} />
@@ -307,8 +307,8 @@ export default function Cash() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden mt-10">
-                <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-10">
+                <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
                             <Building2 size={20} />
@@ -349,7 +349,7 @@ export default function Cash() {
                                     key={s.id}
                                     className="group hover:bg-slate-50/50 transition-colors"
                                 >
-                                    <td className="px-8 py-6">
+                                    <td className="px-6 py-5">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-blue-600 font-medium text-sm shadow-sm">
                                                 {s.brandName.charAt(0)}
@@ -360,19 +360,19 @@ export default function Cash() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 text-right font-medium text-slate-400 tabular-nums text-xs">
+                                    <td className="px-6 py-5 text-right font-medium text-slate-400 tabular-nums text-xs">
                                         {rupiah(s.grossRevenue)}
                                     </td>
-                                    <td className="px-8 py-6 text-right font-medium text-slate-900 tabular-nums">
+                                    <td className="px-6 py-5 text-right font-medium text-slate-900 tabular-nums">
                                         {rupiah(s.revenue)}
                                     </td>
-                                    <td className="px-8 py-6 text-right font-bold text-blue-600 tabular-nums">
+                                    <td className="px-6 py-5 text-right font-bold text-blue-600 tabular-nums">
                                         {rupiah(s.developerProfit || (s.grossRevenue - s.revenue))}
                                     </td>
-                                    <td className="px-8 py-6 text-right font-medium text-emerald-600 tabular-nums">
+                                    <td className="px-6 py-5 text-right font-medium text-emerald-600 tabular-nums">
                                         {rupiah(s.disbursed)}
                                     </td>
-                                    <td className="px-8 py-6 text-right">
+                                    <td className="px-6 py-5 text-right">
                                         <div className="flex flex-col items-end">
                                             <span className="text-sm font-medium text-slate-900 tabular-nums">{rupiah(s.revenue - s.disbursed)}</span>
                                             <div className="flex items-center gap-1.5 mt-1">

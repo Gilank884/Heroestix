@@ -177,156 +177,166 @@ export default function EventCheckIn() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-100px)] flex flex-col items-center justify-center p-6 space-y-12 animate-in fade-in duration-700">
-            {/* Mode Switcher */}
-            <div className="bg-white p-1 rounded-2xl border border-slate-100 shadow-sm flex gap-1">
-                <button
-                    onClick={() => { setMode('qr'); setInputValue(''); setResult(null); stopScanner(); }}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${mode === 'qr' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
-                >
-                    <QrCode size={16} />
-                    Auto Scanner
-                </button>
-                <button
-                    onClick={() => { setMode('manual'); setInputValue(''); setResult(null); stopScanner(); }}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${mode === 'manual' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
-                >
-                    <Keyboard size={16} />
-                    Input Kode
-                </button>
-            </div>
+        <div className="space-y-8 pb-20 pt-4">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Main Content Area */}
+                <div className="lg:col-span-9 order-2 lg:order-1 flex flex-col items-center justify-center min-h-[60vh] bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+                    {/* Input & Action Area */}
+                    <div className="w-full max-w-xl space-y-8 text-center">
 
-            {/* Input & Action Area */}
-            <div className="w-full max-w-xl space-y-8 text-center">
-                <div className="space-y-2">
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-                        Cek Tiket Pengunjung
-                    </h1>
-                    <p className="text-slate-400 font-medium text-sm">
-                        {mode === 'qr'
-                            ? 'Pindai QR code menggunakan kamera atau alat scanner.'
-                            : 'Masukkan kode unik yang tertera pada tiket.'}
-                    </p>
-                </div>
-
-                {mode === 'qr' && (
-                    <div className="flex flex-col items-center gap-6">
-                        {isCameraActive ? (
-                            <div className="relative w-full max-w-xs aspect-square bg-black rounded-2xl overflow-hidden border-2 border-blue-600 shadow-xl">
-                                <div id={scannerContainerId} className="w-full h-full" />
-                                <button
-                                    onClick={stopScanner}
-                                    className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-[10px] uppercase tracking-wider flex items-center gap-2 shadow-lg"
-                                >
-                                    <CameraOff size={14} />
-                                    Matikan Kamera
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={startScanner}
-                                className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-blue-100 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all text-sm"
-                            >
-                                <Camera size={20} />
-                                Gunakan Kamera HP
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className={`relative ${isCameraActive ? 'hidden' : 'block'}`}>
-                    <div className="relative flex gap-2">
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            placeholder={mode === 'qr' ? 'Menunggu Scan...' : 'Masukkan kode tiket...'}
-                            className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl font-bold text-xl text-slate-900 outline-none focus:border-blue-600 transition-all text-center placeholder:text-slate-200 shadow-sm"
-                        />
-                        {mode === 'manual' && (
-                            <button
-                                type="submit"
-                                disabled={loading || !inputValue}
-                                className="px-6 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all disabled:opacity-50"
-                            >
-                                {loading ? <Loader2 className="animate-spin" size={20} /> : <ArrowRight size={20} />}
-                            </button>
-                        )}
-                    </div>
-                </form>
-
-                {/* Status Displays */}
-                <div className="min-h-[260px] flex items-center justify-center">
-                    {!result && !loading && !isCameraActive && (
-                        <div className="text-center opacity-30 space-y-4">
-                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto border border-slate-200 text-slate-400">
-                                {mode === 'qr' ? <QrCode size={32} /> : <Search size={32} />}
-                            </div>
-                            <p className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Siap Melakukan Validasi</p>
-                        </div>
-                    )}
-
-                    {loading && (
-                        <div className="text-center space-y-4">
-                            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto animate-pulse">
-                                <Loader2 size={32} className="animate-spin" />
-                            </div>
-                            <p className="font-bold text-blue-600 uppercase tracking-widest text-[10px]">Memverifikasi Tiket...</p>
-                        </div>
-                    )}
-
-                    {result && !loading && (
-                        <div className={`w-full bg-white rounded-2xl p-8 border shadow-xl animate-in zoom-in-95 duration-300 ${result.status === 'success' ? 'border-green-100' : 'border-red-100'}`}>
+                        {mode === 'qr' && (
                             <div className="flex flex-col items-center gap-6">
-                                <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${result.status === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                                    {result.status === 'success' ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
-                                </div>
-
-                                <div className="space-y-4 w-full">
-                                    <div className="space-y-1">
-                                        <h3 className={`text-2xl font-bold ${result.status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-                                            {result.status === 'success' ? 'Check-in Berhasil' : 'Check-in Gagal'}
-                                        </h3>
-                                        <p className="text-slate-500 font-semibold text-xs">{result.message}</p>
+                                {isCameraActive ? (
+                                    <div className="relative w-full max-w-xs aspect-square bg-black rounded-2xl overflow-hidden border-2 border-blue-600 shadow-xl">
+                                        <div id={scannerContainerId} className="w-full h-full" />
+                                        <button
+                                            onClick={stopScanner}
+                                            className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-[10px] uppercase tracking-wider flex items-center gap-2 shadow-lg"
+                                        >
+                                            <CameraOff size={14} />
+                                            Matikan Kamera
+                                        </button>
                                     </div>
-
-                                    {result.ticket && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
-                                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Pengunjung</p>
-                                                <p className="font-bold text-slate-800 text-sm truncate">{result.ticket.full_name}</p>
-                                            </div>
-                                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Tipe Tiket</p>
-                                                <p className="font-bold text-slate-800 text-sm truncate">{result.ticket.ticket_types?.name}</p>
-                                            </div>
-                                        </div>
-                                    )}
-
+                                ) : (
                                     <button
-                                        onClick={() => { setResult(null); setInputValue(''); if (mode === 'qr' && !isCameraActive) startScanner(); }}
-                                        className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all"
+                                        onClick={startScanner}
+                                        className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-blue-100 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all text-sm"
                                     >
-                                        Lanjut Check-in
+                                        <Camera size={20} />
+                                        Gunakan Kamera HP
                                     </button>
-                                </div>
+                                )}
                             </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className={`relative ${isCameraActive ? 'hidden' : 'block'}`}>
+                            <div className="relative flex gap-2">
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    placeholder={mode === 'qr' ? 'Menunggu Scan...' : 'Masukkan kode tiket...'}
+                                    className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl font-bold text-xl text-slate-900 outline-none focus:border-blue-600 transition-all text-center placeholder:text-slate-200 shadow-sm"
+                                />
+                                {mode === 'manual' && (
+                                    <button
+                                        type="submit"
+                                        disabled={loading || !inputValue}
+                                        className="px-6 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all disabled:opacity-50"
+                                    >
+                                        {loading ? <Loader2 className="animate-spin" size={20} /> : <ArrowRight size={20} />}
+                                    </button>
+                                )}
+                            </div>
+                        </form>
+
+                        {/* Status Displays */}
+                        <div className="min-h-[260px] flex items-center justify-center">
+                            {!result && !loading && !isCameraActive && (
+                                <div className="text-center opacity-30 space-y-4">
+                                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto border border-slate-200 text-slate-400">
+                                        {mode === 'qr' ? <QrCode size={32} /> : <Search size={32} />}
+                                    </div>
+                                    <p className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Siap Melakukan Validasi</p>
+                                </div>
+                            )}
+
+                            {loading && (
+                                <div className="text-center space-y-4">
+                                    <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto animate-pulse">
+                                        <Loader2 size={32} className="animate-spin" />
+                                    </div>
+                                    <p className="font-bold text-blue-600 uppercase tracking-widest text-[10px]">Memverifikasi Tiket...</p>
+                                </div>
+                            )}
+
+                            {result && !loading && (
+                                <div className={`w-full bg-white rounded-2xl p-6 border shadow-xl animate-in zoom-in-95 duration-300 ${result.status === 'success' ? 'border-green-100' : 'border-red-100'}`}>
+                                    <div className="flex flex-col items-center gap-6">
+                                        <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${result.status === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                            {result.status === 'success' ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
+                                        </div>
+
+                                        <div className="space-y-4 w-full">
+                                            <div className="space-y-1">
+                                                <h3 className={`text-2xl font-bold ${result.status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {result.status === 'success' ? 'Check-in Berhasil' : 'Check-in Gagal'}
+                                                </h3>
+                                                <p className="text-slate-500 font-semibold text-xs">{result.message}</p>
+                                            </div>
+
+                                            {result.ticket && (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Pengunjung</p>
+                                                        <p className="font-bold text-slate-800 text-sm truncate">{result.ticket.full_name}</p>
+                                                    </div>
+                                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Tipe Tiket</p>
+                                                        <p className="font-bold text-slate-800 text-sm truncate">{result.ticket.ticket_types?.name}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <button
+                                                onClick={() => { setResult(null); setInputValue(''); if (mode === 'qr' && !isCameraActive) startScanner(); }}
+                                                className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all"
+                                            >
+                                                Lanjut Check-in
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Hidden Input for Hardware Scanners */}
+                    {mode === 'qr' && !isCameraActive && (
+                        <div className="opacity-0 absolute -z-50 pointer-events-none">
+                            <input
+                                autoFocus
+                                type="text"
+                                onChange={(e) => handleCheckIn(e.target.value)}
+                            />
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Hidden Input for Hardware Scanners */}
-            {mode === 'qr' && !isCameraActive && (
-                <div className="opacity-0 absolute -z-50 pointer-events-none">
-                    <input
-                        autoFocus
-                        type="text"
-                        onChange={(e) => handleCheckIn(e.target.value)}
-                    />
-                </div>
-            )}
+                {/* Right Column: Sidebar */}
+                <aside className="lg:col-span-3 order-1 lg:order-2 space-y-6 lg:sticky lg:top-6">
+                    {/* Header Info Card */}
+                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div className="relative z-10 space-y-5">
+                            <h5 className="text-base font-black text-slate-900 tracking-tight border-b border-slate-100 pb-3">Cek Tiket Pengunjung</h5>
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                {mode === 'qr'
+                                    ? 'Pindai QR code menggunakan kamera atau alat scanner.'
+                                    : 'Masukkan kode unik yang tertera pada tiket.'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Mode Switcher */}
+                    <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-2">
+                        <button
+                            onClick={() => { setMode('qr'); setInputValue(''); setResult(null); stopScanner(); }}
+                            className={`flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${mode === 'qr' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                        >
+                            <QrCode size={16} />
+                            Auto Scanner
+                        </button>
+                        <button
+                            onClick={() => { setMode('manual'); setInputValue(''); setResult(null); stopScanner(); }}
+                            className={`flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${mode === 'manual' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                        >
+                            <Keyboard size={16} />
+                            Input Kode
+                        </button>
+                    </div>
+                </aside>
+            </div>
         </div>
     );
 }

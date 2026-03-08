@@ -100,12 +100,12 @@ const TaxManagementSection = ({ eventId }) => {
             />
 
             {/* Form Section */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Konfigurasi Pajak</h3>
                 </div>
 
-                <div className="p-8 space-y-8">
+                <div className="p-6 space-y-8">
                     <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex items-start gap-4">
                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
                             <Info className="text-[#1a36c7]" size={20} />
@@ -115,7 +115,7 @@ const TaxManagementSection = ({ eventId }) => {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1">Nama Pajak</label>
                             <input
@@ -160,8 +160,8 @@ const TaxManagementSection = ({ eventId }) => {
             {/* Simulation Section - Stacked Below */}
             <div className="space-y-4">
                 <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Simulasi Tampilan Checkout</h4>
-                <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-6 opacity-10">
                         <Info size={40} />
                     </div>
 

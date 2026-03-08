@@ -83,10 +83,10 @@ const Scan = () => {
             <div className="max-w-xl mx-auto px-6 py-12 space-y-12">
                 {/* Visual Scanner Simulation */}
                 <div className="relative group text-center">
-                    <div className="absolute inset-0 bg-[#b1451a]/5 rounded-[3rem] blur-2xl group-hover:bg-[#b1451a]/10 transition-colors" />
-                    <div className="relative w-48 h-48 bg-white border-2 border-dashed border-[#b1451a]/30 rounded-[3rem] mx-auto flex items-center justify-center text-[#b1451a] shadow-xl group-hover:border-[#b1451a] transition-all duration-500">
+                    <div className="absolute inset-0 bg-[#b1451a]/5 rounded-2xl blur-2xl group-hover:bg-[#b1451a]/10 transition-colors" />
+                    <div className="relative w-48 h-48 bg-white border-2 border-dashed border-[#b1451a]/30 rounded-2xl mx-auto flex items-center justify-center text-[#b1451a] shadow-xl group-hover:border-[#b1451a] transition-all duration-500">
                         <HiQrcode size={64} className="group-hover:scale-110 transition-transform duration-500" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#b1451a]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem]" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#b1451a]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
                     </div>
                 </div>
 
@@ -101,7 +101,7 @@ const Scan = () => {
                             onChange={(e) => setQrValue(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             placeholder="Awaiting QR Payload..."
-                            className="flex-1 px-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-[2rem] focus:border-[#b1451a] outline-none transition-all font-mono font-bold text-[#b1451a] tracking-widest text-center"
+                            className="flex-1 px-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-[#b1451a] outline-none transition-all font-mono font-bold text-[#b1451a] tracking-widest text-center"
                         />
                     </div>
                 </div>
@@ -109,7 +109,7 @@ const Scan = () => {
                 {/* Result Cards */}
                 <div className="min-h-[320px]">
                     {ticketInfo ? (
-                        <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 p-10 space-y-8 animate-in zoom-in-95 shadow-2xl shadow-slate-100 text-left">
+                        <div className="bg-white rounded-2xl border-2 border-slate-100 p-10 space-y-8 animate-in zoom-in-95 shadow-2xl shadow-slate-100 text-left">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket Holder Category</p>
@@ -146,8 +146,8 @@ const Scan = () => {
                             )}
                         </div>
                     ) : error ? (
-                        <div className="bg-red-50 rounded-[2.5rem] border-2 border-red-100 p-10 text-center space-y-4 animate-in shake duration-300">
-                            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-3xl flex items-center justify-center mx-auto">
+                        <div className="bg-red-50 rounded-2xl border-2 border-red-100 p-10 text-center space-y-4 animate-in shake duration-300">
+                            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto">
                                 <HiExclamationCircle size={32} />
                             </div>
                             <h3 className="text-xl font-black text-red-900 uppercase">Authorization Denied</h3>

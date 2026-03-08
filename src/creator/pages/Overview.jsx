@@ -227,7 +227,7 @@ export default function Overview() {
                             <tbody className="divide-y divide-slate-100">
                                 {filteredHistory.length > 0 ? filteredHistory.map((item) => (
                                     <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-8 py-6">
+                                        <td className="px-6 py-5">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
                                                     {item.banner ? (
@@ -248,13 +248,13 @@ export default function Overview() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6">
+                                        <td className="px-6 py-5">
                                             <div className="flex items-baseline gap-1.5">
                                                 <span className="text-slate-900 text-lg">{item.ticketsSold}</span>
                                                 <span className="text-[10px] text-slate-400 uppercase tracking-widest">Tiket</span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6">
+                                        <td className="px-6 py-5">
                                             <div className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] uppercase tracking-widest border ${item.status === 'Aktif'
                                                 ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
                                                 : 'bg-slate-50 text-slate-400 border-slate-100'
@@ -262,7 +262,7 @@ export default function Overview() {
                                                 {item.status}
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6 text-right">
+                                        <td className="px-6 py-5 text-right">
                                             <p className="text-slate-900 tabular-nums">{rupiah(item.totalRevenue)}</p>
                                         </td>
                                     </tr>

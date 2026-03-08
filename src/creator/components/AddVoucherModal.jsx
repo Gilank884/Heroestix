@@ -87,9 +87,9 @@ const AddVoucherModal = ({ isOpen, onClose, eventId, onRefresh }) => {
 
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 {/* Header */}
-                <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
                     <div>
                         <h2 className="text-lg font-black text-slate-900">Buat <span className="text-[#1a36c7]">Voucher Baru</span></h2>
                         <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mt-1">Konfigurasi Diskon Event</p>
@@ -99,7 +99,7 @@ const AddVoucherModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-6">
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
                     {/* Basic Info */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -128,51 +128,25 @@ const AddVoucherModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                         </div>
                     </div>
 
-                    {/* Type & Value */}
-                    <div className="bg-slate-50 rounded-3xl p-6 space-y-6">
-                        <div className="flex p-1 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                            <button
-                                type="button"
-                                onClick={() => setVoucherData({ ...voucherData, type: 'percentage' })}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase transition-all ${voucherData.type === 'percentage' ? 'bg-[#1a36c7] text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-slate-600'}`}
-                            >
-                                <Percent size={14} /> Persentase
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setVoucherData({ ...voucherData, type: 'fixed' })}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase transition-all ${voucherData.type === 'fixed' ? 'bg-[#1a36c7] text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-slate-600'}`}
-                            >
-                                <CircleDollarSign size={14} /> Potongan Tetap
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
+                    {/* Value */}
+                    <div className="bg-slate-50 rounded-2xl p-6 space-y-6">
+                        <div className="grid grid-cols-1 gap-4">
                             <div className="space-y-2">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                                    {voucherData.type === 'percentage' ? 'Persen (%)' : 'Nilai (Rp)'}
+                                    Nilai Potongan (Rp)
                                 </label>
                                 <input
                                     required
                                     type="text"
-                                    value={voucherData.type === 'fixed' ? formatNumber(voucherData.value) : voucherData.value}
-                                    onChange={e => handleNumericChange('value', e.target.value)}
-                                    placeholder={voucherData.type === 'percentage' ? '10' : '50.000'}
+                                    value={formatNumber(voucherData.value)}
+                                    onChange={e => {
+                                        setVoucherData({ ...voucherData, type: 'fixed' });
+                                        handleNumericChange('value', e.target.value);
+                                    }}
+                                    placeholder="50.000"
                                     className="w-full bg-white border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 outline-none text-sm"
                                 />
                             </div>
-                            {voucherData.type === 'percentage' && (
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Maks. Diskon (Rp)</label>
-                                    <input
-                                        type="text"
-                                        value={formatNumber(voucherData.max_discount)}
-                                        onChange={e => handleNumericChange('max_discount', e.target.value)}
-                                        placeholder="Tanpa batas"
-                                        className="w-full bg-white border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 outline-none text-sm"
-                                    />
-                                </div>
-                            )}
                         </div>
                     </div>
 
@@ -205,7 +179,7 @@ const AddVoucherModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                     </div>
 
                     {/* Sales Period */}
-                    <div className="bg-slate-50 rounded-3xl p-6 space-y-4">
+                    <div className="bg-slate-50 rounded-2xl p-6 space-y-4">
                         <label className="text-[9px] font-black uppercase tracking-widest text-slate-600 pl-1 flex items-center gap-2">
                             <Calendar size={12} /> Periode Berlaku
                         </label>

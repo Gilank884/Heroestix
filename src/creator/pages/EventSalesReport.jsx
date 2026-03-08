@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthStore from '../../auth/useAuthStore';
 import {
@@ -9,7 +9,18 @@ import {
     ArrowDownLeft,
     Search,
     Calendar,
-    ArrowLeft
+    ArrowLeft,
+    User,
+    Mail,
+    Phone,
+    X,
+    CreditCard,
+    Tag,
+    Clock,
+    ClipboardList,
+    FileText,
+    Download,
+    Layers
 } from 'lucide-react';
 import VerificationPending from '../components/VerificationPending';
 
@@ -23,6 +34,7 @@ const rupiah = (value) => {
 
 export default function EventSalesReport() {
     const { id: eventId } = useParams();
+    const navigate = useNavigate();
     const { user } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [eventData, setEventData] = useState(null);
@@ -32,8 +44,13 @@ export default function EventSalesReport() {
         ticketsSold: 0,
         netRevenue: 0
     });
+    const [orderTicketCounts, setOrderTicketCounts] = useState({});
+    const [customFieldKeys, setCustomFieldKeys] = useState([]);
     const [isVerified, setIsVerified] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [pageSize, setPageSize] = useState(20);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     useEffect(() => {
         if (user?.id && eventId) {
@@ -69,15 +86,23 @@ export default function EventSalesReport() {
                 .select('id')
                 .eq('event_id', eventId);
 
+            const ttIds = ticketTypes?.map(t => t.id) || [];
+
             if (ttIds.length > 0) {
                 // 3. Fetch Tickets with joined Orders for this event
                 const { data: ticketsWithOrders, error: tError } = await supabase
                     .from('tickets')
                     .select(`
                         id,
-                        created_at,
                         order_id,
-                        orders!inner (id, total, status),
+                        qr_code,
+                        full_name,
+                        email,
+                        gender,
+                        birth_date,
+                        phone,
+                        custom_responses,
+                        orders!inner (id, total, status, created_at),
                         ticket_types!inner (event_id)
                     `)
                     .in('ticket_type_id', ttIds)
@@ -96,18 +121,32 @@ export default function EventSalesReport() {
                         .select('order_id')
                         .in('order_id', orderIds);
 
-                    const orderTicketCounts = {};
+                    const counts = {};
                     allTicketsInOrders?.forEach(t => {
-                        orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                        counts[t.order_id] = (counts[t.order_id] || 0) + 1;
                     });
+                    setOrderTicketCounts(counts);
 
                     // 3. Calculate revenue: (Order Total / Total Tickets) - 8500 per ticket
                     let calculatedNetRevenue = 0;
                     ticketsWithOrders.forEach(t => {
-                        const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
-                        const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
+                        const totalTicketsInOrder = counts[t.order_id] || 1;
+                        const shareOfGross = Number(t.orders?.total || 0) / totalTicketsInOrder;
                         calculatedNetRevenue += (shareOfGross - 8500);
                     });
+
+                    // 4. Identify unique custom field keys
+                    const keys = new Set();
+                    ticketsWithOrders.forEach(t => {
+                        let customData = {};
+                        try {
+                            customData = typeof t.custom_responses === 'string'
+                                ? JSON.parse(t.custom_responses)
+                                : (t.custom_responses || {});
+                        } catch (e) { }
+                        Object.keys(customData).forEach(k => keys.add(k));
+                    });
+                    setCustomFieldKeys(Array.from(keys));
 
                     setStats({
                         totalRevenue: calculatedNetRevenue,
@@ -123,9 +162,74 @@ export default function EventSalesReport() {
         }
     };
 
-    const filteredHistory = history.filter(item =>
-        item.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredHistory = history.filter(item => {
+        const matchesSearch =
+            item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.order_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.qr_code?.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const itemDate = item.orders?.created_at ? new Date(item.orders.created_at).toISOString().split('T')[0] : null;
+        const matchesStartDate = !startDate || (itemDate && itemDate >= startDate);
+        const matchesEndDate = !endDate || (itemDate && itemDate <= endDate);
+
+        return matchesSearch && matchesStartDate && matchesEndDate;
+    });
+
+    const filteredStats = React.useMemo(() => {
+        let revenue = 0;
+        filteredHistory.forEach(t => {
+            const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
+            const shareOfGross = Number(t.orders?.total || 0) / totalTicketsInOrder;
+            revenue += (shareOfGross - 8500);
+        });
+        return {
+            totalRevenue: revenue,
+            ticketsSold: filteredHistory.length
+        };
+    }, [filteredHistory, orderTicketCounts]);
+
+    const exportToExcel = () => {
+        const headers = ["Order ID", "QR Code", "Nama Pembeli", "Email", "Kelamin", "Tgl Lahir", "Potensi Pendapatan"];
+        customFieldKeys.forEach(key => headers.push(key));
+
+        const rows = filteredHistory.map(item => {
+            let customData = {};
+            try {
+                customData = typeof item.custom_responses === 'string'
+                    ? JSON.parse(item.custom_responses)
+                    : (item.custom_responses || {});
+            } catch (e) { }
+
+            const row = [
+                item.orders?.id || '-',
+                item.qr_code || '-',
+                item.full_name || '-',
+                item.email || '-',
+                item.gender || '-',
+                item.birth_date || '-',
+                (Number(item.orders?.total || 0) / (orderTicketCounts[item.order_id] || 1) - 8500)
+            ];
+            customFieldKeys.forEach(key => row.push(customData[key] || '-'));
+            return row;
+        });
+
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Sales_Report_${eventData?.title || 'Event'}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const exportToPDF = () => {
+        window.print();
+    };
 
     if (loading && !eventData) {
         return (
@@ -139,105 +243,217 @@ export default function EventSalesReport() {
     if (!isVerified) return <VerificationPending />;
 
     return (
-        <div className="max-w-6xl mx-auto space-y-12 pb-20 animate-in fade-in duration-700">
-            {/* Minimalist Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-100 pb-8">
-                <div className="space-y-2">
-                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
-                        Laporan Penjualan
-                    </h2>
-                    <p className="text-slate-500 font-medium">
-                        Rincian performa keuangan untuk event <span className="text-slate-900 font-semibold">{eventData?.title}</span>
-                    </p>
-                </div>
-                <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-lg border border-slate-200">
-                    <Calendar size={14} className="text-slate-400" />
-                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Event Report</span>
-                </div>
-            </div>
-
-            {/* Metric Cards - Minimalist Style */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
+        <div className="space-y-10 pb-20">
+            {/* Top Row: Metrics & Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Metric: Tickets Sold */}
+                <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
                     <div className="space-y-2">
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Tiket Terjual</p>
                         <div className="flex items-baseline gap-2">
-                            <h4 className="text-4xl font-bold text-slate-900 tracking-tight">{stats.ticketsSold}</h4>
+                            <h4 className="text-4xl font-black text-slate-900 tracking-tight">{filteredStats.ticketsSold}</h4>
                             <span className="text-sm font-semibold text-slate-400">Inventory</span>
                         </div>
                     </div>
-                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                        <Ticket size={28} strokeWidth={1.5} />
+                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                        <Ticket size={24} strokeWidth={2} />
                     </div>
                 </div>
 
-                <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
+                {/* Metric: Total Revenue */}
+                <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
                     <div className="space-y-2">
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Total Pendapatan</p>
-                        <h4 className="text-4xl font-bold text-slate-900 tracking-tight">{rupiah(stats.totalRevenue)}</h4>
+                        <h4 className="text-4xl font-black text-slate-900 tracking-tight">{rupiah(filteredStats.totalRevenue)}</h4>
                     </div>
-                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                        <TrendingUp size={28} strokeWidth={1.5} />
+                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                        <TrendingUp size={24} strokeWidth={2} />
+                    </div>
+                </div>
+
+                {/* Info Card: Sales Report Details */}
+                <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
+                    <div className="space-y-2">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Event Info</p>
+                        <h4 className="text-lg font-black text-slate-900 line-clamp-1">{eventData?.title}</h4>
+                        <div className="flex items-center gap-2 text-slate-400">
+                            <Calendar size={12} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Sales Report</span>
+                        </div>
+                    </div>
+                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                        <BarChart3 size={24} strokeWidth={2} />
                     </div>
                 </div>
             </div>
 
-            {/* Transactions Section */}
+            {/* Main Content Area: Sales History Table */}
             <div className="space-y-8">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-1 h-6 bg-blue-600 rounded-full" />
-                        <h3 className="text-xl font-bold text-slate-900">Riwayat Penjualan</h3>
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-5 rounded-[32px] border border-slate-200 shadow-sm">
+                    <div className="flex flex-wrap md:flex-nowrap items-center gap-2">
+                        <div className="flex items-center gap-2 mr-2">
+                            <button
+                                onClick={exportToPDF}
+                                className="group flex items-center gap-2 bg-slate-900 px-4 py-2.5 rounded-xl text-white hover:bg-slate-800 transition-all active:scale-95 shadow-md"
+                            >
+                                <FileText size={14} className="text-slate-400 group-hover:text-blue-400 transition-colors" />
+                                <span className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap">PDF</span>
+                            </button>
+                            <button
+                                onClick={exportToExcel}
+                                className="group flex items-center gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-slate-600 hover:border-blue-200 hover:text-blue-600 transition-all active:scale-95 shadow-sm"
+                            >
+                                <Download size={14} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                <span className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap">Excel</span>
+                            </button>
+                        </div>
+
+                        <div className="h-8 w-px bg-slate-100 mx-1 hidden md:block" />
+
+                        {/* Date Filter */}
+                        <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                            <div className="flex items-center gap-2 px-2">
+                                <Calendar size={13} className="text-slate-400" />
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="bg-transparent border-none text-[10px] font-bold text-slate-600 focus:ring-0 p-0 w-24"
+                                />
+                            </div>
+                            <span className="text-slate-300 font-bold">-</span>
+                            <div className="flex items-center gap-2 px-2">
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="bg-transparent border-none text-[10px] font-bold text-slate-600 focus:ring-0 p-0 w-24"
+                                />
+                            </div>
+                            {(startDate || endDate) && (
+                                <button
+                                    onClick={() => { setStartDate(''); setEndDate(''); }}
+                                    className="p-1 hover:bg-white rounded-md text-slate-400 hover:text-red-500 transition-all"
+                                >
+                                    <X size={12} />
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="h-8 w-px bg-slate-100 mx-1 hidden md:block" />
+
+                        <div className="flex items-center gap-2.5 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-100">
+                            <Layers size={13} className="text-slate-400" />
+                            <select
+                                value={pageSize}
+                                onChange={(e) => setPageSize(Number(e.target.value))}
+                                className="bg-transparent text-[10px] font-black text-slate-900 border-none outline-none cursor-pointer focus:ring-0 p-0"
+                            >
+                                <option value={20}>20</option>
+                                <option value={50}>50</option>
+                                <option value={100}>100</option>
+                            </select>
+                        </div>
                     </div>
-                    <div className="relative group w-full md:w-80">
-                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+
+                    <div className="relative group w-full xl:w-56">
+                        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Cari transaksi..."
+                            placeholder="Cari..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-sm font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+                            className="w-full bg-slate-50 border border-slate-100 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-700 outline-none focus:border-blue-200 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
                         />
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-[32px] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-slate-50 border-b border-slate-200">
+                            <thead className="bg-slate-50/80 border-b border-slate-100 backdrop-blur-sm">
                                 <tr>
-                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Keterangan</th>
-                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tanggal</th>
-                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Nominal</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pembeli</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kontak & Kelamin</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Lahir</th>
+                                    {customFieldKeys.map(key => (
+                                        <th key={key} className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">{key}</th>
+                                    ))}
+                                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal Order</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Nominal</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {filteredHistory.length > 0 ? filteredHistory.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-50 text-slate-400 border border-slate-100 group-hover:bg-blue-100 group-hover:text-blue-600 group-hover:border-blue-200 transition-colors">
-                                                    <ArrowDownLeft size={18} />
+                            <tbody className="divide-y divide-slate-50">
+                                {filteredHistory.length > 0 ? filteredHistory.slice(0, pageSize).map((item, index) => {
+                                    let customData = {};
+                                    try {
+                                        customData = typeof item.custom_responses === 'string'
+                                            ? JSON.parse(item.custom_responses)
+                                            : (item.custom_responses || {});
+                                    } catch (e) {
+                                        customData = {};
+                                    }
+
+                                    return (
+                                        <tr
+                                            key={item.id}
+                                            onClick={() => navigate(`/manage/event/${eventId}/sales-report/${item.id}`)}
+                                            className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                                        >
+                                            <td className="px-6 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-50 text-slate-500 border border-slate-100 font-black text-[10px] group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-300">
+                                                        {index + 1}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-slate-900 tracking-tight text-sm">{item.full_name || 'Tanpa Nama'}</p>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">#{item.orders?.id?.substring(0, 8) || 'N/A'}</p>
+                                                            <span className="w-1 h-1 rounded-full bg-slate-200" />
+                                                            <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest">{item.qr_code}</p>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-semibold text-slate-800 tracking-tight">Order #{item.orders.id.substring(0, 8)}</p>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Ticket ID: {item.id.substring(0, 8)}</p>
+                                            </td>
+                                            <td className="px-6 py-6">
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-semibold text-slate-600 italic">{item.email}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[9px] font-black uppercase text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">{item.gender || '-'}</span>
+                                                        <span className="text-[10px] font-bold text-slate-400">{item.phone}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <span className="text-slate-500 text-xs font-semibold">{new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <p className="font-bold text-slate-900 tabular-nums">+{rupiah(Number(item.orders.total) - 8500)}</p>
-                                        </td>
-                                    </tr>
-                                )) : (
+                                            </td>
+                                            <td className="px-6 py-6">
+                                                <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{item.birth_date || '-'}</span>
+                                            </td>
+                                            {customFieldKeys.map(key => (
+                                                <td key={key} className="px-6 py-6">
+                                                    <span className="text-slate-600 text-[11px] font-bold uppercase tracking-tight">{customData[key] || '-'}</span>
+                                                </td>
+                                            ))}
+                                            <td className="px-6 py-6">
+                                                <span className="text-slate-500 text-[11px] font-semibold">
+                                                    {item.orders?.created_at
+                                                        ? new Date(item.orders.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                                                        : '-'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-6 text-right">
+                                                <p className="font-black text-[#1a36c7] tabular-nums text-base">
+                                                    +{rupiah(Number(item.orders?.total || 0) / (orderTicketCounts[item.order_id] || 1) - 8500)}
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    );
+                                }) : (
                                     <tr>
-                                        <td colSpan="3" className="px-8 py-20 text-center">
-                                            <div className="flex flex-col items-center gap-3 opacity-40">
-                                                <Search size={32} className="text-slate-300" />
-                                                <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Belum ada data penjualan</p>
+                                        <td colSpan={6 + customFieldKeys.length} className="px-8 py-32 text-center">
+                                            <div className="flex flex-col items-center gap-4 opacity-30">
+                                                <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center">
+                                                    <Search size={40} className="text-slate-200" />
+                                                </div>
+                                                <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-xs">Belum ada data penjualan</p>
                                             </div>
                                         </td>
                                     </tr>

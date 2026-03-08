@@ -217,7 +217,7 @@ export default function CreatorCash() {
             {/* Top Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Balance Card */}
-                <div className="lg:col-span-2 bg-slate-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden group">
+                <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-10 text-white relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-blue-600/30 transition-all duration-700" />
 
                     <div className="relative z-10 space-y-8">
@@ -231,7 +231,7 @@ export default function CreatorCash() {
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-8 pt-4 border-t border-white/10">
+                        <div className="flex flex-wrap gap-6 pt-4 border-t border-white/10">
                             <div>
                                 <p className="text-white/40 text-[9px] font-black uppercase tracking-widest mb-1">Total Pendapatan</p>
                                 <p className="text-xl font-bold">{rupiah(totalIncome)}</p>
@@ -245,7 +245,7 @@ export default function CreatorCash() {
                 </div>
 
                 {/* Bank Info Card */}
-                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm space-y-6">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
                     <div className="flex items-center gap-3 mb-2">
                         <Building2 size={20} className="text-[#1b3bb6]" />
                         <h4 className="font-black text-slate-900 uppercase text-xs tracking-widest">Rekening Tujuan</h4>
@@ -276,7 +276,7 @@ export default function CreatorCash() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Withdrawal Requests */}
                 <div className="space-y-6">
                     <div className="flex items-center gap-4 px-2">
@@ -284,7 +284,7 @@ export default function CreatorCash() {
                         <h3 className="text-xl font-black text-slate-900">Pengajuan Penarikan</h3>
                     </div>
 
-                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 border-b border-slate-100">
@@ -326,7 +326,7 @@ export default function CreatorCash() {
                         <h3 className="text-xl font-black text-slate-900">Histori Transaksi</h3>
                     </div>
 
-                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 border-b border-slate-100">
@@ -369,13 +369,13 @@ export default function CreatorCash() {
             {isRequestModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsRequestModalOpen(false)} />
-                    <div className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-8 border-b border-slate-50 bg-slate-50/50">
+                    <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-6 border-b border-slate-50 bg-slate-50/50">
                             <h2 className="text-2xl font-black text-slate-900">Tarik <span className="text-[#1b3bb6]">Saldo</span></h2>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Nominal minimal Rp 10.000</p>
                         </div>
 
-                        <form onSubmit={handleRequestWithdrawal} className="p-8 space-y-6">
+                        <form onSubmit={handleRequestWithdrawal} className="p-6 space-y-6">
                             <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-between">
                                 <span className="text-xs font-bold text-blue-800">Saldo Tersedia:</span>
                                 <span className="font-black text-blue-900">{rupiah(balance)}</span>

@@ -124,11 +124,11 @@ const Events = () => {
             </div>
 
             {/* Content Card */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 {/* Search & Filters */}
-                <div className="p-8 border-b border-slate-50 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="p-6 border-b border-slate-50 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-2xl border border-slate-100 shadow-sm">
+                        <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-2xl border border-slate-200 shadow-sm">
                             {['all', 'active', 'draft', 'archived'].map((f) => (
                                 <button
                                     key={f}
@@ -191,7 +191,7 @@ const Events = () => {
                                     key={event.id}
                                     className="group hover:bg-slate-50/50 transition-colors"
                                 >
-                                    <td className="px-8 py-6">
+                                    <td className="px-6 py-5">
                                         <div className="flex items-center gap-4">
                                             <div className="w-16 h-12 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden flex-shrink-0 shadow-sm group-hover:border-blue-200 transition-all">
                                                 <img
@@ -206,7 +206,7 @@ const Events = () => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
+                                    <td className="px-6 py-5">
                                         <div className="flex items-center gap-2.5">
                                             <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold shadow-sm">
                                                 {event.creators?.brand_name?.charAt(0) || 'C'}
@@ -223,7 +223,7 @@ const Events = () => {
                                         </div>
                                     </td>
 
-                                    <td className="px-8 py-6">
+                                    <td className="px-6 py-5">
                                         <div className="space-y-1.5">
                                             <div className="flex items-center gap-2 text-slate-500">
                                                 <MapPin size={12} className="text-blue-500" />
@@ -237,14 +237,14 @@ const Events = () => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
+                                    <td className="px-6 py-5">
                                         <div className="flex justify-center">
                                             <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] border ${getStatusStyles(event.status)}`}>
                                                 {event.status}
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 text-right">
+                                    <td className="px-6 py-5 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100 shadow-sm hover:shadow-blue-100/20">
                                                 <ExternalLink size={16} />
@@ -272,7 +272,7 @@ const Events = () => {
                 </div>
 
                 {/* Footer Info */}
-                <div className="p-8 bg-slate-50/50 border-t border-slate-50 flex items-center justify-between">
+                <div className="p-6 bg-slate-50/50 border-t border-slate-50 flex items-center justify-between">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         Total Catalog Volume: <span className="text-slate-900">{filteredEvents.length} Units</span>
                     </p>

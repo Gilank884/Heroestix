@@ -170,7 +170,7 @@ export default function Withdrawals() {
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Balance Card */}
-                <div className="lg:col-span-2 bg-slate-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden group shadow-2xl shadow-slate-900/20">
+                <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-10 text-white relative overflow-hidden group shadow-2xl shadow-slate-900/20">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-blue-600/30 transition-all duration-700" />
 
                     <div className="relative z-10 flex flex-col h-full justify-between gap-10">
@@ -192,7 +192,7 @@ export default function Withdrawals() {
                 </div>
 
                 {/* Bank Info Card */}
-                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col gap-6">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
                             <Building2 size={18} />
@@ -215,7 +215,7 @@ export default function Withdrawals() {
                             </div>
                         </div>
                     ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-amber-50 rounded-3xl border border-amber-100 text-center gap-3">
+                        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-amber-50 rounded-2xl border border-amber-100 text-center gap-3">
                             <AlertCircle size={32} className="text-amber-500" />
                             <p className="text-xs font-bold text-amber-800 leading-relaxed uppercase tracking-widest">Belum Ada Rekening Terdaftar</p>
                             <p className="text-[10px] text-amber-600 font-medium">Lengkapi data bank di menu Profil Anda untuk melakukan penarikan.</p>
@@ -231,7 +231,7 @@ export default function Withdrawals() {
                     <h3 className="text-xl font-black text-slate-900">Histori Pengajuan</h3>
                 </div>
 
-                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 border-b border-slate-100">

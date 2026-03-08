@@ -79,7 +79,7 @@ const Tickets = () => {
                             {event.ticket_types?.map((tt) => {
                                 const utilization = Math.round((tt.sold / tt.quota) * 100) || 0;
                                 return (
-                                    <div key={tt.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden group">
+                                    <div key={tt.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden group">
                                         {/* Background Decor */}
                                         <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500" />
 
@@ -138,8 +138,8 @@ const Tickets = () => {
                         </div>
                     </div>
                 )) : (
-                    <div className="py-24 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
-                        <div className="w-20 h-20 bg-slate-50 text-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <div className="py-24 text-center bg-white rounded-2xl border-2 border-dashed border-slate-100">
+                        <div className="w-20 h-20 bg-slate-50 text-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <HiTicket size={40} />
                         </div>
                         <h3 className="text-xl font-black text-slate-900 uppercase">No ticket data found</h3>

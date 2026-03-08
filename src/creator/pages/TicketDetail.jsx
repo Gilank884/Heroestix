@@ -3,14 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { Ticket, Calendar, Info, CircleDollarSign, ArrowLeft } from 'lucide-react';
 
-const CreateTicket = () => {
-    const { id: eventId } = useParams();
+const TicketDetail = () => {
+    const { id: eventId, ticketId } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(true);
     const [taxValue, setTaxValue] = useState(0);
+    const [originalSold, setOriginalSold] = useState(0);
     const [ticketData, setTicketData] = useState({
         name: '',
-        price: '',
         price_net: '',
         price_gross: '',
         quota: '',
@@ -47,20 +48,56 @@ const CreateTicket = () => {
     };
 
     useEffect(() => {
-        const fetchEventTax = async () => {
-            if (!eventId) return;
-            const { data, error } = await supabase
-                .from('event_taxes')
-                .select('value')
-                .eq('event_id', eventId)
-                .maybeSingle();
+        const fetchInitialData = async () => {
+            setFetching(true);
+            try {
+                // 1. Fetch Tax
+                const { data: taxData } = await supabase
+                    .from('event_taxes')
+                    .select('value')
+                    .eq('event_id', eventId)
+                    .maybeSingle();
 
-            if (data) {
-                setTaxValue(parseFloat(data.value) || 0);
+                if (taxData) {
+                    setTaxValue(parseFloat(taxData.value) || 0);
+                }
+
+                // 2. Fetch Ticket Details
+                if (!ticketId) return;
+                const { data: ticket, error } = await supabase
+                    .from('ticket_types')
+                    .select('*')
+                    .eq('id', ticketId)
+                    .eq('event_id', eventId)
+                    .single();
+
+                if (error) throw error;
+                if (ticket) {
+                    setOriginalSold(ticket.sold || 0);
+                    setTicketData({
+                        name: ticket.name || '',
+                        price_net: ticket.price_net?.toString() || '',
+                        price_gross: ticket.price_gross?.toString() || '',
+                        quota: ticket.quota?.toString() || '',
+                        description: ticket.description || '',
+                        start_date: ticket.start_date || '',
+                        end_date: ticket.end_date || '',
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                alert("Gagal memuat detail tiket.");
+                navigate(`/manage/event/${eventId}/ticket-categories`);
+            } finally {
+                setFetching(false);
             }
         };
-        fetchEventTax();
-    }, [eventId]);
+
+        if (eventId && ticketId) {
+            fetchInitialData();
+        }
+    }, [eventId, ticketId, navigate]);
 
     const calculateNet = (gross) => {
         const val = parseInt(gross) || 0;
@@ -75,31 +112,50 @@ const CreateTicket = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Validation for quota
+        const intQuota = parseInt(ticketData.quota) || 0;
+        if (intQuota < originalSold) {
+            alert(`Kuota tidak boleh kurang dari jumlah tiket yang sudah terjual (${originalSold}).`);
+            return;
+        }
+
         setLoading(true);
 
         try {
             const { error } = await supabase
                 .from('ticket_types')
-                .insert({
-                    ...ticketData,
-                    event_id: eventId,
-                    price: parseInt(ticketData.price_gross),
+                .update({
+                    name: ticketData.name,
+                    price: parseInt(ticketData.price_gross), // Price matches gross usually
                     price_net: parseInt(ticketData.price_net),
                     price_gross: parseInt(ticketData.price_gross),
-                    quota: parseInt(ticketData.quota),
-                    sold: 0,
-                    status: 'active'
-                });
+                    quota: intQuota,
+                    description: ticketData.description,
+                    start_date: ticketData.start_date || null,
+                    end_date: ticketData.end_date || null,
+                })
+                .eq('id', ticketId)
+                .eq('event_id', eventId);
 
             if (error) throw error;
 
             navigate(`/manage/event/${eventId}/ticket-categories`);
         } catch (error) {
-            alert('Error adding ticket: ' + error.message);
+            alert('Error updating ticket: ' + error.message);
         } finally {
             setLoading(false);
         }
     };
+
+    if (fetching) {
+        return (
+            <div className="p-20 flex flex-col items-center justify-center gap-4">
+                <div className="w-12 h-12 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Memuat Detail Tiket...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 pb-20">
@@ -132,7 +188,7 @@ const CreateTicket = () => {
 
                                         <div className="space-y-2">
                                             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 pl-1">
-                                                Kuota Tiket
+                                                Kuota Tiket {originalSold > 0 && `(Terjual: ${originalSold})`}
                                             </label>
                                             <input
                                                 required
@@ -237,7 +293,7 @@ const CreateTicket = () => {
                                     ) : (
                                         <>
                                             <Ticket size={18} />
-                                            Simpan Tiket
+                                            Simpan Perubahan
                                         </>
                                     )}
                                 </button>
@@ -260,13 +316,16 @@ const CreateTicket = () => {
                                     <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                                 </button>
                                 <div>
-                                    <h5 className="text-base font-black text-slate-900 tracking-tight leading-tight">Buat Tiket</h5>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Konfigurasi</p>
+                                    <h5 className="text-base font-black text-slate-900 tracking-tight leading-tight">Edit Tiket</h5>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Pengaturan Tambahan</p>
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                    Tambahkan tiket baru untuk event Anda dan tentukan kuota, harga, serta jadwal penjualannya.
+                                    Anda dapat mengubah detail tiket yang sudah ada seperti nama, harga, dan kuota.
+                                </p>
+                                <p className="text-xs text-red-500 font-medium leading-relaxed">
+                                    Catatan: Kuota tidak dapat diubah menjadi lebih kecil dari jumlah yang sudah terjual.
                                 </p>
                             </div>
                         </div>
@@ -277,4 +336,4 @@ const CreateTicket = () => {
     );
 };
 
-export default CreateTicket;
+export default TicketDetail;

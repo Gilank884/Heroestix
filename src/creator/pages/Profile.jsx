@@ -188,11 +188,11 @@ export default function Profile() {
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-20">
             {/* Hero Section */}
-            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-12 shadow-xl shadow-slate-200/40">
+            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-2xl p-6 md:p-12 shadow-xl shadow-slate-200/40">
                 <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-blue-50/50 rounded-full blur-3xl opacity-50" />
                 <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl opacity-50" />
 
-                <div className="relative flex flex-col md:flex-row items-center gap-8 md:gap-12">
+                <div className="relative flex flex-col md:flex-row items-center gap-6 md:gap-12">
                     <div className="relative group">
                         <input
                             type="file"
@@ -203,7 +203,7 @@ export default function Profile() {
                         />
                         <label
                             htmlFor="hero-photo-upload"
-                            className="block relative w-32 h-32 md:w-40 md:h-40 rounded-[2rem] border-4 border-white shadow-2xl shadow-blue-200/50 overflow-hidden cursor-pointer group"
+                            className="block relative w-32 h-32 md:w-40 md:h-40 rounded-2xl border-4 border-white shadow-2xl shadow-blue-200/50 overflow-hidden cursor-pointer group"
                         >
                             {photoPreview ? (
                                 <img src={photoPreview} alt="Avatar" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -264,7 +264,7 @@ export default function Profile() {
                 )}
             </AnimatePresence>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 <div className="lg:col-span-2 space-y-8">
                     {/* Brand Information */}
                     <Section
@@ -272,7 +272,7 @@ export default function Profile() {
                         description="Informasi utama yang akan ditampilkan di halaman publik Anda."
                         icon={<Building2 className="text-blue-600" size={20} />}
                     >
-                        <div className="grid grid-cols-1 gap-6 p-8">
+                        <div className="grid grid-cols-1 gap-6 p-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-medium uppercase tracking-widest text-slate-400 ml-1">Nama Brand / EO</label>
                                 <Input
@@ -318,7 +318,7 @@ export default function Profile() {
                         description="Detail rekening untuk proses pencairan dana hasil penjualan tiket."
                         icon={<CreditCard className="text-blue-600" size={20} />}
                     >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-medium uppercase tracking-widest text-slate-400 ml-1">Nama Bank</label>
                                 <Input
@@ -353,7 +353,7 @@ export default function Profile() {
                         description="Hubungkan audience Anda dengan sosial media."
                         icon={<Share2 className="text-blue-600" size={20} />}
                     >
-                        <div className="space-y-5 p-6 md:p-8">
+                        <div className="space-y-5 p-6 md:p-6">
                             <SocialInput
                                 icon={<Instagram size={18} className="text-pink-500" />}
                                 name="instagram_url"
@@ -386,7 +386,7 @@ export default function Profile() {
                     </Section>
 
                     {/* Save Action */}
-                    <div className="bg-slate-900 rounded-[2rem] p-8 space-y-4 shadow-xl shadow-slate-200">
+                    <div className="bg-slate-900 rounded-2xl p-6 space-y-4 shadow-xl shadow-slate-200">
                         <div className="space-y-2">
                             <h3 className="text-white font-medium text-lg">Siap Meluncur?</h3>
                             <p className="text-slate-400 text-xs leading-relaxed">
@@ -426,8 +426,8 @@ export default function Profile() {
 
 // Subcomponents
 const Section = ({ title, description, icon, children }) => (
-    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="p-8 border-b border-slate-50 flex items-center justify-between gap-4">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="p-6 border-b border-slate-50 flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
                     {icon}

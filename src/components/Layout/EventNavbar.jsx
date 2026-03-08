@@ -89,7 +89,7 @@ const EventNavbar = ({ searchTerm, setSearchTerm }) => {
 
                             <div className="
                                 absolute right-0 mt-4 w-52
-                                rounded-[2rem] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100
+                                rounded-2xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100
                                 opacity-0 invisible group-hover:opacity-100 group-hover:visible
                                 transition-all duration-200 transform origin-top-right scale-95 group-hover:scale-100
                                 overflow-hidden p-2

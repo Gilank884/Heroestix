@@ -91,8 +91,8 @@ const AboutDeveloper = () => {
 
                 {/* LEFT: IMAGE */}
                 <div ref={imageRef} className="relative order-2 lg:order-1">
-                    <div className="absolute -inset-4 bg-gradient-to-tl from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-[2.5rem] rotate-2"></div>
-                    <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 aspect-[4/3] group bg-white dark:bg-slate-800 p-8 flex items-center justify-center">
+                    <div className="absolute -inset-4 bg-gradient-to-tl from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-2xl rotate-2"></div>
+                    <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 aspect-[4/3] group bg-white dark:bg-slate-800 p-6 flex items-center justify-center">
                         <img
                             src="/assets/peristiwa.png"
                             alt="PT Peristiwa Kreatif Nusantara"

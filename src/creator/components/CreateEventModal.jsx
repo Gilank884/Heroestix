@@ -155,9 +155,9 @@ const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh, navigate }) =
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl shadow-slate-900/20 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl shadow-slate-900/20 overflow-hidden flex flex-col max-h-[90vh]">
                 {/* Header */}
-                <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
                     <div>
                         <h2 className="text-2xl font-black text-slate-900">Buat <span className="text-[#1a36c7]">Event Baru</span></h2>
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Langkah {step} dari 2: {step === 1 ? 'Detail Operasional' : 'Kategori Tiket'}</p>
@@ -168,7 +168,7 @@ const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh, navigate }) =
                 </div>
 
                 {/* Form Content */}
-                <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8">
                     {step === 1 ? (
                         <div className="space-y-6">
                             <div className="space-y-2">
@@ -263,7 +263,7 @@ const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh, navigate }) =
                                     <label
                                         htmlFor="banner-upload"
                                         className={`
-                                            relative aspect-video w-full rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center gap-3
+                                            relative aspect-video w-full rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center gap-3
                                             ${previewUrl ? 'border-transparent' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-[#1a36c7]'}
                                         `}
                                     >
@@ -327,7 +327,7 @@ const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh, navigate }) =
                                 </div>
                             </div>
 
-                            <div className="bg-slate-50 rounded-[2rem] p-6 space-y-4 border border-slate-100">
+                            <div className="bg-slate-50 rounded-2xl p-6 space-y-4 border border-slate-100">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Periode Penjualan Tiket</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
@@ -355,7 +355,7 @@ const CreateEventModal = ({ isOpen, onClose, creatorId, onRefresh, navigate }) =
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="p-8 border-t border-slate-50 bg-white flex items-center justify-between">
+                <div className="p-6 border-t border-slate-50 bg-white flex items-center justify-between">
                     {step === 2 ? (
                         <button
                             disabled={loading}

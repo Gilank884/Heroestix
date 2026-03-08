@@ -65,10 +65,10 @@ const EventDetail = () => {
 
     return (
         <div className="space-y-8 pb-20">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* LEFT COLUMN: Dynamic Content */}
                 <div className="lg:col-span-9 order-2 lg:order-1">
-                    <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm min-h-[500px]">
+                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm min-h-[500px]">
                         {/* Dynamic Content */}
                         <div>
                             {/* General Info Tab */}
@@ -118,8 +118,8 @@ const EventDetail = () => {
                 </div>
 
                 {/* RIGHT COLUMN: Sidebar Tabs */}
-                <aside className="lg:col-span-3 order-1 lg:order-2 space-y-4 lg:sticky lg:top-8">
-                    <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm">
+                <aside className="lg:col-span-3 order-1 lg:order-2 space-y-4 lg:sticky lg:top-6">
+                    <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4 px-2">Navigation</p>
                         <div className="space-y-2">
                             {tabs.map((tab) => {
@@ -156,7 +156,7 @@ const EventDetail = () => {
                     </div>
 
                     {/* Quick Help Card */}
-                    <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-3xl p-6 text-white shadow-xl relative overflow-hidden group">
+                    <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
                         <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-500" />
                         <div className="relative z-10 space-y-4">
                             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">

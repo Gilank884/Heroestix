@@ -21,7 +21,7 @@ const HeroSection = () => {
         <section className="relative w-full pt-32 md:pt-40 pb-4 px-4 sm:px-6 lg:px-12 overflow-hidden bg-transparent">
             <div className="max-w-4xl mx-auto relative z-10">
                 {/* 21:9 or 16:9 Aspect Ratio Container - Sleek & High fidelity */}
-                <div className="relative w-full aspect-[21/9] md:aspect-[3/1] overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800">
+                <div className="relative w-full aspect-[21/9] md:aspect-[3/1] overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
                     {banners.map((banner, index) => (
                         <div
                             key={index}

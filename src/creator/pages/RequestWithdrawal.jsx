@@ -180,8 +180,8 @@ export default function RequestWithdrawal() {
 
             <div className="space-y-6">
                 {/* Main Form Section */}
-                <form onSubmit={handleRequestWithdrawal} className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
-                    <div className="p-8 space-y-6">
+                <form onSubmit={handleRequestWithdrawal} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="p-6 space-y-6">
                         {/* Balance Info */}
                         <div className="p-5 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-between">
                             <div className="space-y-0.5">
@@ -241,7 +241,7 @@ export default function RequestWithdrawal() {
                 {/* Info Sections Stacked */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* EO Details */}
-                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
+                    <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
                         <div className="flex items-center gap-2">
                             <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
                                 <User size={14} />
@@ -262,7 +262,7 @@ export default function RequestWithdrawal() {
                     </div>
 
                     {/* Bank Account */}
-                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
+                    <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
                         <div className="flex items-center gap-2">
                             <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
                                 <Building2 size={14} />

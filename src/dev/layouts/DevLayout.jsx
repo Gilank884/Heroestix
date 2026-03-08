@@ -154,7 +154,7 @@ const DevLayout = ({ children }) => {
                 </header>
 
                 {/* Main */}
-                <main className="flex-1 overflow-y-auto p-8 lg:p-10 no-scrollbar">
+                <main className="flex-1 overflow-y-auto p-6 lg:p-10 no-scrollbar">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={location.pathname}

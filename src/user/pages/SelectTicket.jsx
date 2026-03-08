@@ -283,9 +283,9 @@ export default function SelectTicket() {
 
                                                             <div className="space-y-0.5">
                                                                 <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{rupiah(tt.price_gross || tt.price)}</p>
-                                                                {tt.price_net && (
+                                                                {tt.description && (
                                                                     <p className="text-xs font-medium text-slate-400 dark:text-slate-500 italic">
-                                                                        Termasuk pajak & biaya admin
+                                                                        {tt.description}
                                                                     </p>
                                                                 )}
                                                             </div>

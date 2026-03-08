@@ -147,9 +147,9 @@ const DevDashboard = () => {
                 <motion.div
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6"
+                    className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-6"
                 >
-                    <div className="w-16 h-16 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
+                    <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
                         <Building2 size={28} />
                     </div>
                     <div>
@@ -162,9 +162,9 @@ const DevDashboard = () => {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6"
+                    className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-6"
                 >
-                    <div className="w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm">
                         <Calendar size={28} />
                     </div>
                     <div>
@@ -175,8 +175,8 @@ const DevDashboard = () => {
             </div>
 
             {/* Performance Matrix Table */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
                             <TrendingUp size={20} />
@@ -215,7 +215,7 @@ const DevDashboard = () => {
                                     key={p.id}
                                     className="group hover:bg-slate-50/50 transition-colors"
                                 >
-                                    <td className="px-8 py-6">
+                                    <td className="px-6 py-5">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-blue-600 font-bold text-lg shadow-sm group-hover:border-blue-200 transition-all">
                                                 {p.brandName.charAt(0)}
@@ -229,13 +229,13 @@ const DevDashboard = () => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 text-center">
+                                    <td className="px-6 py-5 text-center">
                                         <div className="flex flex-col items-center">
                                             <span className="text-sm font-bold text-slate-900">{p.eventCount}</span>
                                             <span className="text-[9px] font-black text-slate-300 uppercase mt-0.5">Listings</span>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 text-center">
+                                    <td className="px-6 py-5 text-center">
                                         <div className="flex flex-col items-center">
                                             <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100">
                                                 <ShoppingBag size={12} />
@@ -244,7 +244,7 @@ const DevDashboard = () => {
                                             <span className="text-[9px] font-black text-slate-300 uppercase mt-1.5">Volume</span>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 text-right">
+                                    <td className="px-6 py-5 text-right">
                                         <div className="flex flex-col items-end">
                                             <span className="text-lg font-bold text-slate-900 tabular-nums">{rupiah(p.revenue)}</span>
                                             <div className="flex items-center gap-1.5 mt-0.5">
@@ -270,7 +270,7 @@ const DevDashboard = () => {
                     </table>
                 </div>
 
-                <div className="p-8 bg-slate-50/50 border-t border-slate-50">
+                <div className="p-6 bg-slate-50/50 border-t border-slate-50">
                     <div className="flex items-center justify-between">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                             Matrix updated: <span className="text-slate-900">{new Date().toLocaleString()}</span>

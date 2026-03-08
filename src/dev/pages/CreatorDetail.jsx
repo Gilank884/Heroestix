@@ -104,7 +104,7 @@ const CreatorDetail = () => {
                 <h1 className="text-3xl font-extrabold text-slate-900">Creator Details</h1>
             </div>
 
-            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 {/* Hero / ID Section */}
                 <div className="p-10 border-b border-slate-50 bg-slate-50/30">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -175,7 +175,7 @@ const CreatorDetail = () => {
                     <div className="space-y-8">
                         <div className="space-y-4">
                             <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Settlement Configuration</h4>
-                            <div className="p-8 bg-slate-900 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
+                            <div className="p-6 bg-slate-900 rounded-2xl text-white shadow-xl relative overflow-hidden group">
                                 <div className="relative z-10 space-y-8">
                                     <div className="flex items-center justify-between">
                                         <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
@@ -201,7 +201,7 @@ const CreatorDetail = () => {
                             <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Actions</h4>
                             <button
                                 onClick={handleToggleVerification}
-                                className={`w-full py-5 font-black text-xs uppercase tracking-widest rounded-3xl border transition-all active:scale-95 shadow-sm flex items-center justify-center gap-3 ${creator.verified
+                                className={`w-full py-5 font-black text-xs uppercase tracking-widest rounded-2xl border transition-all active:scale-95 shadow-sm flex items-center justify-center gap-3 ${creator.verified
                                     ? 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                     : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-blue-600/20 shadow-lg'
                                     }`}

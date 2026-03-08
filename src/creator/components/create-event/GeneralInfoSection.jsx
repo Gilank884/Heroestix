@@ -7,7 +7,7 @@ const GeneralInfoSection = ({ eventData, setEventData, previewUrl, handleFileCha
             {/* Banner Section */}
             <div className="space-y-4">
                 <label className="text-sm font-bold text-slate-900">Banner Utama</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     <div className="relative group/banner">
                         <input
                             type="file"

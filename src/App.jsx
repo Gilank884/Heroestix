@@ -48,11 +48,14 @@ import EventCash from "./creator/pages/EventCash";
 import AdditionalForm from "./creator/pages/AdditionalForm";
 import CreateEvent from "./creator/pages/CreateEvent";
 import EventVouchers from "./creator/pages/EventVouchers";
+import VoucherDetail from "./creator/pages/VoucherDetail";
 import CreateTicket from "./creator/pages/CreateTicket";
+import TicketDetail from "./creator/pages/TicketDetail";
 import CreatorProfile from "./creator/pages/Profile";
 import RequestWithdrawal from "./creator/pages/RequestWithdrawal";
 import EventRequestWithdrawal from "./creator/pages/EventRequestWithdrawal";
 import EventStaff from "./creator/pages/EventStaff";
+import SalesDetail from "./creator/pages/SalesDetail";
 
 // Dev Pages
 import DevDashboard from "./dev/pages/Dashboard";
@@ -334,12 +337,15 @@ export default function App() {
                 <Route path="/" element={<CreatorEventDetail />} />
                 <Route path="/ticket-categories" element={<TicketCategories />} />
                 <Route path="/ticket-categories/create" element={<CreateTicket />} />
+                <Route path="/ticket-categories/:ticketId/edit" element={<TicketDetail />} />
                 <Route path="/visitors" element={<Visitors />} />
                 <Route path="/check-in-stats" element={<EventValidationStats />} />
                 <Route path="/check-in" element={<EventCheckIn />} />
                 <Route path="/vouchers" element={<EventVouchers />} />
+                <Route path="/vouchers/:voucherId/edit" element={<VoucherDetail />} />
                 <Route path="/staff" element={<EventStaff />} />
                 <Route path="/sales-report" element={<EventSalesReport />} />
+                <Route path="/sales-report/:ticketId" element={<SalesDetail />} />
                 <Route path="/withdrawals" element={<EventWithdrawals />} />
                 <Route path="/withdrawals/request" element={<EventRequestWithdrawal />} />
                 <Route path="/additional-form" element={<AdditionalForm />} />

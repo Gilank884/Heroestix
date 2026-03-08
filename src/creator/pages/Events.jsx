@@ -233,7 +233,7 @@ const Events = () => {
                         </div>
                     </div>
                 )) : (
-                    <div className="py-20 text-center bg-white rounded-3xl border border-gray-100">
+                    <div className="py-20 text-center bg-white rounded-2xl border border-gray-100">
                         <div className="w-16 h-16 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Calendar size={32} />
                         </div>

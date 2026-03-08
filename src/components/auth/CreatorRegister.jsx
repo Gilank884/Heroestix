@@ -236,9 +236,9 @@ const CreatorRegister = () => {
             </div>
 
             <div className="w-full max-w-2xl relative z-10">
-                <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                     {/* Header Steps */}
-                    <div className="p-8 border-b border-slate-50 bg-slate-50/50">
+                    <div className="p-6 border-b border-slate-50 bg-slate-50/50">
                         <div className="flex items-center justify-between max-w-sm mx-auto mb-8 relative">
                             {/* Line */}
                             <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-200 -z-10" />
@@ -269,7 +269,7 @@ const CreatorRegister = () => {
                         </div>
                     </div>
 
-                    <div className="p-8 md:p-10">
+                    <div className="p-6 md:p-10">
                         {errorMsg && (
                             <div className="bg-red-50 border border-red-100 text-red-600 text-[12px] px-4 py-3 rounded-xl mb-8 flex items-center gap-3">
                                 <span className="font-bold">{errorMsg}</span>
@@ -366,7 +366,7 @@ const CreatorRegister = () => {
 
                         {step === 2 && (
                             <form onSubmit={handleStep2Submit} className="space-y-6">
-                                <div className="flex flex-col md:flex-row gap-8">
+                                <div className="flex flex-col md:flex-row gap-6">
                                     {/* Left: Image Upload */}
                                     <div className="w-full md:w-1/3 flex flex-col items-center">
                                         <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Foto Creator</label>
@@ -381,7 +381,7 @@ const CreatorRegister = () => {
                                             <label
                                                 htmlFor="photo-upload"
                                                 className={`
-                                                    relative w-full aspect-square rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center gap-3
+                                                    relative w-full aspect-square rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center gap-3
                                                     ${photoPreview ? 'border-transparent' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-blue-600'}
                                                 `}
                                             >

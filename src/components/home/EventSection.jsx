@@ -131,7 +131,7 @@ export default function EventSection({ searchTerm = "" }) {
 
     if (error) {
         return (
-            <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
+            <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                 <div className="bg-red-50 dark:bg-red-900/20 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-100 dark:border-red-800">
                     <FiSearch size={40} className="text-red-400" />
                 </div>
@@ -150,7 +150,7 @@ export default function EventSection({ searchTerm = "" }) {
     if (filteredEvents.length === 0) {
         return (
             <div className="w-full flex justify-center py-12">
-                <div className="relative overflow-hidden w-full max-w-lg rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50/30 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100/50 dark:border-blue-900/50 shadow-sm p-10 text-center">
+                <div className="relative overflow-hidden w-full max-w-lg rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/30 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100/50 dark:border-blue-900/50 shadow-sm p-10 text-center">
                     {/* Decorative Background Elements */}
                     <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-blue-100/50 dark:bg-blue-900/50 rounded-full blur-2xl"></div>
                     <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-32 h-32 bg-indigo-100/50 dark:bg-indigo-900/50 rounded-full blur-2xl"></div>

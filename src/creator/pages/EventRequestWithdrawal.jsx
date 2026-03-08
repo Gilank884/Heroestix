@@ -193,128 +193,117 @@ export default function EventRequestWithdrawal() {
     }
 
     return (
-        <div className="max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 pt-10">
-            {/* Header */}
-            <div className="flex items-center gap-4">
-                <button
-                    onClick={() => navigate(`/manage/event/${eventId}/withdrawals`)}
-                    className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all shadow-sm group"
-                >
-                    <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                </button>
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Tarik Saldo <span className="text-indigo-600 italic">Event</span></h2>
-                    <p className="text-slate-500 font-medium text-[10px]">Pencairan dana khusus event <span className="text-slate-900 font-semibold">{eventData?.title}</span></p>
+        <div className="space-y-8 pb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Main Content Area */}
+                <div className="lg:col-span-9 order-2 lg:order-1 space-y-6">
+                    {/* Main Form Section */}
+                    <form onSubmit={handleRequestWithdrawal} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="p-6 space-y-6">
+                            {/* Balance Info */}
+                            <div className="p-5 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <p className="text-[10px] font-semibold text-indigo-400 uppercase tracking-widest leading-none">Saldo Event</p>
+                                    <h3 className="text-2xl font-bold text-indigo-900 tracking-tight">{rupiah(balance)}</h3>
+                                </div>
+                                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md shadow-indigo-500/5">
+                                    <Wallet size={24} className="text-indigo-600" />
+                                </div>
+                            </div>
+
+                            {/* Amount Input */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between px-1">
+                                    <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Nominal Penarikan</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setWithdrawAmount(balance.toString())}
+                                        className="text-[10px] font-semibold text-indigo-600 uppercase tracking-widest hover:text-indigo-700 transition-colors"
+                                    >
+                                        Tarik Semua
+                                    </button>
+                                </div>
+                                <div className="relative group/input">
+                                    <span className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-slate-300 group-focus-within/input:text-indigo-600 transition-colors text-lg">Rp</span>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={formatThousand(withdrawAmount)}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '');
+                                            setWithdrawAmount(val);
+                                        }}
+                                        placeholder="0"
+                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 pl-12 pr-6 font-bold text-2xl text-slate-900 outline-none focus:border-indigo-600 focus:bg-white transition-all tabular-nums"
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between px-1">
+                                    <p className="text-[9px] text-slate-400 font-medium italic">* Minimal penarikan Rp 100.000</p>
+                                    <p className="text-[9px] text-indigo-600 font-bold italic">Maksimal 3 hari pengerjaan</p>
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={submitting || balance < 10000 || hasPending}
+                                className={`w-full py-4 rounded-2xl font-semibold uppercase tracking-[0.2em] text-xs shadow-lg transition-all active:scale-95 ${submitting || balance < 10000 || hasPending
+                                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                    : 'bg-indigo-600 text-white shadow-indigo-500/10 hover:bg-indigo-700 hover:scale-[1.01]'
+                                    }`}
+                            >
+                                {submitting ? 'Mengirim Data...' : (hasPending ? 'Ada Progres Pending' : 'Konfirmasi & Kirim')}
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </div>
 
-            <div className="space-y-6">
-                {/* Main Form Section */}
-                <form onSubmit={handleRequestWithdrawal} className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
-                    <div className="p-8 space-y-6">
-                        {/* Balance Info */}
-                        <div className="p-5 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center justify-between">
-                            <div className="space-y-0.5">
-                                <p className="text-[10px] font-semibold text-indigo-400 uppercase tracking-widest leading-none">Saldo Event</p>
-                                <h3 className="text-2xl font-bold text-indigo-900 tracking-tight">{rupiah(balance)}</h3>
-                            </div>
-                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md shadow-indigo-500/5">
-                                <Wallet size={24} className="text-indigo-600" />
-                            </div>
-                        </div>
-
-                        {/* Amount Input */}
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between px-1">
-                                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Nominal Penarikan</label>
-                                <button
-                                    type="button"
-                                    onClick={() => setWithdrawAmount(balance.toString())}
-                                    className="text-[10px] font-semibold text-indigo-600 uppercase tracking-widest hover:text-indigo-700 transition-colors"
-                                >
-                                    Tarik Semua
-                                </button>
-                            </div>
-                            <div className="relative group/input">
-                                <span className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-slate-300 group-focus-within/input:text-indigo-600 transition-colors text-lg">Rp</span>
-                                <input
-                                    required
-                                    type="text"
-                                    value={formatThousand(withdrawAmount)}
-                                    onChange={(e) => {
-                                        const val = e.target.value.replace(/\D/g, '');
-                                        setWithdrawAmount(val);
-                                    }}
-                                    placeholder="0"
-                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 pl-12 pr-6 font-bold text-2xl text-slate-900 outline-none focus:border-indigo-600 focus:bg-white transition-all tabular-nums"
-                                />
-                            </div>
-                            <div className="flex items-center justify-between px-1">
-                                <p className="text-[9px] text-slate-400 font-medium italic">* Minimal penarikan Rp 100.000</p>
-                                <p className="text-[9px] text-indigo-600 font-bold italic">Maksimal 3 hari pengerjaan</p>
-                            </div>
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={submitting || balance < 10000 || hasPending}
-                            className={`w-full py-4 rounded-2xl font-semibold uppercase tracking-[0.2em] text-xs shadow-lg transition-all active:scale-95 ${submitting || balance < 10000 || hasPending
-                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                : 'bg-indigo-600 text-white shadow-indigo-500/10 hover:bg-indigo-700 hover:scale-[1.01]'
-                                }`}
-                        >
-                            {submitting ? 'Mengirim Data...' : (hasPending ? 'Ada Progres Pending' : 'Konfirmasi & Kirim')}
-                        </button>
-                    </div>
-                </form>
-
-                {/* Info Sections Stacked */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* EO Details */}
-                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
-                        <div className="flex items-center gap-2">
-                            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                                <User size={14} />
-                            </div>
-                            <h4 className="font-semibold text-slate-900 uppercase text-[9px] tracking-widest">Detail EO</h4>
-                        </div>
-
-                        <div className="space-y-3">
+                {/* Right Column: Sidebar */}
+                <aside className="lg:col-span-3 order-1 lg:order-2 space-y-6 lg:sticky lg:top-6">
+                    {/* Header/Info Box */}
+                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+                        <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/manage/event/${eventId}/withdrawals`)}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all group shrink-0"
+                            >
+                                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                            </button>
                             <div>
-                                <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Organisasi</p>
-                                <p className="font-semibold text-slate-800 text-xs">{creatorInfo?.display_name || creatorInfo?.name}</p>
-                            </div>
-                            <div>
-                                <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Event</p>
-                                <p className="font-medium text-slate-700 text-[10px] line-clamp-1">{eventData?.title}</p>
+                                <h3 className="text-base font-black text-slate-900 tracking-tight leading-tight">Tarik Saldo</h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Event</p>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Bank Account */}
-                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
-                        <div className="flex items-center gap-2">
-                            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                                <Building2 size={14} />
+                        {/* EO Details */}
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-start gap-2">
+                                <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5 w-16">Organisasi</p>
+                                <p className="font-semibold text-slate-800 text-xs text-right break-words flex-1">{creatorInfo?.display_name || creatorInfo?.name}</p>
                             </div>
-                            <h4 className="font-semibold text-slate-900 uppercase text-[9px] tracking-widest">Bank Tujuan</h4>
+                            <div className="flex justify-between items-start gap-2">
+                                <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5 w-16">Event</p>
+                                <p className="font-semibold text-slate-800 text-[10px] text-right break-words flex-1 italic">{eventData?.title}</p>
+                            </div>
                         </div>
 
+                        <hr className="border-slate-100" />
+
+                        {/* Bank Account */}
                         {creatorInfo?.bank_account ? (
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Bank</p>
-                                        <p className="font-semibold text-slate-800 text-xs">{creatorInfo.bank_name}</p>
-                                    </div>
-                                    <div className="p-1 px-2.5 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 flex items-center gap-1.5 scale-75 origin-right">
-                                        <ShieldCheck size={12} />
-                                        <span className="text-[8px] font-semibold uppercase">Verified</span>
+                                    <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest w-16">Bank</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-semibold text-slate-800 text-xs text-right">{creatorInfo.bank_name}</p>
+                                        <div className="p-1 px-[0.4rem] bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 flex items-center gap-1 scale-90">
+                                            <ShieldCheck size={10} />
+                                        </div>
                                     </div>
                                 </div>
-                                <div>
-                                    <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">No. Rekening</p>
-                                    <p className="font-semibold text-slate-800 tracking-wider text-xs">{creatorInfo.bank_account}</p>
+                                <div className="flex justify-between items-center gap-2">
+                                    <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest w-16">No Rekening</p>
+                                    <p className="font-bold text-slate-900 tracking-wider text-xs text-right">{creatorInfo.bank_account}</p>
                                 </div>
                             </div>
                         ) : (
@@ -323,7 +312,7 @@ export default function EventRequestWithdrawal() {
                             </div>
                         )}
                     </div>
-                </div>
+                </aside>
             </div>
         </div>
     );

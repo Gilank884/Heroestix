@@ -111,11 +111,11 @@ const GeneralInfoManagement = ({ eventId, eventData: initialData, onUpdate }) =>
                     <h3 className="text-sm font-black text-gray-900">Informasi Umum</h3>
                 </div>
 
-                <div className="p-8 space-y-10">
+                <div className="p-6 space-y-10">
                     {/* Banner Section */}
                     <div className="space-y-4">
                         <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1">Banner Utama</label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                             <div className="relative group/banner">
                                 <input
                                     type="file"

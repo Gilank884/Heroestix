@@ -114,9 +114,9 @@ const UserRegister = () => {
             </div>
 
             <div className="w-full max-w-md relative z-10">
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
                     {/* Header Steps */}
-                    <div className="p-8 border-b border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                    <div className="p-6 border-b border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                         <div className="text-center">
                             <h2 className="text-2xl font-medium text-slate-900 dark:text-white tracking-tight mb-2">
                                 Daftar Akun
@@ -127,7 +127,7 @@ const UserRegister = () => {
                         </div>
                     </div>
 
-                    <div className="p-8">
+                    <div className="p-6">
                         {errorMsg && (
                             <div className="bg-red-50 border border-red-100 text-red-600 text-[12px] px-4 py-3 rounded-xl mb-8 flex items-center gap-3">
                                 <span className="font-medium">{errorMsg}</span>

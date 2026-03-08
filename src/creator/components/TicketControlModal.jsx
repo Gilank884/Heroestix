@@ -68,9 +68,9 @@ const TicketControlModal = ({ isOpen, onClose }) => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="relative bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="relative bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
                 {/* Header */}
-                <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center">
                             <HiQrcode size={22} />
@@ -85,7 +85,7 @@ const TicketControlModal = ({ isOpen, onClose }) => {
                     </button>
                 </div>
 
-                <div className="p-8 space-y-8">
+                <div className="p-6 space-y-8">
                     {/* Search Area */}
                     <div className="space-y-4">
                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest block text-left">Manual QR / Ticket ID Entry</label>
@@ -119,7 +119,7 @@ const TicketControlModal = ({ isOpen, onClose }) => {
                     </div>
 
                     {/* Result Area */}
-                    <div className="min-h-[200px] flex items-center justify-center border-2 border-dashed border-slate-100 rounded-3xl p-6">
+                    <div className="min-h-[200px] flex items-center justify-center border-2 border-dashed border-slate-100 rounded-2xl p-6">
                         {ticketInfo ? (
                             <div className="w-full space-y-6">
                                 <div className="flex items-center justify-between">
@@ -168,7 +168,7 @@ const TicketControlModal = ({ isOpen, onClose }) => {
                             </div>
                         ) : (
                             <div className="text-center space-y-4">
-                                <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-3xl flex items-center justify-center mx-auto transition-transform hover:scale-110">
+                                <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center mx-auto transition-transform hover:scale-110">
                                     <HiQrcode size={32} />
                                 </div>
                                 <p className="text-slate-400 font-bold text-sm tracking-tight italic">Waiting for scan data...</p>
