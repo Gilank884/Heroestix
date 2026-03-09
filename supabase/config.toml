@@ -58,8 +58,3 @@ entrypoint = "./functions/transfer-va-payment/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/api/index.ts"
-
-[functions.api]
-enabled = true
-verify_jwt = false
-entrypoint = "./functions/api/index.ts"

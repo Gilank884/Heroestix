@@ -138,11 +138,11 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
                 );
             }
 
-            if (partnerId !== "CHVA01") {
+            if (!partnerId) {
                 return new Response(
                     JSON.stringify({
                         responseCode: "4012501",
-                        responseMessage: "Unauthorized Signature: Invalid Partner ID",
+                        responseMessage: "Unauthorized Signature: Missing Partner ID",
                         virtualAccountData: {}
                     }),
                     { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -353,13 +353,16 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             findError = result.error;
         } else {
             // External call (Bayarind): lookup by VA number
-            const result = await supabase
+            // Note: Virtual Account numbers might have leading spaces in DB due to padding rules
+            const { data: txs, error: txError } = await supabase
                 .from("transactions")
                 .select("*")
-                .eq("va_number", virtualAccountNo.trim())
-                .maybeSingle();
-            transaction = result.data;
-            findError = result.error;
+                .or(`va_number.eq.${virtualAccountNo},va_number.ilike.%${virtualAccountNo}`)
+                .order("created_at", { ascending: false })
+                .limit(2);
+
+            transaction = (txs && txs.length > 0) ? txs.find(t => t.va_number.trim() === virtualAccountNo) : null;
+            findError = txError;
         }
 
         if (findError || !transaction) {

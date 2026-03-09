@@ -400,7 +400,7 @@ serve(async (req: Request) => {
             const { error: updateError } = await supabase
                 .from('transactions')
                 .update({
-                    va_number: virtualAccountNo,
+                    va_number: virtualAccountNo.trim(),
                     expiry_date: getTimestampWithOffset(new Date(Date.now() + 5 * 60 * 1000)),
                     insert_id: insertId, // Explicitly placing it in root as requested
                     payment_provider_data: {

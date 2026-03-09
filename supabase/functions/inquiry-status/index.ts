@@ -172,7 +172,8 @@ serve(async (req: Request) => {
     // 2. Query Transaction Data
     let query = supabase.from('transactions').select('*');
     if (virtualAccountNo) {
-      query = query.ilike('va_number', virtualAccountNo.trim());
+      const cleanVA = virtualAccountNo.trim();
+      query = query.or(`va_number.eq.${cleanVA},va_number.ilike.%${cleanVA}`);
     } else {
       query = query.eq('order_id', order_id);
     }
