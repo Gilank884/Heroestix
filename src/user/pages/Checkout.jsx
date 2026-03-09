@@ -297,7 +297,7 @@ export default function Checkout() {
                         visitorEmail: ticketHolders[0].email,
                         virtualAccountNo: gatewayData.virtualAccountNo,
                         bankName: selectedBank,
-                        expiredDate: gatewayData.expiredDate || (new Date(Date.now() + 5 * 60 * 1000)).toISOString()
+                        expiredDate: gatewayData.expiredDate || (new Date(Date.now() + 24 * 60 * 60 * 1000)).toISOString()
                     }
                 });
             } else {

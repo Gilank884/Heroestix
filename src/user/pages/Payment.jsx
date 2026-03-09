@@ -99,7 +99,7 @@ export default function Payment() {
     const navigate = useNavigate();
     const { total, selectedPayment, orderId, eventTitle, visitorEmail, virtualAccountNo, bankName, expiredDate } = location.state || { total: 0, selectedPayment: "bayarind", orderId: null, eventTitle: "", visitorEmail: "", virtualAccountNo: "", bankName: "BAYARIND", expiredDate: "" };
 
-    const [timeLeft, setTimeLeft] = useState(5 * 60); // Default 5m
+    const [timeLeft, setTimeLeft] = useState(24 * 60 * 60); // Default 24h
     const [activeTab, setActiveTab] = useState("MBanking");
     const [loading, setLoading] = useState(false);
     const [statusChecking, setStatusChecking] = useState(false);
@@ -225,10 +225,10 @@ export default function Payment() {
 
             console.log("[Status Check] Response:", data);
 
-            if (data?.success) {
+            if (data?.success || data?.responseCode === "4042514") {
                 handlePaymentSuccess();
             } else {
-                triggerToast(data?.message || "Pembayaran belum diterima. Silakan selesaikan pembayaran Anda.", "warning");
+                triggerToast(data?.message || data?.responseMessage || "Pembayaran belum diterima. Silakan selesaikan pembayaran Anda.", "warning");
             }
         } catch (err) {
             console.error("Status check error:", err);

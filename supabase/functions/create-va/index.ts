@@ -276,7 +276,7 @@ serve(async (req: Request) => {
                     }
                 }
             ],
-            expiredDate: getTimestampWithOffset(new Date(Date.now() + 5 * 60 * 1000)),
+            expiredDate: getTimestampWithOffset(new Date(Date.now() + 24 * 60 * 60 * 1000)),
             additionalInfo: {}
         };
 
@@ -401,7 +401,7 @@ serve(async (req: Request) => {
                 .from('transactions')
                 .update({
                     va_number: virtualAccountNo.trim(),
-                    expiry_date: getTimestampWithOffset(new Date(Date.now() + 5 * 60 * 1000)),
+                    expiry_date: getTimestampWithOffset(new Date(Date.now() + 24 * 60 * 60 * 1000)),
                     insert_id: insertId, // Explicitly placing it in root as requested
                     payment_provider_data: {
                         ...bankConfig,

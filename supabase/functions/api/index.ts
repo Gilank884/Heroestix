@@ -8,7 +8,7 @@ const corsHeaders = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const MAX_TIME_DIFF = 300; // 5 menit
+const MAX_TIME_DIFF = 86400; // 24 jam
 
 function getTimestamp(now: Date = new Date()) {
     const tzOffset = -now.getTimezoneOffset();
@@ -432,26 +432,11 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
 
             return new Response(
                 JSON.stringify({
-                    responseCode: "2002500",
-                    responseMessage: "Success",
-                    virtualAccountData: {
-                        partnerServiceId: partnerServiceId,
-                        customerNo: customerNo,
-                        virtualAccountNo: virtualAccountNo,
-                        virtualAccountName: (virtualAccountName || "Customer").substring(0, 20),
-                        paymentRequestId: paymentRequestId,
-                        paidAmount: {
-                            value: reqAmount.toFixed(2),
-                            currency: "IDR"
-                        },
-                        paymentFlagReason: {
-                            english: "Success",
-                            indonesia: "Sukses"
-                        },
-                        paymentFlagStatus: "00"
-                    }
+                    responseCode: "4042514",
+                    responseMessage: "Paid Bill",
+                    virtualAccountData: {}
                 }),
-                { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", "X-TIMESTAMP": getTimestamp() } }
+                { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json", "X-TIMESTAMP": getTimestamp() } }
             );
         }
 

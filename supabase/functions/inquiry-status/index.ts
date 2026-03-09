@@ -152,6 +152,11 @@ serve(async (req: Request) => {
     }
 
     // 1. Parse Request Body
+    const signature = req.headers.get("x-signature");
+    const authHeader = req.headers.get("authorization") || "";
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const isInternalCall = signature === "internal-bypass" && authHeader === `Bearer ${SERVICE_KEY}`;
+
     const rawBody = await req.text();
     let reqBody;
     try {
@@ -206,15 +211,18 @@ serve(async (req: Request) => {
       );
     }
 
+    const bank_code = singleTx.method?.split('_')[1]?.toUpperCase();
+
     // Safeguard: Prevent redundant API calls and timestamp overwrites if already paid
     if (singleTx.status === "success") {
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Transaction already success. No need to re-inquiry.",
-          db_updated: false
+          responseCode: "4042514",
+          responseMessage: "Paid Bill",
+          virtualAccountData: {}
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -231,7 +239,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const bank_code = singleTx.method?.split('_')[1]?.toUpperCase();
+
 
     // 3. Fetch Bank Config Details
     const { data: bankConfig, error: configError } = await supabase
@@ -269,7 +277,7 @@ serve(async (req: Request) => {
     }
     customerNo = customerNo.substring(0, 20);
 
-    const targetVirtualAccountNo = singleTx.va_number || `${partnerServiceId}${customerNo}`;
+    const targetVirtualAccountNo = `${partnerServiceId}${customerNo}`;
     const externalId = crypto.randomUUID().replace(/-/g, '');
     const trxIdPayload = String(singleTx.numeric_id).replace(/[^0-9]/g, '').substring(0, 18); // Revert to numeric for provider match
 
@@ -337,18 +345,20 @@ serve(async (req: Request) => {
     }
 
     // 7. Handle Bayarind Response
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("=== BAYARIND HTTP ERROR ===");
+    let result: any;
+    const responseText = await response.text();
+    try {
+      result = JSON.parse(responseText);
+    } catch (e) {
+      console.error("=== BAYARIND NON-JSON ERROR ===");
       console.error("STATUS:", response.status);
-      console.error("BODY:", errorText);
+      console.error("BODY:", responseText);
       return new Response(
-        JSON.stringify({ success: false, error: "Bayarind API returned HTTP Error", provider_code: response.status, details: errorText }),
+        JSON.stringify({ success: false, error: "Bayarind API returned Non-JSON Error", provider_code: response.status, details: responseText }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const result = await response.json();
     console.log("PROVIDER RESPONSE:", result);
     const responseCode = result.responseCode || "";
 
@@ -413,7 +423,7 @@ serve(async (req: Request) => {
       updatePayload.payment_channel = "VA";
       updatePayload.reference_no = referenceNo || null;
     } else {
-      if (responseCode === "4042414") {
+      if (responseCode === "4042514") {
         updatePayload.status = "success";
         updatePayload.paid_at = new Date().toISOString();
       }
@@ -473,12 +483,14 @@ serve(async (req: Request) => {
     const paddedCustomerNo = customerNo || "";
     const paddedVirtualAccountNo = `${paddedPartnerServiceId}${paddedCustomerNo}`;
 
+    const isPaidBill = result.responseCode === "4042514" || (isPaid && !isInternalCall);
+
     // Build the inquiry response with original Bayarind responseCode (2002600)
     const inquiryResponse = {
       ...result,
-      responseCode: result.responseCode || (isPaid ? "2002600" : "4042414"),
+      responseCode: result.responseCode || (isPaid ? "2002600" : "4042514"),
       responseMessage: result.responseMessage || userMessage,
-      virtualAccountData: {
+      virtualAccountData: isPaidBill ? {} : {
         ...(result.virtualAccountData || {}),
         partnerServiceId: paddedPartnerServiceId,
         virtualAccountNo: paddedVirtualAccountNo,

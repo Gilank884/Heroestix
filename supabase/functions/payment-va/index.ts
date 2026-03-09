@@ -11,7 +11,7 @@ const corsHeaders = {
 console.log("PUBLIC KEY LENGTH:", Deno.env.get("BAYARIND_PUBLIC_KEY")?.length);
 console.log("PUBLIC KEY CONTENT:", Deno.env.get("BAYARIND_PUBLIC_KEY"));
 
-const MAX_TIME_DIFF = 300; // 5 menit
+const MAX_TIME_DIFF = 86400; // 24 jam
 
 function getTimestamp(now: Date = new Date()) {
     const tzOffset = -now.getTimezoneOffset();
