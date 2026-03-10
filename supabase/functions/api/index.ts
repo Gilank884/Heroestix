@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers":
-        "authorization, x-client-info, apikey, content-type, x-signature, x-timestamp, x-partner-id",
+        "authorization, x-client-info, apikey, content-type, x-signature, x-timestamp, x-partner-id, x-external-id, x-ip-address, x-device-id, channel-id, x-latitude, x-longitude",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -115,11 +115,15 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
         const isInternalCall = signature === "internal-bypass" && authHeader === `Bearer ${SERVICE_KEY}`;
 
         const userAgent = req.headers.get("user-agent") || "unknown";
+        const externalIdHeader = req.headers.get("x-external-id");
+        
         console.log(`[api/transfer-va/payment] ========== REQUEST ==========`);
         console.log(`[api/transfer-va/payment] Source: ${isInternalCall ? "🔗 INTERNAL (inquiry-status)" : "🌐 EXTERNAL (Bayarind callback)"}`);
         console.log(`[api/transfer-va/payment] User-Agent: ${userAgent}`);
         console.log(`[api/transfer-va/payment] Signature: ${signature?.substring(0, 30)}...`);
         console.log(`[api/transfer-va/payment] Partner-ID: ${partnerId}`);
+        console.log(`[api/transfer-va/payment] X-EXTERNAL-ID: ${externalIdHeader}`);
+        console.log(`[api/transfer-va/payment] X-TIMESTAMP: ${timestamp}`);
         console.log(`[api/transfer-va/payment] ============================`);
 
         if (isInternalCall) {
@@ -197,16 +201,28 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             const hashedBody = await sha256Hex(minifiedBody);
             const stringToSign = `POST:/api/v1.0/transfer-va/payment:${hashedBody.toLowerCase()}:${timestamp}`;
 
+            console.log("=== RSA VERIFY DEBUG (ASPI/BAYARIND) ===");
+            console.log("RAW BODY:", rawBody);
+            console.log("MINIFIED BODY:", minifiedBody);
+            console.log("HASHED BODY:", hashedBody);
+            console.log("TIMESTAMP:", timestamp);
+            console.log("STRING TO SIGN:", stringToSign);
+            console.log("SIGNATURE:", signature);
+            console.log("PUBLIC KEY LENGTH:", PUBLIC_KEY?.length);
+
             const isValid = await verifyRSASignature(
                 signature!,
                 stringToSign,
                 PUBLIC_KEY
             );
+
+            console.log("IS SIGNATURE VALID:", isValid);
+            console.log("=========================================");
             if (!isValid) {
                 console.error("[Auth] RSA Signature Verification Failed.");
                 return new Response(
                     JSON.stringify({
-                        responseCode: "4012501",
+                        responseCode: "4012500",
                         responseMessage: "Unauthorized Signature: RSA verification failed",
                         virtualAccountData: {}
                     }),
@@ -223,6 +239,32 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             Deno.env.get("SUPABASE_URL") ?? "",
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
+
+        // =============================
+        // 2.5 IDEMPOTENCY CHECK (X-EXTERNAL-ID)
+        // =============================
+        const externalId = req.headers.get("x-external-id");
+        if (externalId && !isInternalCall) {
+            console.log(`[api/transfer-va/payment] Checking idempotency for X-EXTERNAL-ID: ${externalId}`);
+            const { data: existingIdempotency } = await supabase
+                .from("payment_idempotency")
+                .select("external_id")
+                .eq("external_id", externalId)
+                .maybeSingle();
+
+            if (existingIdempotency) {
+                console.warn(`[api/transfer-va/payment] Conflict detected: X-EXTERNAL-ID ${externalId} already processed.`);
+                return new Response(
+                    JSON.stringify({
+                        responseCode: "409xx00",
+                        responseMessage: "Conflict",
+                        virtualAccountData: {}
+                    }),
+                    { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
+        }
+
 
         // =============================
         // 3. PARSE BODY
@@ -256,11 +298,21 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
 
         // SNAP B2B Requirement: partnerServiceId (8 digit left padding space)
         const partnerServiceId = body.partnerServiceId || "";
-        if (partnerServiceId.length !== 8) {
+        if (!partnerServiceId) {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002502",
-                    responseMessage: "Invalid Mandatory Field {partnerServiceId} length must be 8",
+                    responseMessage: "Missing Mandatory Field {partnerServiceId}",
+                    virtualAccountData: {}
+                }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+        if (partnerServiceId.length !== 8) {
+            return new Response(
+                JSON.stringify({
+                    responseCode: "4002501",
+                    responseMessage: "Invalid Field Format {partnerServiceId}",
                     virtualAccountData: {}
                 }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -268,15 +320,36 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
         }
 
         const customerNo = body.customerNo || "";
+        if (!customerNo) {
+            return new Response(
+                JSON.stringify({
+                    responseCode: "4002502",
+                    responseMessage: "Missing Mandatory Field {customerNo}",
+                    virtualAccountData: {}
+                }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
         // SNAP B2B Requirement: virtualAccountNo = partnerServiceId (8 space) + customerNo
         const virtualAccountNo = (body.virtualAccountNo || "").trim();
+        if (!virtualAccountNo) {
+            return new Response(
+                JSON.stringify({
+                    responseCode: "4002502",
+                    responseMessage: "Missing Mandatory Field {virtualAccountNo}",
+                    virtualAccountData: {}
+                }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
 
         const expectedVA = (partnerServiceId + customerNo).trim();
         if (virtualAccountNo !== expectedVA) {
             return new Response(
                 JSON.stringify({
-                    responseCode: "4002502",
-                    responseMessage: "Missing Mandatory Field {virtualAccountNo} consistency check failed",
+                    responseCode: "4002501",
+                    responseMessage: "Invalid Field Format {virtualAccountNo}",
                     virtualAccountData: {}
                 }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -288,14 +361,51 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
 
         const virtualAccountName = body.virtualAccountName;
         const paymentRequestId = body.paymentRequestId;
-        const reqAmount = parseFloat(body.paidAmount?.value);
+        if (!paymentRequestId) {
+            return new Response(
+                JSON.stringify({
+                    responseCode: "4002502",
+                    responseMessage: "Missing Mandatory Field {paymentRequestId}",
+                    virtualAccountData: {}
+                }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
+        // Strict Decimal Validation (e.g. 50000.00)
+        const rawAmountStr = body.paidAmount?.value || "";
+        const decimalRegex = /^\d+\.\d{2}$/;
+        if (!decimalRegex.test(rawAmountStr)) {
+            console.error(`[api/transfer-va/payment] Invalid amount format: "${rawAmountStr}". Expected 2-decimal format (e.g. .00).`);
+            return new Response(
+                JSON.stringify({
+                    responseCode: "4002501",
+                    responseMessage: "Invalid Field Format {paidAmount.value}",
+                    virtualAccountData: {}
+                }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
+        const reqAmount = parseFloat(rawAmountStr);
+
         const currency = body.paidAmount?.currency;
+        if (!currency) {
+            return new Response(
+                JSON.stringify({
+                    responseCode: "4002502",
+                    responseMessage: "Missing Mandatory Field {paidAmount.currency}",
+                    virtualAccountData: {}
+                }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
 
         if (currency !== "IDR") {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002501",
-                    responseMessage: "Invalid currency",
+                    responseMessage: "Invalid Field Format {currency}",
                     virtualAccountData: {}
                 }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -303,6 +413,16 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
         }
 
         const trxId = body.trxId;
+        if (!trxId) {
+            return new Response(
+                JSON.stringify({
+                    responseCode: "4002502",
+                    responseMessage: "Missing Mandatory Field {trxId}",
+                    virtualAccountData: {}
+                }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
 
 
         console.log("[VA PAYMENT] Incoming Callback:", {
@@ -313,10 +433,16 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
         });
 
         if (!virtualAccountNo.trim() || !partnerServiceId.trim() || !customerNo) {
+            // Already checked above, but keeping a fallback consistent with user expectations
+            const missingFields = [];
+            if (!virtualAccountNo.trim()) missingFields.push("virtualAccountNo");
+            if (!partnerServiceId.trim()) missingFields.push("partnerServiceId");
+            if (!customerNo) missingFields.push("customerNo");
+
             return new Response(
                 JSON.stringify({
                     responseCode: "4002502",
-                    responseMessage: "Missing Mandatory Field {virtualAccountNo, partnerServiceId, or customerNo}",
+                    responseMessage: `Missing Mandatory Field {${missingFields.join(", ")}}`,
                     virtualAccountData: {}
                 }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -326,8 +452,8 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
         if (isNaN(reqAmount)) {
             return new Response(
                 JSON.stringify({
-                    responseCode: "4002502",
-                    responseMessage: "Missing Mandatory Field {paidAmount.value}",
+                    responseCode: "4002501",
+                    responseMessage: "Invalid Field Format {paidAmount.value}",
                     virtualAccountData: {}
                 }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -486,6 +612,13 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
                 }),
                 { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
+        }
+
+        // Record idempotency to prevent duplicate processing if Bayarind retries with same X-EXTERNAL-ID
+        if (externalId && !isInternalCall) {
+            await supabase
+                .from("payment_idempotency")
+                .insert([{ external_id: externalId, payload: body }]);
         }
 
         // Update order to paid (triggers fulfillment)

@@ -3,11 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-timestamp, x-signature, x-partner-id, x-external-id, x-ip-address, channel-id",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-signature, x-timestamp, x-partner-id, x-external-id, x-ip-address, x-device-id, channel-id, x-latitude, x-longitude, origin",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
-
 
 function getTimestampWithOffset(date: Date = new Date()): string {
     // Offset +7
@@ -193,23 +191,8 @@ serve(async (req: Request) => {
         }
 
         // 3. Create Transaction to get numeric_id
-        const externalIdHeader = req.headers.get("x-external-id") || crypto.randomUUID();
-
-        const { data: existingExternal } = await supabase
-            .from("transactions")
-            .select("id")
-            .eq("external_id", externalIdHeader)
-            .maybeSingle();
-
-        if (existingExternal) {
-            return new Response(
-                JSON.stringify({
-                    errorCode: "409xx00",
-                    errorMessage: "Conflict"
-                }),
-                { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-        }
+        const externalIdHeader = req.headers.get("x-external-id");
+        console.log("[DEBUG] Received X-EXTERNAL-ID header:", externalIdHeader);
 
         const { data: transaction, error: txError } = await supabase
             .from('transactions')
@@ -219,7 +202,7 @@ serve(async (req: Request) => {
                     amount: amount,
                     method: `va_${bank_code.toLowerCase()}`,
                     status: 'pending',
-                    external_id: externalIdHeader
+                    external_id: externalIdHeader || crypto.randomUUID()
                 }
             ])
             .select()
