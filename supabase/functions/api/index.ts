@@ -116,7 +116,7 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
 
         const userAgent = req.headers.get("user-agent") || "unknown";
         const externalIdHeader = req.headers.get("x-external-id");
-        
+
         console.log(`[api/transfer-va/payment] ========== REQUEST ==========`);
         console.log(`[api/transfer-va/payment] Source: ${isInternalCall ? "🔗 INTERNAL (inquiry-status)" : "🌐 EXTERNAL (Bayarind callback)"}`);
         console.log(`[api/transfer-va/payment] User-Agent: ${userAgent}`);
@@ -256,7 +256,7 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
                 console.warn(`[api/transfer-va/payment] Conflict detected: X-EXTERNAL-ID ${externalId} already processed.`);
                 return new Response(
                     JSON.stringify({
-                        responseCode: "409xx00",
+                        responseCode: "4092500",
                         responseMessage: "Conflict",
                         virtualAccountData: {}
                     }),
@@ -312,6 +312,8 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002501",
+                    errorCode: "400xx01",
+                    errorMessage: "Invalid Field",
                     responseMessage: "Invalid Field Format {partnerServiceId}",
                     virtualAccountData: {}
                 }),
@@ -349,6 +351,8 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002501",
+                    errorCode: "400xx01",
+                    errorMessage: "Invalid Field",
                     responseMessage: "Invalid Field Format {virtualAccountNo}",
                     virtualAccountData: {}
                 }),
@@ -380,6 +384,8 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002501",
+                    errorCode: "400xx01",
+                    errorMessage: "Invalid Field",
                     responseMessage: "Invalid Field Format {paidAmount.value}",
                     virtualAccountData: {}
                 }),
@@ -405,6 +411,8 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002501",
+                    errorCode: "400xx01",
+                    errorMessage: "Invalid Field",
                     responseMessage: "Invalid Field Format {currency}",
                     virtualAccountData: {}
                 }),
@@ -453,6 +461,8 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002501",
+                    errorCode: "400xx01",
+                    errorMessage: "Invalid Field",
                     responseMessage: "Invalid Field Format {paidAmount.value}",
                     virtualAccountData: {}
                 }),

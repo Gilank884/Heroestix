@@ -213,18 +213,8 @@ serve(async (req: Request) => {
 
     const bank_code = singleTx.method?.split('_')[1]?.toUpperCase();
 
-    // Safeguard: Prevent redundant API calls and timestamp overwrites if already paid
-    if (singleTx.status === "success") {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          responseCode: "4042514",
-          responseMessage: "Paid Bill",
-          virtualAccountData: {}
-        }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Removed: Early return for paid bills to ensure full SNAP response is returned
+    // instead of simplified {virtualAccountData: {}}
 
     // Idempotency: If the client retries with the exact same request ID, return the cached DB state
     if (reqInquiryId && singleTx.last_inquiry_request_id === reqInquiryId) {
@@ -264,17 +254,19 @@ serve(async (req: Request) => {
 
 
     // 4. Construct Inquiry Body
-    const partnerServiceId = bankConfig.bank_id.padStart(8, " ");
+    const partnerServiceId = bankConfig.bank_id.trim().padStart(8, " ");
 
     let customerNo = "";
     const numericStr = String(singleTx.numeric_id);
     if (bankConfig.sub_id) {
       const subIdStr = String(bankConfig.sub_id);
       const remainingLen = 8 - subIdStr.length;
+      // In SNAP, customerNo often includes the sub_id + numeric_id
       customerNo = subIdStr + numericStr.slice(-remainingLen).padStart(remainingLen, "0");
     } else {
       customerNo = numericStr.slice(-8).padStart(8, "0");
     }
+    // Ensure customerNo is valid length for SNAP (usually up to 20)
     customerNo = customerNo.substring(0, 20);
 
     const targetVirtualAccountNo = `${partnerServiceId}${customerNo}`;
@@ -429,6 +421,20 @@ serve(async (req: Request) => {
       }
       updatePayload.provider_response_code = responseCode;
       updatePayload.trx_message = result.responseMessage || "Provider Failed Response";
+
+      // If already paid (4042514) or other non-success code, we still want to ensure
+      // additional mapping for consistent response structure if available
+      const vaData = result.virtualAccountData;
+      const addInfo = result.additionalInfo;
+      if (vaData) {
+        updatePayload.paid_amount = vaData.paidAmount?.value ? parseFloat(vaData.paidAmount.value) : updatePayload.paid_amount;
+        updatePayload.bank_reference = vaData.referenceNo || updatePayload.bank_reference;
+        updatePayload.transaction_date = vaData.transactionDate || updatePayload.transaction_date;
+      }
+      if (addInfo) {
+        updatePayload.trx_status = addInfo.trxStatus || updatePayload.trx_status;
+        updatePayload.trx_message = addInfo.trxMessage || updatePayload.trx_message;
+      }
     }
 
     // 8. Update DB
@@ -483,18 +489,38 @@ serve(async (req: Request) => {
     const paddedCustomerNo = customerNo || "";
     const paddedVirtualAccountNo = `${paddedPartnerServiceId}${paddedCustomerNo}`;
 
-    const isPaidBill = result.responseCode === "4042514" || (isPaid && !isInternalCall);
-
     // Build the inquiry response with original Bayarind responseCode (2002600)
+    // ensure amount formatting with .00 as per user image
+    const totalAmountValue = singleTx.amount ? parseFloat(singleTx.amount).toFixed(2) : "0.00";
+    const paidAmountValue = (isPaid || result.responseCode === "4042514") ? totalAmountValue : "0.00";
+
     const inquiryResponse = {
       ...result,
       responseCode: result.responseCode || (isPaid ? "2002600" : "4042514"),
       responseMessage: result.responseMessage || userMessage,
-      virtualAccountData: isPaidBill ? {} : {
-        ...(result.virtualAccountData || {}),
+      virtualAccountData: {
         partnerServiceId: paddedPartnerServiceId,
+        customerNo: paddedCustomerNo,
         virtualAccountNo: paddedVirtualAccountNo,
-        customerNo: paddedCustomerNo
+        inquiryRequestId: inquiryId,
+        paymentRequestId: result.virtualAccountData?.paymentRequestId || "",
+        paidAmount: {
+          currency: "IDR",
+          value: paidAmountValue
+        },
+        totalAmount: {
+          currency: "IDR",
+          value: totalAmountValue
+        },
+        referenceNo: result.virtualAccountData?.referenceNo || result.additionalInfo?.referenceNo || "",
+        trxDateTime: result.virtualAccountData?.trxDateTime || result.additionalInfo?.trxDateTime || getTimestamp(),
+        transactionDate: result.virtualAccountData?.transactionDate || ""
+      },
+      additionalInfo: {
+        insertId: result.additionalInfo?.insertId || "",
+        tagId: result.additionalInfo?.tagId || "",
+        trxStatus: result.additionalInfo?.trxStatus || (isPaid ? "00" : "03"),
+        trxMessage: result.additionalInfo?.trxMessage || result.responseMessage || userMessage
       }
     };
 

@@ -156,17 +156,8 @@ export default function Payment() {
             )
             .subscribe();
 
-        // 3. Background Polling (every 30s)
-        const pollInterval = setInterval(() => {
-            if (!showSuccessModal && !statusChecking) {
-                console.log('[Polling] Checking status...');
-                handleCheckStatusSilent();
-            }
-        }, 30000);
-
         return () => {
             clearInterval(timer);
-            clearInterval(pollInterval);
             supabase.removeChannel(channel);
         };
     }, [orderId, virtualAccountNo, expiredDate, navigate, showSuccessModal, statusChecking]);
@@ -184,19 +175,6 @@ export default function Payment() {
             setEmailStatus('sent');
             console.log(`[Payment] ✅ Payment successful. System is processing ticket delivery.`);
         }, 1500);
-    };
-
-    const handleCheckStatusSilent = async () => {
-        try {
-            const { data } = await supabase.functions.invoke('inquiry-status', {
-                body: { order_id: orderId }
-            });
-            if (data?.success) {
-                handlePaymentSuccess();
-            }
-        } catch (err) {
-            console.error("Silent status check error:", err);
-        }
     };
 
     const formatTime = (seconds) => {
