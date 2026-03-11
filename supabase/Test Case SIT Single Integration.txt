@@ -1,0 +1,379 @@
+test case paymentflag:
+1. Invalid channelId => expected response 01
+2. Invalid transactionNo => expected response 01
+3. Invalid transactionAmount => expected response 01
+4. Invalid insertId => expected response 01
+5. Invalid authCode => expected response 01
+6. Invalid currency => expected response 01
+7. Invalid transactionStatus => expected response 01
+8. Success Transaction => expected response 00
+9. Double Payment  => expected response 02
+10 Cancel by admin (optional) => expected response 05
+11 Expired (optional) => expected response 04
+12 Invalid Customer Account (For VirtualAccount) => expected response 01 
+
+************************************************************
+
+1. Invalid channelId 
+
+Request Parameters
+{
+  "channelId": "SNBXSPR1",
+  "currency": "IDR",
+  "transactionNo": "630",
+  "transactionAmount": "10000",
+  "transactionDate": "2017-10-25 12:01:23",
+  "transactionStatus": "00",
+  "transactionMessage": "Approved",
+  "flagType": "11",
+  "insertId": "132",
+  "customerAccount": "8164010000000630",
+  "paymentReffId": "SANDBOX",
+  "additionalData": null,
+  "authCode": "f1fed4b0f0ce4a4b646c5bfdeae748e1b5e162acf146a1b37cdaef4c71a5778d"
+}
+Response
+{
+  "channelId": "SNBXSPR1",
+  "currency": "IDR",
+  "paymentStatus": "01",
+  "paymentMessage": "Invalid channelId",
+  "flagType": "11",
+  "paymentReffId": "SANDBOX"
+}
+************************************************************
+
+2. Invalid transactionNo
+
+Request Parameters
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "transactionNo": "ABCD1234",
+  "transactionAmount": "10000",
+  "transactionDate": "2017-10-25 12:01:23",
+  "transactionStatus": "00",
+  "transactionMessage": "Approved",
+  "flagType": "11",
+  "insertId": "132",
+  "customerAccount": "8164010000000630",
+  "paymentReffId": "SANDBOX",
+  "additionalData": null,
+  "authCode": "0d03f24b16902ea46c9ecb0842686e8c5b90953320309efd936c1791fbea88e3"
+}
+Response
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "paymentStatus": "01",
+  "paymentMessage": "Invalid transactionNo",
+  "flagType": "11",
+  "paymentReffId": "SANDBOX"
+}
+************************************************************
+
+3. Invalid transactionAmount
+
+Request Parameters
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "transactionNo": "630",
+  "transactionAmount": 105289,
+  "transactionDate": "2017-10-25 12:01:23",
+  "transactionStatus": "00",
+  "transactionMessage": "Approved",
+  "flagType": "11",
+  "insertId": "132",
+  "customerAccount": "8164010000000630",
+  "paymentReffId": "SANDBOX",
+  "additionalData": null,
+  "authCode": "55c4f2b2b1877802217760a85f28bdf426c5df5b20693af441a7aa5011adc9d8"
+}
+Response
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "paymentStatus": "01",
+  "paymentMessage": "Invalid Transaction Amount",
+  "flagType": "11",
+  "paymentReffId": "SANDBOX"
+}
+************************************************************
+
+4. Invalid insertId
+
+Request Parameters
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "transactionNo": "630",
+  "transactionAmount": "10000",
+  "transactionDate": "2017-10-25 12:01:23",
+  "transactionStatus": "00",
+  "transactionMessage": "Approved",
+  "flagType": "11",
+  "insertId": 190,
+  "customerAccount": "8164010000000630",
+  "paymentReffId": "SANDBOX",
+  "additionalData": null,
+  "authCode": "46a69b271253ee07f262b8b8b3c1f7d50a3c14d4e8f242163f6e1b099b00ddf3"
+}
+Response
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "paymentStatus": "01",
+  "paymentMessage": "Invalid insertId",
+  "flagType": "11",
+  "paymentReffId": "SANDBOX"
+}
+************************************************************
+
+5. Invalid authCode
+
+Request Parameters
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "transactionNo": "630",
+  "transactionAmount": "10000",
+  "transactionDate": "2017-10-25 12:01:23",
+  "transactionStatus": "00",
+  "transactionMessage": "Approved",
+  "flagType": "11",
+  "insertId": "132",
+  "customerAccount": "8164010000000630",
+  "paymentReffId": "SANDBOX",
+  "additionalData": null,
+  "authCode": "1cbc166406f16c6cf6d5b47b0b59314593c75f52d51212cf5a31fa61fba07xxx"
+}
+Response
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "paymentStatus": "01",
+  "paymentMessage": "Invalid AuthCode",
+  "flagType": "11",
+  "paymentReffId": "SANDBOX"
+}
+************************************************************
+
+6. Invalid currency
+
+Request
+{
+  "channelId": "TESSPRINT01",
+  "currency": "USD",
+  "transactionNo": "630",
+  "transactionAmount": "10000",
+  "transactionDate": "2017-10-25 12:01:23",
+  "transactionStatus": "00",
+  "transactionMessage": "Approved",
+  "flagType": "11",
+  "insertId": "132",
+  "paymentReffId": "FSEHNU",
+  "customerAccount": "8164010000000630",
+  "authCode": "9328530de8b7e2655c0b0f068c5785d667fcec800d6357497791e6a7c1ba8c72",
+  "additionalData": ""
+}
+Response
+{
+  "channelId": "TESSPRINT01",
+  "currency": "USD",
+  "paymentStatus": "01",
+  "paymentMessage": "Invalid Currency",
+  "flagType": "11",
+  "paymentReffId": "FSEHNU"
+}
+************************************************************
+
+7. Invalid transactionStatus
+
+Request
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "transactionNo": "630",
+  "transactionAmount": "10000",
+  "transactionDate": "2017-10-25 12:01:23",
+  "transactionStatus": "01",
+  "transactionMessage": "Invalid Transaction Status",
+  "flagType": "11",
+  "insertId": "132",
+  "paymentReffId": "AEEB5KDF",
+  "customerAccount": "8164010000000630",
+  "authCode": "3c8b9a4070a9c3cbb84fe3f68e3813c961c0afaef181869fa9a02a03a7930b3a",
+  "additionalData": ""
+}
+Response
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "paymentStatus": "01",
+  "paymentMessage": "Invalid Transaction Status",
+  "flagType": "11",
+  "paymentReffId": "AEEB5KDF"
+}
+************************************************************
+
+8. Invalid Customeraccount     (jika VA)
+
+Request
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "transactionNo": "630",
+  "transactionAmount": "10000",
+  "transactionDate": "2017-10-25 12:01:23",
+  "transactionStatus": "00",
+  "transactionMessage": "Approved",
+  "flagType": "11",
+  "insertId": "132",
+  "paymentReffId": "9C8KAH2NFS",
+  "customerAccount": "8164010000077777",
+  "authCode": "9328530de8b7e2655c0b0f068c5785d667fcec800d6357497791e6a7c1ba8c72",
+  "additionalData": ""
+}
+Response
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "paymentStatus": "01",
+  "paymentMessage": "Invalid VA Number",
+  "flagType": "11",
+  "paymentReffId": "9C8KAH2NFS"
+}
+************************************************************
+
+9. Success Transaction
+
+Request Parameters
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "transactionNo": "630",
+  "transactionAmount": "10000",
+  "transactionDate": "2017-10-25 12:01:23",
+  "transactionStatus": "00",
+  "transactionMessage": "Approved",
+  "flagType": "11",
+  "insertId": "132",
+  "customerAccount": "8164010000000630",
+  "paymentReffId": "SANDBOX",
+  "additionalData": null,
+  "authCode": "9328530de8b7e2655c0b0f068c5785d667fcec800d6357497791e6a7c1ba8c72"
+}
+Response
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "paymentStatus": "00",
+  "paymentMessage": "Success",
+  "flagType": "11",
+  "paymentReffId": "SANDBOX"
+}
+************************************************************
+
+10.Double Payment
+
+Request Parameters
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "transactionNo": "630",
+  "transactionAmount": "10000",
+  "transactionDate": "2017-10-25 12:01:23",
+  "transactionStatus": "00",
+  "transactionMessage": "Approved",
+  "flagType": "11",
+  "insertId": "132",
+  "customerAccount": "8164010000000630",
+  "paymentReffId": "SANDBOX",
+  "additionalData": null,
+  "authCode": "9328530de8b7e2655c0b0f068c5785d667fcec800d6357497791e6a7c1ba8c72"
+}
+Response
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "paymentStatus": "02",
+  "paymentMessage": "Transaction has been paid",
+  "flagType": "11",
+  "paymentReffId": "SANDBOX"
+}
+************************************************************
+
+11.Cancel by admin			   (optional case)
+
+Request
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "transactionNo": "631",
+  "transactionAmount": "10000",
+  "transactionDate": "2017-10-25 13:40:23",
+  "transactionStatus": "00",
+  "transactionMessage": "Approved",
+  "flagType": "11",
+  "insertId": "133",
+  "paymentReffId": "110XN1",
+  "customerAccount": "8164010000000631",
+  "authCode": "4636413ae0ba16bdfb091eb581c8d3eec8b804c4211c7d0369a1fca52e746fbf",
+  "additionalData": ""
+}
+Response
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "paymentStatus": "05",
+  "paymentMessage": "Transaction has been canceled",
+  "flagType": "11",
+  "paymentReffId": "110XN1"
+}
+************************************************************
+
+12.Expired				       (optional case)
+
+Request
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "transactionNo": "631",
+  "transactionAmount": "10000",
+  "transactionDate": "2017-10-25 13:40:23",
+  "transactionStatus": "00",
+  "transactionMessage": "Approved",
+  "flagType": "11",
+  "insertId": "133",
+  "paymentReffId": "110XN1",
+  "customerAccount": "8164010000000631",
+  "authCode": "4636413ae0ba16bdfb091eb581c8d3eec8b804c4211c7d0369a1fca52e746fbf",
+  "additionalData": ""
+}
+Response
+{
+  "channelId": "TESSPRINT01",
+  "currency": "IDR",
+  "paymentStatus": "04",
+  "paymentMessage": "Transaction has been expired",
+  "flagType": "11",
+  "paymentReffId": "110XN1"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

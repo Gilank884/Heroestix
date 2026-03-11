@@ -1,238 +1,235 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
-serve(async (req) => {
-  // 1. Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+// Default secret key (shared across channels where bank_configs.secret_key is null)
+const DEFAULT_SECRET_KEY = "c438ca42baba01ffa2b9b5748ed897a4";
+
+// Supabase callback URL for Payment Flag (Non-SNAP)
+const CALLBACK_URL =
+  "https://qftuhnkzyegcxfozdfyz.functions.supabase.co/api/v1.0/payment-flag";
+
+// Channels that are Virtual Account based
+const VA_CHANNELS = "MANDIRI";
+
+// Channels that are E-Wallet / redirect based
+const EWALLET_CHANNELS = ["SHOPEEPAY", "DANA", "OVO", "LINKAJA", "QRIS"];
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const bayarindApiUrl = Deno.env.get('BAYARIND_PAYMENT_URL')
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
 
-    if (!supabaseUrl || !supabaseServiceRoleKey || !bayarindApiUrl) {
-      throw new Error('Missing environment variables')
-    }
+    const { order_id, amount, method, customer_name, customer_email, customer_phone } = await req.json();
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
-
-    // Step 1: Validate Request
-    const body = await req.json()
-    const { order_id, amount, method, customer_name, customer_email } = body
-
-    if (!order_id || !amount || amount <= 0 || !method) {
+    // Validate required fields
+    if (!order_id || !amount || !method) {
       return new Response(
-        JSON.stringify({ error: 'Invalid request body' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+        JSON.stringify({ success: false, error: "Missing required fields: order_id, amount, method" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
     }
 
-    // Step 2: Fetch Payment Channel Config
-    const { data: bankConfig, error: configError } = await supabase
-      .from('bank_configs')
-      .select('*')
-      .eq('bank_code', method)
-      .single()
+    // Step 1: Fetch bank config
+    const { data: bankConfig, error: configError } = await supabaseClient
+      .from("bank_configs")
+      .select("*")
+      .eq("bank_code", method)
+      .single();
 
     if (configError || !bankConfig) {
-      console.error(`Config error for ${method}:`, configError)
       return new Response(
-        JSON.stringify({ error: `Configuration not found for method: ${method}` }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-      )
+        JSON.stringify({ error: "Payment method not configured" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
+      );
     }
 
-    const { partner_id, channel_id, secret_key, bank_id } = bankConfig
+    const { partner_id, channel_id, secret_key, bank_id } = bankConfig;
+    const finalSecretKey = secret_key || DEFAULT_SECRET_KEY;
 
-    // Step 3: Generate Short External ID (Max 18 chars, no strips)
-    const external_id = crypto.randomUUID().replace(/-/g, '').substring(0, 18).toUpperCase()
+    // Step 2: Generate unique external_id (Max 18 chars, no hyphens)
+    const external_id = method === VA_CHANNELS
+      ? `${Date.now()}${Math.floor(Math.random() * 1000)}`.substring(0, 18)
+      : `HRX${crypto.randomUUID().substring(0, 15).toUpperCase().replace(/-/g, "")}`.substring(0, 18);
 
-    // Step 4: Insert Pending Transaction and get numeric_id
-    const { data: transaction, error: insertError } = await supabase
-      .from('transactions')
+    // Step 3: Insert transaction into DB (Pending)
+    const { data: transaction, error: txError } = await supabaseClient
+      .from("transactions")
       .insert({
         order_id,
-        external_id,
         amount,
         method,
-        payment_channel: method,
-        status: 'pending'
+        status: "pending",
+        external_id,
+        payment_channel: method
       })
       .select()
-      .single()
+      .single();
 
-    if (insertError) {
-      console.error('Insert transaction error:', insertError)
-      throw new Error('Failed to insert initial transaction record')
+    if (txError) throw txError;
+
+    // Step 4: Generate customerAccount
+    let customerAccount = "";
+    if (method === VA_CHANNELS && bank_id) {
+      customerAccount = `${bank_id}${transaction.numeric_id.toString().padStart(11, "0")}`;
+    } else if (EWALLET_CHANNELS.includes(method)) {
+      customerAccount = customer_phone || customer_email || "";
     }
 
-    // Step 5: Format Date (YYYY-MM-DD HH:mm:ss)
-    const now = new Date()
-    const timestamp = now.toISOString().replace("T", " ").substring(0, 19)
-
-    // Expire 24 jam
-    const transactionExpire = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-      .toISOString()
+    // Step 5: Format Dates (UTC, same as working v40)
+    const transactionDate = new Date().toISOString()
       .replace("T", " ")
-      .substring(0, 19)
+      .substring(0, 19);
 
-    // Step 6: Generate authCode (SHA256: merchantId + transactionNo + transactionAmount + secret_key)
-    const authCodePayload = `${partner_id}${external_id}${amount}${secret_key || ""}`
-    const msgUint8 = new TextEncoder().encode(authCodePayload)
-    const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    const authCode = hashArray.map(b => b.toString(16).padStart(2, "0")).join("")
+    const transactionExpire = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      .replace("T", " ")
+      .substring(0, 19);
 
-    // Step 7: Call Bayarind API (Non-SNAP, Strict field names)
-    // Correct mapping based on user feedback:
-    // channelId should be the string ID (e.g. HEROEMVA01BYRF7756F)
-    // serviceCode should be the numeric ID (e.g. 1032)
-    // Looking at bank_configs:
-    // For VA: partner_id is string, channel_id is number.
-    // For E-Wallet: partner_id is number, channel_id is string.
-    
-    // Simplified mapping as requested:
-    // channelId taken from partner_id
-    // serviceCode taken from channel_id
-    const finalChannelId = partner_id || ""
-    const finalServiceCode = channel_id || ""
+    // Step 6: Generate authCode
+    // Formula: SHA256(transactionNo + transactionAmount + channelId + SecretKey)
+    const authCodePayload = `${external_id}${amount}${partner_id}${finalSecretKey}`;
+    const msgUint8 = new TextEncoder().encode(authCodePayload);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const authCode = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-    const bayarindPayload = {
+    console.log("GENERATED AUTHCODE:", authCode);
+
+    // Step 7: Prepare Bayarind Payload (exact field order from working v40)
+    const bayarindPayload: Record<string, unknown> = {
       merchantId: partner_id,
-      merchantKey: secret_key || "",
+      merchantKey: "",
       authCode: authCode,
-      channelId: finalChannelId,
-      serviceCode: finalServiceCode,
+      channelId: partner_id,
+      serviceCode: channel_id,
       transactionNo: external_id,
       transactionAmount: amount.toString(),
       transactionFee: "0",
-      transactionDate: timestamp,
+      transactionDate: transactionDate,
       transactionExpire: transactionExpire,
       currency: "IDR",
-      customerName: customer_name,
-      customerEmail: customer_email,
-      // For VA channels, customerAccount is the VA number (16 digits).
-      // Format: bank_id + numeric_id (zero padded to reach total 16 digits).
-      customerAccount: (() => {
-        const isVANumeric = /^\d+$/.test(finalServiceCode.toString().trim())
-        if (isVANumeric && transaction?.numeric_id) {
-          const prefix = bankConfig.bank_id.toString().trim()
-          const suffix = transaction.numeric_id.toString().padStart(16 - prefix.length, "0")
-          return prefix + suffix
-        }
-        return customer_email
-      })(),
+      customerName: customer_name || "Customer",
+      customerEmail: customer_email || "customer@email.com",
+      customerAccount: customerAccount,
       description: `Payment for Order ${order_id}`,
-      callbackURL: `${supabaseUrl}/functions/v1/api`
+      callbackURL: CALLBACK_URL
+    };
+
+    // Add customerPhone for e-wallet channels
+    if (EWALLET_CHANNELS.includes(method) && customer_phone) {
+      bayarindPayload.customerPhone = customer_phone;
     }
 
-    console.log("PAYLOAD:", JSON.stringify(bayarindPayload, null, 2))
-    console.log("CHANNEL:", channel_id)
-    console.log("MERCHANT:", partner_id)
-    console.log("EXTERNAL:", external_id)
-    console.log("EXPIRE:", transactionExpire)
+    // ShopeePay/DANA description max 50 chars
+    if (method === "SHOPEEPAY" || method === "DANA") {
+      bayarindPayload.description = `Order ${order_id}`.substring(0, 50);
+    }
 
-    const bayarindResponse = await fetch(`${bayarindApiUrl}/PaymentRegister`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+    console.log("PAYLOAD:", JSON.stringify(bayarindPayload, null, 2));
+
+    // Step 8: Call Bayarind API (hardcoded — BAYARIND_PAYMENT_URL env var may be wrong)
+    const BAYARIND_PAYMENT_URL = "https://paytest.bayarind.id/PaymentRegister";
+    console.log("BAYARIND URL:", BAYARIND_PAYMENT_URL);
+    const bayarindResponse = await fetch(BAYARIND_PAYMENT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(bayarindPayload)
-    })
+    });
 
-    const bayarindText = await bayarindResponse.text()
-    let bayarindData
+    const bayarindText = await bayarindResponse.text();
+    let bayarindData: Record<string, unknown>;
     try {
-      bayarindData = JSON.parse(bayarindText)
+      bayarindData = JSON.parse(bayarindText);
     } catch {
-      bayarindData = { raw: bayarindText }
+      console.error("Failed to parse Bayarind response:", bayarindText.substring(0, 500));
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Payment gateway error",
+          message: "Gateway returned non-JSON response",
+          provider_response: { raw: bayarindText.substring(0, 500) }
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Step 8 & 9: Handle Response & Update Record
-    if (!bayarindResponse.ok || bayarindData.insertStatus !== "00") {
-      console.error('Bayarind API Error:', bayarindData)
+    // Step 9: Handle Response
+    if (bayarindData.insertStatus === "00") {
+      const vaNumber = (bayarindData.virtualAccountNo as string) || customerAccount;
+      const expiry = (bayarindData.expiredDate as string) || transactionExpire;
 
-      await supabase
-        .from('transactions')
+      // Update transaction with successful data
+      await supabaseClient
+        .from("transactions")
         .update({
-          status: 'failed',
-          provider_raw_response: bayarindData
+          insert_id: bayarindData.insertId,
+          va_number: vaNumber,
+          expiry_date: expiry,
+          provider_raw_response: bayarindData,
+          provider_response_code: bayarindData.insertStatus
         })
-        .eq('external_id', external_id)
+        .eq("external_id", external_id);
+
+      const result: Record<string, unknown> = {
+        success: true,
+        external_id,
+        method,
+        va_number: vaNumber,
+        expiry_date: expiry,
+      };
+
+      // E-wallet response fields
+      if (bayarindData.redirectURL) result.redirect_url = bayarindData.redirectURL;
+      if (bayarindData.redirectData) result.redirect_data = bayarindData.redirectData;
+      if (bayarindData.deeplink) result.deeplink = bayarindData.deeplink;
+      if (bayarindData.urlQris) result.url_qris = bayarindData.urlQris;
+      if (bayarindData.qrisText) result.qris_text = bayarindData.qrisText;
+      if (bayarindData.paymentCode) result.payment_code = bayarindData.paymentCode;
+      if (bayarindData.appPaymentUrl) result.app_payment_url = bayarindData.appPaymentUrl;
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200
+      });
+    } else {
+      // Handle failure
+      await supabaseClient
+        .from("transactions")
+        .update({
+          provider_raw_response: bayarindData,
+          provider_response_code: (bayarindData.insertStatus as string) || "ERROR",
+          status: "failed",
+          trx_message: (bayarindData.insertMessage as string) || "Gateway error"
+        })
+        .eq("external_id", external_id);
 
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Payment gateway error',
-          message: bayarindData.insertMessage || 'Unexpected response from gateway',
+          error: "Payment gateway error",
+          message: bayarindData.insertMessage || "Gateway rejected request",
           provider_response: bayarindData
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: bayarindResponse.ok ? 400 : 500 }
-      )
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const {
-      virtualAccountNo,
-      expiredDate,
-      paymentUrl,
-      qrString,
-      transactionID,
-      insertId,
-      redirectURL,
-      redirectData
-    } = bayarindData
-
-    const payment_provider_data: any = {}
-    if (paymentUrl) payment_provider_data.paymentUrl = paymentUrl
-    if (qrString) payment_provider_data.qrString = qrString
-    if (redirectURL) payment_provider_data.redirectURL = redirectURL
-    if (redirectData) payment_provider_data.redirectData = redirectData
-
-    const updateData = {
-      va_number: virtualAccountNo || null,
-      expiry_date: expiredDate || null,
-      insert_id: insertId || transactionID || null,
-      payment_provider_data: Object.keys(payment_provider_data).length > 0 ? payment_provider_data : null,
-      provider_raw_response: bayarindData
-    }
-
-    const { error: updateError } = await supabase
-      .from('transactions')
-      .update(updateData)
-      .eq('external_id', external_id)
-
-    if (updateError) {
-      console.error('Update transaction error:', updateError)
-    }
-
-    // Step 10: Return API Response
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Unexpected error:", message);
     return new Response(
-      JSON.stringify({
-        success: true,
-        external_id,
-        method,
-        va_number: virtualAccountNo || null,
-        expiry_date: expiredDate || null,
-        payment_url: paymentUrl || redirectURL || null,
-        redirect_url: redirectURL || null,
-        redirect_data: redirectData || null,
-        qr_string: qrString || null
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-    )
-
-  } catch (err: any) {
-    console.error('Unexpected Error:', err)
-    return new Response(
-      JSON.stringify({ error: err.message || 'Internal Server Error' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+      JSON.stringify({ success: false, error: "Internal server error", message }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+    );
   }
-})
+});
