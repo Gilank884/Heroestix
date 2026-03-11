@@ -270,11 +270,15 @@ export default function Checkout() {
 
             if (ticketError) throw ticketError;
 
-            const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke('create-va', {
+            // Switch to insert-transaction (Non-SNAP flow) for all supported methods
+            const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke('insert-transaction', {
                 body: {
-                    bank_code: selectedBank,
+                    method: selectedBank,
                     order_id: order.id,
-                    amount: finalCalculatedTotal
+                    amount: finalCalculatedTotal,
+                    customer_name: ticketHolders[0].full_name,
+                    customer_email: ticketHolders[0].email,
+                    customer_phone: ticketHolders[0].phone
                 }
             });
 
@@ -287,21 +291,23 @@ export default function Checkout() {
                 throw gatewayError;
             }
 
-            if (gatewayData?.success && gatewayData?.virtualAccountNo) {
+            if (gatewayData?.success) {
                 navigate(`/payment/${gatewayData.transaction_id || order.id}`, {
                     state: {
                         total: finalCalculatedTotal,
-                        selectedPayment: "bayarind_va",
+                        selectedPayment: "bayarind",
                         orderId: order.id,
                         eventTitle: eventData?.title || event.title,
                         visitorEmail: ticketHolders[0].email,
-                        virtualAccountNo: gatewayData.virtualAccountNo,
+                        virtualAccountNo: gatewayData.va_number || gatewayData.url_qris || gatewayData.payment_code,
                         bankName: selectedBank,
-                        expiredDate: gatewayData.expiredDate || (new Date(Date.now() + 24 * 60 * 60 * 1000)).toISOString()
+                        expiredDate: gatewayData.expiry_date,
+                        redirectUrl: gatewayData.redirect_url,
+                        urlQris: gatewayData.url_qris
                     }
                 });
             } else {
-                throw new Error(gatewayData?.error || "Gagal mendapatkan nomor Virtual Account");
+                throw new Error(gatewayData?.error || "Gagal mendapatkan data pembayaran");
             }
 
         } catch (error) {

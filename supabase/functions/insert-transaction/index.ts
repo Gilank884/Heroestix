@@ -12,10 +12,10 @@ const DEFAULT_SECRET_KEY = "c438ca42baba01ffa2b9b5748ed897a4";
 
 // Supabase callback URL for Payment Flag (Non-SNAP)
 const CALLBACK_URL =
-  "https://qftuhnkzyegcxfozdfyz.functions.supabase.co/api/v1.0/payment-flag";
+  "https://qftuhnkzyegcxfozdfyz.functions.supabase.co/payment-flag";
 
 // Channels that are Virtual Account based
-const VA_CHANNELS = "MANDIRI";
+const VA_CHANNELS = ["MANDIRI", "BNI", "BRI"];
 
 // Channels that are E-Wallet / redirect based
 const EWALLET_CHANNELS = ["SHOPEEPAY", "DANA", "OVO", "LINKAJA", "QRIS"];
@@ -59,7 +59,7 @@ serve(async (req: Request) => {
     const finalSecretKey = secret_key || DEFAULT_SECRET_KEY;
 
     // Step 2: Generate unique external_id (Max 18 chars, no hyphens)
-    const external_id = method === VA_CHANNELS
+    const external_id = VA_CHANNELS.includes(method)
       ? `${Date.now()}${Math.floor(Math.random() * 1000)}`.substring(0, 18)
       : `HRX${crypto.randomUUID().substring(0, 15).toUpperCase().replace(/-/g, "")}`.substring(0, 18);
 
@@ -81,7 +81,7 @@ serve(async (req: Request) => {
 
     // Step 4: Generate customerAccount
     let customerAccount = "";
-    if (method === VA_CHANNELS && bank_id) {
+    if (VA_CHANNELS.includes(method) && bank_id) {
       customerAccount = `${bank_id}${transaction.numeric_id.toString().padStart(11, "0")}`;
     } else if (EWALLET_CHANNELS.includes(method)) {
       customerAccount = customer_phone || customer_email || "";
@@ -184,6 +184,7 @@ serve(async (req: Request) => {
       const result: Record<string, unknown> = {
         success: true,
         external_id,
+        insert_id: bayarindData.insertId,
         method,
         va_number: vaNumber,
         expiry_date: expiry,

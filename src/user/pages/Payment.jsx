@@ -97,7 +97,7 @@ export default function Payment() {
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const { total, selectedPayment, orderId, eventTitle, visitorEmail, virtualAccountNo, bankName, expiredDate } = location.state || { total: 0, selectedPayment: "bayarind", orderId: null, eventTitle: "", visitorEmail: "", virtualAccountNo: "", bankName: "BAYARIND", expiredDate: "" };
+    const { total, selectedPayment, orderId, eventTitle, visitorEmail, virtualAccountNo, bankName, expiredDate, redirectUrl, urlQris } = location.state || { total: 0, selectedPayment: "bayarind", orderId: null, eventTitle: "", visitorEmail: "", virtualAccountNo: "", bankName: "BAYARIND", expiredDate: "" };
 
     const [timeLeft, setTimeLeft] = useState(24 * 60 * 60); // Default 24h
     const [activeTab, setActiveTab] = useState("MBanking");
@@ -291,9 +291,9 @@ export default function Payment() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="space-y-1">
+                                    <div className="space-y-4">
                                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                                            {selectedPayment?.includes('va') || ['BNI', 'BRI'].includes(bankName) ? `Nomor Akun Virtual (${bankName})` : `ID Pembayaran (${bankName})`}
+                                            {selectedPayment?.includes('va') || ['BNI', 'BRI', 'MANDIRI'].includes(bankName) ? `Nomor Akun Virtual (${bankName})` : `ID Pembayaran (${bankName})`}
                                         </p>
                                         <div className="flex items-center gap-3">
                                             <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{virtualAccountNo}</p>
@@ -304,6 +304,18 @@ export default function Payment() {
                                                 <HiOutlineDuplicate size={22} />
                                             </button>
                                         </div>
+                                        {redirectUrl && (
+                                            <div className="pt-2">
+                                                <a
+                                                    href={redirectUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95"
+                                                >
+                                                    🚀 Bayar dengan Aplikasi {bankName}
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
