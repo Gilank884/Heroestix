@@ -51,11 +51,11 @@ serve(async (req) => {
 
     const { partner_id, channel_id, secret_key, bank_id } = bankConfig
 
-    // Step 3: Generate External ID
-    const external_id = `HRX-${crypto.randomUUID()}`
+    // Step 3: Generate Short External ID (Max 18 chars, no strips)
+    const external_id = crypto.randomUUID().replace(/-/g, '').substring(0, 18).toUpperCase()
 
-    // Step 4: Insert Pending Transaction
-    const { error: insertError } = await supabase
+    // Step 4: Insert Pending Transaction and get numeric_id
+    const { data: transaction, error: insertError } = await supabase
       .from('transactions')
       .insert({
         order_id,
@@ -65,66 +65,84 @@ serve(async (req) => {
         payment_channel: method,
         status: 'pending'
       })
+      .select()
+      .single()
 
     if (insertError) {
       console.error('Insert transaction error:', insertError)
       throw new Error('Failed to insert initial transaction record')
     }
 
-    // Step 5: Generate Timestamp (ISO with +07:00)
+    // Step 5: Format Date (YYYY-MM-DD HH:mm:ss)
     const now = new Date()
-    const timestamp = now.toISOString().replace("Z", "+07:00")
+    const timestamp = now.toISOString().replace("T", " ").substring(0, 19)
 
     // Expire 24 jam
-    const expire = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-    const transactionExpire = expire.toISOString().replace("Z", "+07:00")
+    const transactionExpire = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+      .toISOString()
+      .replace("T", " ")
+      .substring(0, 19)
 
-    // Step 6: Generate Signature (HMAC SHA256)
-    // Signature string: channel_id + external_id + timestamp
-    const signaturePayload = `${channel_id}${external_id}${timestamp}`
+    // Step 6: Generate authCode (SHA256: merchantId + transactionNo + transactionAmount + secret_key)
+    const authCodePayload = `${partner_id}${external_id}${amount}${secret_key || ""}`
+    const msgUint8 = new TextEncoder().encode(authCodePayload)
+    const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const authCode = hashArray.map(b => b.toString(16).padStart(2, "0")).join("")
 
-    // Crypto logic for HMAC SHA256 in Deno
-    const keyBuf = new TextEncoder().encode(secret_key);
-    const dataBuf = new TextEncoder().encode(signaturePayload);
-    const key = await crypto.subtle.importKey(
-      "raw",
-      keyBuf,
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"]
-    );
-    const signatureBuf = await crypto.subtle.sign("HMAC", key, dataBuf);
-    const signature = Array.from(new Uint8Array(signatureBuf))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+    // Step 7: Call Bayarind API (Non-SNAP, Strict field names)
+    // Correct mapping based on user feedback:
+    // channelId should be the string ID (e.g. HEROEMVA01BYRF7756F)
+    // serviceCode should be the numeric ID (e.g. 1032)
+    // Looking at bank_configs:
+    // For VA: partner_id is string, channel_id is number.
+    // For E-Wallet: partner_id is number, channel_id is string.
+    
+    // Simplified mapping as requested:
+    // channelId taken from partner_id
+    // serviceCode taken from channel_id
+    const finalChannelId = partner_id || ""
+    const finalServiceCode = channel_id || ""
 
-    // Step 7: Call Bayarind API
     const bayarindPayload = {
-      partnerServiceId: partner_id,
-      externalId: external_id,
-      channelId: channel_id,
+      merchantId: partner_id,
+      merchantKey: secret_key || "",
+      authCode: authCode,
+      channelId: finalChannelId,
+      serviceCode: finalServiceCode,
+      transactionNo: external_id,
+      transactionAmount: amount.toString(),
+      transactionFee: "0",
+      transactionDate: timestamp,
       transactionExpire: transactionExpire,
       currency: "IDR",
-      amount: {
-        value: Number(amount).toFixed(2),
-        currency: 'IDR'
-      },
       customerName: customer_name,
-      customerEmail: customer_email
+      customerEmail: customer_email,
+      // For VA channels, customerAccount is the VA number (16 digits).
+      // Format: bank_id + numeric_id (zero padded to reach total 16 digits).
+      customerAccount: (() => {
+        const isVANumeric = /^\d+$/.test(finalServiceCode.toString().trim())
+        if (isVANumeric && transaction?.numeric_id) {
+          const prefix = bankConfig.bank_id.toString().trim()
+          const suffix = transaction.numeric_id.toString().padStart(16 - prefix.length, "0")
+          return prefix + suffix
+        }
+        return customer_email
+      })(),
+      description: `Payment for Order ${order_id}`,
+      callbackURL: `${supabaseUrl}/functions/v1/api`
     }
 
     console.log("PAYLOAD:", JSON.stringify(bayarindPayload, null, 2))
-    console.log("TIMESTAMP:", timestamp)
+    console.log("CHANNEL:", channel_id)
+    console.log("MERCHANT:", partner_id)
+    console.log("EXTERNAL:", external_id)
     console.log("EXPIRE:", transactionExpire)
 
     const bayarindResponse = await fetch(`${bayarindApiUrl}/PaymentRegister`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'X-PARTNER-ID': partner_id,
-        'X-CHANNEL-ID': channel_id,
-        'X-TIMESTAMP': timestamp,
-        'X-SIGNATURE': signature
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(bayarindPayload)
     })
@@ -138,7 +156,7 @@ serve(async (req) => {
     }
 
     // Step 8 & 9: Handle Response & Update Record
-    if (!bayarindResponse.ok) {
+    if (!bayarindResponse.ok || bayarindData.insertStatus !== "00") {
       console.error('Bayarind API Error:', bayarindData)
 
       await supabase
@@ -153,9 +171,10 @@ serve(async (req) => {
         JSON.stringify({
           success: false,
           error: 'Payment gateway error',
+          message: bayarindData.insertMessage || 'Unexpected response from gateway',
           provider_response: bayarindData
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: bayarindResponse.ok ? 400 : 500 }
       )
     }
 
@@ -164,17 +183,22 @@ serve(async (req) => {
       expiredDate,
       paymentUrl,
       qrString,
-      transactionID
+      transactionID,
+      insertId,
+      redirectURL,
+      redirectData
     } = bayarindData
 
     const payment_provider_data: any = {}
     if (paymentUrl) payment_provider_data.paymentUrl = paymentUrl
     if (qrString) payment_provider_data.qrString = qrString
+    if (redirectURL) payment_provider_data.redirectURL = redirectURL
+    if (redirectData) payment_provider_data.redirectData = redirectData
 
     const updateData = {
       va_number: virtualAccountNo || null,
       expiry_date: expiredDate || null,
-      insert_id: transactionID || null,
+      insert_id: insertId || transactionID || null,
       payment_provider_data: Object.keys(payment_provider_data).length > 0 ? payment_provider_data : null,
       provider_raw_response: bayarindData
     }
@@ -196,7 +220,9 @@ serve(async (req) => {
         method,
         va_number: virtualAccountNo || null,
         expiry_date: expiredDate || null,
-        payment_url: paymentUrl || null,
+        payment_url: paymentUrl || redirectURL || null,
+        redirect_url: redirectURL || null,
+        redirect_data: redirectData || null,
         qr_string: qrString || null
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }

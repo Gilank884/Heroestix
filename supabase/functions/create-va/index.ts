@@ -202,7 +202,7 @@ serve(async (req: Request) => {
                     amount: amount,
                     method: `va_${bank_code.toLowerCase()}`,
                     status: 'pending',
-                    external_id: externalIdHeader || crypto.randomUUID()
+                    external_id: externalIdHeader || crypto.randomUUID().replace(/-/g, '').substring(0, 18).toUpperCase()
                 }
             ])
             .select()
@@ -238,7 +238,7 @@ serve(async (req: Request) => {
 
         const virtualAccountNo = `${partnerServiceId}${customerNo}`;
         const timestamp = getTimestampWithOffset();
-        const externalId = String(transaction.numeric_id).replace(/[^0-9]/g, '').substring(0, 18);
+        const externalId = transaction.external_id;
 
         // 5. Build SNAP Create VA Payload
         const snapBody = {
@@ -246,7 +246,7 @@ serve(async (req: Request) => {
             customerNo: customerNo,
             virtualAccountNo: virtualAccountNo,
             virtualAccountName: ("Customer VA #" + customerNo.slice(-4)).substring(0, 20),
-            trxId: String(transaction.numeric_id).replace(/[^0-9]/g, '').substring(0, 18),
+            trxId: transaction.external_id,
             totalAmount: {
                 value: parseFloat(amount).toFixed(2),
                 currency: "IDR"
