@@ -94,54 +94,39 @@ serve(async (req: Request) => {
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
 
-        // 1. Invalid Currency
-        if (currency && currency !== "IDR") {
-            return buildResponse("01", "Invalid Currency");
-        }
-
-        // 2. Invalid channelId
+        // 1. Invalid channelId
         const { data: bankConfig } = await supabase
             .from("bank_configs")
             .select("*")
-            .eq("partner_id", channelId)
+            .eq("partner_id", String(channelId || ""))
             .maybeSingle();
 
         if (!bankConfig) {
             return buildResponse("01", "Invalid channelId");
         }
 
-        // 3. Invalid transactionNo
+        // 2. Invalid transactionNo
         const { data: transaction, error: txError } = await supabase
             .from("transactions")
             .select("*")
-            .eq("external_id", String(transactionNo))
+            .eq("external_id", String(transactionNo || ""))
             .maybeSingle();
 
         if (txError || !transaction) {
             return buildResponse("01", "Invalid transactionNo");
         }
 
-        // 4. Invalid Transaction Amount
+        // 3. Invalid Transaction Amount
         if (parseFloat(String(transactionAmount)) !== transaction.amount) {
             return buildResponse("01", "Invalid Transaction Amount");
         }
 
-        // 5. Invalid insertId
+        // 4. Invalid insertId
         if (transaction.insert_id && String(insertId) !== String(transaction.insert_id)) {
             return buildResponse("01", "Invalid insertId");
         }
 
-        // 6. Invalid Transaction Status
-        if (transactionStatus !== "00") {
-            return buildResponse("01", "Invalid Transaction Status");
-        }
-
-        // 7. Invalid VA Number (customerAccount matching va_number)
-        if (transaction.va_number && String(customerAccount) !== String(transaction.va_number)) {
-            return buildResponse("01", "Invalid VA Number");
-        }
-
-        // 8. Invalid authCode
+        // 5. Invalid AuthCode
         const secretKey = bankConfig.secret_key || "c438ca42baba01ffa2b9b5748ed897a4";
         const authPayload = `${transactionNo}${transactionAmount}${channelId}${transactionStatus}${insertId}${secretKey}`;
         const calculatedAuthCode = await sha256Hex(authPayload);
@@ -151,15 +136,34 @@ serve(async (req: Request) => {
             return buildResponse("01", "Invalid AuthCode");
         }
 
-        // 9. Status Checks (Cancelled, Expired, Already Paid)
+        // 6. Invalid Currency
+        if (!currency || currency !== "IDR") {
+            return buildResponse("01", "Invalid Currency");
+        }
+
+        // 7. Invalid Transaction Status
+        if (transactionStatus !== "00") {
+            return buildResponse("01", "Invalid Transaction Status");
+        }
+
+        // 8. Invalid VA Number (customerAccount matching va_number)
+        if (transaction.va_number && String(customerAccount) !== String(transaction.va_number)) {
+            return buildResponse("01", "Invalid VA Number");
+        }
+
+        // 9. Double Payment (Transaction already success)
+        if (transaction.status === "success" || transaction.status === "paid") {
+            return buildResponse("02", "Transaction has been paid");
+        }
+
+        // 10. Cancel by admin (Optional case)
         if (transaction.status === "cancelled" || transaction.status === "canceled") {
             return buildResponse("05", "Transaction has been canceled");
         }
+
+        // 11. Expired (Optional case)
         if (transaction.status === "expired") {
             return buildResponse("04", "Transaction has been expired");
-        }
-        if (transaction.status === "success" || transaction.status === "paid") {
-            return buildResponse("02", "Transaction has been paid");
         }
 
         // 10. Success Transaction Logic

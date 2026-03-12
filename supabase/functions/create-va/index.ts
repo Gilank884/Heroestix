@@ -384,12 +384,14 @@ serve(async (req: Request) => {
             // Extract insertId (if available) from Bayarind response
             const insertId = result?.virtualAccountData?.additionalInfo?.insertId ?? result?.virtualAccountData?.insertId ?? null;
 
+            const expiry_date = getTimestampWithOffset(new Date(Date.now() + 24 * 60 * 60 * 1000));
+
             // Success
             const { error: updateError } = await supabase
                 .from('transactions')
                 .update({
                     va_number: virtualAccountNo.trim(),
-                    expiry_date: getTimestampWithOffset(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+                    expiry_date: expiry_date,
                     insert_id: insertId, // Explicitly placing it in root as requested
                     payment_provider_data: {
                         ...bankConfig,
@@ -410,10 +412,12 @@ serve(async (req: Request) => {
                     success: true,
                     bank_code,
                     virtualAccountNo: virtualAccountNo.trim(),
+                    va_number: virtualAccountNo.trim(), // Alias for consistency
                     amount,
                     order_id,
                     transaction_id: transaction.id,
-                    insertId: insertId // Expose to client if needed
+                    insertId: insertId, // Expose to client if needed
+                    expiry_date: expiry_date
                 }),
                 { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );

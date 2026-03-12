@@ -270,16 +270,28 @@ export default function Checkout() {
 
             if (ticketError) throw ticketError;
 
-            // Switch to insert-transaction (Non-SNAP flow) for all supported methods
-            const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke('insert-transaction', {
-                body: {
-                    method: selectedBank,
-                    order_id: order.id,
-                    amount: finalCalculatedTotal,
-                    customer_name: ticketHolders[0].full_name,
-                    customer_email: ticketHolders[0].email,
-                    customer_phone: ticketHolders[0].phone
-                }
+            // Route based on user requirement: BNI & BRI use create-va (SNAP), others use insert-transaction (Non-SNAP)
+            const snapBanks = ["BNI", "BRI"];
+            const isSnap = snapBanks.includes(selectedBank);
+            const functionName = isSnap ? 'create-va' : 'insert-transaction';
+
+            const payload = isSnap ? {
+                bank_code: selectedBank,
+                order_id: order.id,
+                amount: finalCalculatedTotal
+            } : {
+                method: selectedBank,
+                order_id: order.id,
+                amount: finalCalculatedTotal,
+                customer_name: ticketHolders[0].full_name,
+                customer_email: ticketHolders[0].email,
+                customer_phone: ticketHolders[0].phone
+            };
+
+            console.log(`[Checkout] Initiating ${isSnap ? 'SNAP' : 'Non-SNAP'} payment via ${functionName}...`);
+
+            const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke(functionName, {
+                body: payload
             });
 
             if (gatewayError) {
@@ -295,13 +307,13 @@ export default function Checkout() {
                 navigate(`/payment/${gatewayData.transaction_id || order.id}`, {
                     state: {
                         total: finalCalculatedTotal,
-                        selectedPayment: "bayarind",
+                        selectedPayment: isSnap ? "snap" : "bayarind",
                         orderId: order.id,
                         eventTitle: eventData?.title || event.title,
                         visitorEmail: ticketHolders[0].email,
-                        virtualAccountNo: gatewayData.va_number || gatewayData.url_qris || gatewayData.payment_code,
+                        virtualAccountNo: gatewayData.va_number || gatewayData.url_qris || gatewayData.payment_code || gatewayData.virtualAccountNo,
                         bankName: selectedBank,
-                        expiredDate: gatewayData.expiry_date,
+                        expiredDate: gatewayData.expiry_date || gatewayData.expiredDate,
                         redirectUrl: gatewayData.redirect_url,
                         urlQris: gatewayData.url_qris
                     }

@@ -204,51 +204,35 @@ serve(async (req: Request) => {
       );
     }
 
-    if (!singleTx.method || !singleTx.method.startsWith('va_')) {
-      return new Response(
-        JSON.stringify({ error: "Transaction is not a Virtual Account method." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // 3. Graceful Fallback for Non-SNAP or Unconfigured Banks
+    const isSnapMethod = singleTx.method?.startsWith('va_');
+    const bank_code = isSnapMethod ? singleTx.method?.split('_')[1]?.toUpperCase() : null;
+
+    let bankConfig = null;
+    if (bank_code) {
+      const { data } = await supabase
+        .from('bank_configs')
+        .select('*')
+        .eq('bank_code', bank_code)
+        .maybeSingle();
+      bankConfig = data;
     }
 
-    const bank_code = singleTx.method?.split('_')[1]?.toUpperCase();
-
-    // Removed: Early return for paid bills to ensure full SNAP response is returned
-    // instead of simplified {virtualAccountData: {}}
-
-    // Idempotency: If the client retries with the exact same request ID, return the cached DB state
-    if (reqInquiryId && singleTx.last_inquiry_request_id === reqInquiryId) {
+    // If it's not a SNAP method or bank config is missing, return local status
+    if (!isSnapMethod || !bankConfig || !bankConfig.channel_id || !bankConfig.partner_id) {
+      console.log(`[Inquiry] SNAP logic skipped. Reason: ${!isSnapMethod ? 'Not a VA method' : 'Missing bank config'}. Returning local status.`);
       return new Response(
         JSON.stringify({
-          success: singleTx.status === "success",
-          message: "Idempotency catch. Returning cached status.",
-          db_updated: false,
-          bayarind_response: singleTx.provider_raw_response
+          success: singleTx.status === "success" || singleTx.status === "paid",
+          message: "Status updated from local record (Inquiry skipped).",
+          responseCode: (singleTx.status === "success" || singleTx.status === "paid") ? "2002600" : "4042514",
+          responseMessage: (singleTx.status === "success" || singleTx.status === "paid") ? "Success" : "Pending",
+          virtualAccountData: {
+            virtualAccountNo: singleTx.va_number || "",
+            totalAmount: { value: parseFloat(singleTx.amount).toFixed(2), currency: "IDR" }
+          }
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-
-
-    // 3. Fetch Bank Config Details
-    const { data: bankConfig, error: configError } = await supabase
-      .from('bank_configs')
-      .select('*')
-      .eq('bank_code', bank_code)
-      .single();
-
-    if (configError || !bankConfig) {
-      return new Response(
-        JSON.stringify({ error: `Bank config not found for ${bank_code}.` }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!bankConfig.channel_id || !bankConfig.partner_id) {
-      return new Response(
-        JSON.stringify({ error: `Missing CHANNEL-ID or PARTNER-ID in config for ${bank_code}.` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
