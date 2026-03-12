@@ -72,7 +72,10 @@ serve(async (req: Request) => {
         method,
         status: "pending",
         external_id,
-        payment_channel: method
+        payment_channel: method,
+        customer_name: customer_name || null,
+        customer_email: customer_email || null,
+        customer_phone: customer_phone || null
       })
       .select()
       .single();
@@ -173,11 +176,12 @@ serve(async (req: Request) => {
       await supabaseClient
         .from("transactions")
         .update({
-          insert_id: bayarindData.insertId,
+          insert_id: String(bayarindData.insertId || ""),
           va_number: vaNumber,
           expiry_date: expiry,
           provider_raw_response: bayarindData,
-          provider_response_code: bayarindData.insertStatus
+          provider_response_code: String(bayarindData.insertStatus || "00"),
+          trx_message: String(bayarindData.insertMessage || "Success")
         })
         .eq("external_id", external_id);
 
