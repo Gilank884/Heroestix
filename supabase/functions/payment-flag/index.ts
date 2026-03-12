@@ -26,10 +26,34 @@ serve(async (req: Request) => {
         console.log("[Payment Flag] Raw Body:", rawBody);
 
         let body: any;
+        const contentType = req.headers.get("content-type") || "";
+        console.log("[Payment Flag] Content-Type:", contentType);
+
         try {
-            body = JSON.parse(rawBody);
-        } catch {
-            return new Response(JSON.stringify({ paymentStatus: "01", paymentMessage: "Invalid JSON" }), {
+            if (contentType.includes("application/json")) {
+                body = JSON.parse(rawBody);
+            } else if (contentType.includes("application/x-www-form-urlencoded")) {
+                const params = new URLSearchParams(rawBody);
+                body = Object.fromEntries(params.entries());
+            } else {
+                // Try parsing as custom semicolon-separated or fallback to JSON
+                // Example: channelId:"HERO"; currency:"IDR";
+                const customMatch = rawBody.match(/(\w+):"([^"]*)";/g);
+                if (customMatch) {
+                    body = {};
+                    customMatch.forEach(item => {
+                        const parts = item.match(/(\w+):"([^"]*)";/);
+                        if (parts && parts[1] && parts[2] !== undefined) {
+                            body[parts[1].trim()] = parts[2];
+                        }
+                    });
+                } else {
+                    body = JSON.parse(rawBody);
+                }
+            }
+        } catch (e) {
+            console.error("[Payment Flag] Parsing failed for body:", rawBody);
+            return new Response(JSON.stringify({ paymentStatus: "01", paymentMessage: "Invalid Body Format" }), {
                 status: 400,
                 headers: { ...corsHeaders, "Content-Type": "application/json" }
             });

@@ -271,7 +271,7 @@ serve(async (req: Request) => {
 
     const targetVirtualAccountNo = `${partnerServiceId}${customerNo}`;
     const externalId = crypto.randomUUID().replace(/-/g, '');
-    const trxIdPayload = String(singleTx.numeric_id).replace(/[^0-9]/g, '').substring(0, 18); // Revert to numeric for provider match
+    const trxIdPayload = singleTx.external_id;
 
     const timestamp = getTimestamp();
 
@@ -543,7 +543,7 @@ serve(async (req: Request) => {
           virtualAccountNo: actualVaNumber,
           virtualAccountName: vaData.virtualAccountName || "Customer",
           paymentRequestId: vaData.paymentRequestId || "",
-          trxId: addInfo.trxId || String(singleTx.numeric_id),
+          trxId: addInfo.trxId || singleTx.external_id,
           trxDateTime: vaData.transactionDate || vaData.trxDateTime || getTimestamp(),
           paidAmount: {
             value: actualAmount,

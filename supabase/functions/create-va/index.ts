@@ -129,8 +129,9 @@ serve(async (req: Request) => {
         if (!bank_code || !order_id || !amount) {
             return new Response(
                 JSON.stringify({
-                    errorCode: "400xx02",
-                    errorMessage: "Missing Mandatory Field {bank_code, order_id, amount}"
+                    responseCode: "4002702",
+                    responseMessage: "Missing Mandatory Field {bank_code, order_id, amount}",
+                    virtualAccountData: {}
                 }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
@@ -139,8 +140,9 @@ serve(async (req: Request) => {
         if (isNaN(Number(amount))) {
             return new Response(
                 JSON.stringify({
-                    errorCode: "400xx01",
-                    errorMessage: "Invalid Field Format {amount}"
+                    responseCode: "4002701",
+                    responseMessage: "Invalid Field Format {amount}",
+                    virtualAccountData: {}
                 }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
@@ -149,8 +151,9 @@ serve(async (req: Request) => {
         if (typeof bank_code !== 'string') {
             return new Response(
                 JSON.stringify({
-                    errorCode: "400xx01",
-                    errorMessage: "Invalid Field Format {bank_code}"
+                    responseCode: "4002701",
+                    responseMessage: "Invalid Field Format {bank_code}",
+                    virtualAccountData: {}
                 }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
@@ -331,8 +334,9 @@ serve(async (req: Request) => {
         if (response.status === 401) {
             return new Response(
                 JSON.stringify({
-                    errorCode: "401xx00",
-                    errorMessage: "Unauthorized Signature"
+                    responseCode: "4012700",
+                    responseMessage: "Unauthorized Signature",
+                    virtualAccountData: {}
                 }),
                 { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
@@ -362,8 +366,9 @@ serve(async (req: Request) => {
         if (responseCode === "4012700") {
             return new Response(
                 JSON.stringify({
-                    errorCode: "401xx00",
-                    errorMessage: "Unauthorized Signature"
+                    responseCode: "4012700",
+                    responseMessage: "Unauthorized Signature",
+                    virtualAccountData: {}
                 }),
                 { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
@@ -428,7 +433,7 @@ serve(async (req: Request) => {
     } catch (error: any) {
         console.error("[Bayarind] Exception:", error.message);
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: error.message, virtualAccountData: {} }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }

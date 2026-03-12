@@ -360,20 +360,3 @@ Response
   "flagType": "11",
   "paymentReffId": "110XN1"
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

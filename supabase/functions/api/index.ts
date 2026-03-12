@@ -312,8 +312,6 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002501",
-                    errorCode: "400xx01",
-                    errorMessage: "Invalid Field",
                     responseMessage: "Invalid Field Format {partnerServiceId}",
                     virtualAccountData: {}
                 }),
@@ -351,8 +349,6 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002501",
-                    errorCode: "400xx01",
-                    errorMessage: "Invalid Field",
                     responseMessage: "Invalid Field Format {virtualAccountNo}",
                     virtualAccountData: {}
                 }),
@@ -384,8 +380,6 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002501",
-                    errorCode: "400xx01",
-                    errorMessage: "Invalid Field",
                     responseMessage: "Invalid Field Format {paidAmount.value}",
                     virtualAccountData: {}
                 }),
@@ -411,8 +405,6 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002501",
-                    errorCode: "400xx01",
-                    errorMessage: "Invalid Field",
                     responseMessage: "Invalid Field Format {currency}",
                     virtualAccountData: {}
                 }),
@@ -461,8 +453,6 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
             return new Response(
                 JSON.stringify({
                     responseCode: "4002501",
-                    errorCode: "400xx01",
-                    errorMessage: "Invalid Field",
                     responseMessage: "Invalid Field Format {paidAmount.value}",
                     virtualAccountData: {}
                 }),
@@ -478,8 +468,8 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
         let findError: any = null;
 
         if (isInternalCall && body._internalTxId) {
-            // Internal call: lookup by transaction ID directly (avoids VA number format issues)
-            console.log("[api/transfer-va/payment] Internal lookup by txId:", body._internalTxId);
+            // Internal call: lookup by transaction ID directly (UUID)
+            console.log("[api/transfer-va/payment] Internal lookup by id:", body._internalTxId);
             const result = await supabase
                 .from("transactions")
                 .select("*")
@@ -487,9 +477,19 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
                 .maybeSingle();
             transaction = result.data;
             findError = result.error;
+        } else if (trxId) {
+            // External call (Bayarind) or common SNAP: lookup by external_id (trxId)
+            console.log("[api/transfer-va/payment] Lookup by external_id (trxId):", trxId);
+            const result = await supabase
+                .from("transactions")
+                .select("*")
+                .eq("external_id", trxId)
+                .maybeSingle();
+            transaction = result.data;
+            findError = result.error;
         } else {
-            // External call (Bayarind): lookup by VA number
-            // Note: Virtual Account numbers might have leading spaces in DB due to padding rules
+            // Fallback: lookup by VA number (if trxId missing)
+            console.log("[api/transfer-va/payment] Fallback: lookup by VA:", virtualAccountNo);
             const { data: txs, error: txError } = await supabase
                 .from("transactions")
                 .select("*")
@@ -502,7 +502,7 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
         }
 
         if (findError || !transaction) {
-            console.error("[api/transfer-va/payment] Transaction not found. VA:", virtualAccountNo.trim(), "txId:", body._internalTxId);
+            console.error("[api/transfer-va/payment] Transaction not found. trxId:", trxId, "VA:", virtualAccountNo.trim(), "internalId:", body._internalTxId);
             return new Response(
                 JSON.stringify({
                     responseCode: "4042512",

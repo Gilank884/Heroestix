@@ -102,7 +102,7 @@ serve(async (req: Request) => {
     if (pathname !== "/api/v1.0/transfer-va/payment") {
         console.error(`[Bayarind] Invalid path attempted: ${pathname}`);
         return new Response(
-            JSON.stringify({ responseCode: "4040000", responseMessage: "Not Found" }),
+            JSON.stringify({ responseCode: "4040000", responseMessage: "Not Found", virtualAccountData: {} }),
             { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
@@ -110,14 +110,14 @@ serve(async (req: Request) => {
     // 1. Validation: Method & Content-Type
     if (req.method !== "POST") {
         return new Response(
-            JSON.stringify({ responseCode: "4050000", responseMessage: "Method Not Allowed" }),
+            JSON.stringify({ responseCode: "4050000", responseMessage: "Method Not Allowed", virtualAccountData: {} }),
             { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
 
     if (!req.headers.get("content-type")?.includes("application/json")) {
         return new Response(
-            JSON.stringify({ responseCode: "4000000", responseMessage: "Invalid Content Type" }),
+            JSON.stringify({ responseCode: "4000000", responseMessage: "Invalid Content Type", virtualAccountData: {} }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
@@ -141,7 +141,7 @@ serve(async (req: Request) => {
         if (!PUBLIC_KEY || !PARTNER_SERVICE_ID) {
             console.error("[Bayarind] Missing config: BAYARIND_PUBLIC_KEY or BAYARIND_PARTNER_SERVICE_ID");
             return new Response(
-                JSON.stringify({ responseCode: "5000000", responseMessage: "Server Configuration Error" }),
+                JSON.stringify({ responseCode: "5000000", responseMessage: "Server Configuration Error", virtualAccountData: {} }),
                 { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }
@@ -153,7 +153,7 @@ serve(async (req: Request) => {
 
         if (!signature || !timestamp) {
             return new Response(
-                JSON.stringify({ responseCode: "4012500", responseMessage: "Invalid Signature" }),
+                JSON.stringify({ responseCode: "4012500", responseMessage: "Invalid Signature", virtualAccountData: {} }),
                 { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }
@@ -164,7 +164,7 @@ serve(async (req: Request) => {
         if (!requestTime || Math.abs(now - requestTime) > 5 * 60 * 1000) {
             console.error("[Bayarind] Timestamp expired:", timestamp);
             return new Response(
-                JSON.stringify({ responseCode: "4012501", responseMessage: "Unauthorized: Request expired" }),
+                JSON.stringify({ responseCode: "4012501", responseMessage: "Unauthorized: Request expired", virtualAccountData: {} }),
                 { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }
@@ -179,8 +179,9 @@ serve(async (req: Request) => {
             console.error("[Bayarind] Signature verification failed");
             return new Response(
                 JSON.stringify({
-                    errorCode: "401xx00",
-                    errorMessage: "Unauthorized Signature"
+                    responseCode: "4012500",
+                    responseMessage: "Unauthorized Signature",
+                    virtualAccountData: {}
                 }),
                 { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
@@ -193,7 +194,7 @@ serve(async (req: Request) => {
         if (!body.partnerServiceId || body.partnerServiceId !== PARTNER_SERVICE_ID) {
             console.error(`[Bayarind] Partner Service ID mismatch or missing: ${body.partnerServiceId} vs ${PARTNER_SERVICE_ID}`);
             return new Response(
-                JSON.stringify({ responseCode: "4042512", responseMessage: "Transaction Not Found" }),
+                JSON.stringify({ responseCode: "4042512", responseMessage: "Transaction Not Found", virtualAccountData: {} }),
                 { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }
@@ -203,7 +204,7 @@ serve(async (req: Request) => {
 
         if (!trxId) {
             return new Response(
-                JSON.stringify({ responseCode: "4000000", responseMessage: "Invalid Request: Missing trxId" }),
+                JSON.stringify({ responseCode: "4000000", responseMessage: "Invalid Request: Missing trxId", virtualAccountData: {} }),
                 { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }
@@ -212,13 +213,13 @@ serve(async (req: Request) => {
         const { data: transaction, error: findError } = await supabase
             .from('transactions')
             .select('id, status, order_id, amount')
-            .eq('id', trxId)
+            .eq('external_id', trxId)
             .single();
 
         if (findError || !transaction) {
             console.error("[Bayarind] Transaction not found:", trxId);
             return new Response(
-                JSON.stringify({ responseCode: "4042512", responseMessage: "Transaction Not Found" }),
+                JSON.stringify({ responseCode: "4042512", responseMessage: "Transaction Not Found", virtualAccountData: {} }),
                 { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }
@@ -259,7 +260,7 @@ serve(async (req: Request) => {
         if (Math.abs(paidValue - expectedValue) > 0.01) {
             console.error(`[Bayarind] Amount mismatch. Paid: ${paidValue}, Expected: ${expectedValue}`);
             return new Response(
-                JSON.stringify({ responseCode: "4042513", responseMessage: "Invalid Amount" }),
+                JSON.stringify({ responseCode: "4042513", responseMessage: "Invalid Amount", virtualAccountData: {} }),
                 { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }

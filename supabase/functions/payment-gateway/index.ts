@@ -235,7 +235,7 @@ serve(async (req: any) => {
             const { data: transaction, error: findError } = await supabase
                 .from('transactions')
                 .select('id, status, order_id, amount, payment_provider_data')
-                .eq('id', trxId)
+                .eq('external_id', trxId)
                 .single();
 
             if (findError || !transaction) {
@@ -415,7 +415,8 @@ serve(async (req: any) => {
                         order_id: order_id,
                         amount: amount,
                         method: 'bayarind_payment',
-                        status: 'pending'
+                        status: 'pending',
+                        external_id: crypto.randomUUID().replace(/-/g, '').substring(0, 18).toUpperCase()
                     }
                 ])
                 .select()
@@ -436,7 +437,7 @@ serve(async (req: any) => {
                 .replace(" ", "T") + "+07:00";
 
             const bankName = "BAYARIND";
-            const externalId = transaction.id.replace(/-/g, "").slice(0, 20);
+            const externalId = transaction.external_id;
 
             console.log(`[Bayarind] Initiating RSA Create VA for Order #${order_id} (TRX: ${transaction.id})`);
 
@@ -446,7 +447,7 @@ serve(async (req: any) => {
                 customerNo: customerNo,
                 virtualAccountNo: virtualAccountNo,
                 virtualAccountName: "Customer #" + customerNo.slice(-4),
-                trxId: transaction.id,
+                trxId: transaction.external_id,
                 totalAmount: {
                     value: parseFloat(amount).toFixed(2),
                     currency: "IDR"
