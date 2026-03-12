@@ -90,12 +90,16 @@ serve(async (req: Request) => {
       customerAccount = customer_phone || customer_email || "";
     }
 
-    // Step 5: Format Dates (UTC, same as working v40)
-    const transactionDate = new Date().toISOString()
+    // Step 5: Format Dates (WIB - UTC+7)
+    // Formula: Date.now() + 7h for WIB.
+    const now = new Date();
+    const wibOffset = 7 * 60 * 60 * 1000;
+    
+    const transactionDate = new Date(now.getTime() + wibOffset).toISOString()
       .replace("T", " ")
       .substring(0, 19);
 
-    const transactionExpire = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    const transactionExpire = new Date(now.getTime() + 24 * 60 * 60 * 1000 + wibOffset).toISOString()
       .replace("T", " ")
       .substring(0, 19);
 

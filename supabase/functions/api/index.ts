@@ -82,6 +82,178 @@ async function verifyRSASignature(signature: string, stringToSign: string, publi
 }
 
 // =============================================
+// HANDLER: Legacy Flag (Non-SNAP)
+// =============================================
+
+async function handleLegacyFlag(rawBody: string, supabase: any): Promise<Response> {
+    try {
+        console.log("[api/Legacy] Processing legacy notification...");
+        let body: any;
+        try {
+            // Legacy flags are usually JSON but let's be safe
+            body = JSON.parse(rawBody);
+        } catch (e) {
+            console.error("[api/Legacy] Parsing failed for body:", rawBody);
+            return new Response(JSON.stringify({ paymentStatus: "01", paymentMessage: "Invalid Body Format" }), {
+                status: 400,
+                headers: { ...corsHeaders, "Content-Type": "application/json" }
+            });
+        }
+
+        const {
+            channelId,
+            currency,
+            transactionNo,
+            transactionAmount,
+            transactionStatus,
+            insertId,
+            customerAccount,
+            paymentReffId,
+            authCode,
+            flagType
+        } = body;
+
+        // Helper to build legacy response
+        const buildLegacyResponse = (status: string, message: string) => {
+            const resp = {
+                channelId: channelId || "",
+                currency: currency || "IDR",
+                paymentStatus: status,
+                paymentMessage: message,
+                flagType: flagType || "11",
+                paymentReffId: paymentReffId || ""
+            };
+            console.log(`[api/Legacy] Response [${status}]:`, message);
+            return new Response(JSON.stringify(resp), {
+                status: 200,
+                headers: { ...corsHeaders, "Content-Type": "application/json" }
+            });
+        };
+
+        // 1. Invalid channelId
+        const { data: bankConfig } = await supabase
+            .from("bank_configs")
+            .select("*")
+            .eq("partner_id", String(channelId || ""))
+            .maybeSingle();
+
+        if (!bankConfig) {
+            return buildLegacyResponse("01", "Invalid channelId (config not found)");
+        }
+
+        // 2. Invalid transactionNo
+        const { data: transaction, error: txError } = await supabase
+            .from("transactions")
+            .select("*")
+            .eq("external_id", String(transactionNo || ""))
+            .maybeSingle();
+
+        if (txError || !transaction) {
+            return buildLegacyResponse("01", "Invalid transactionNo (not found)");
+        }
+
+        // 3. Invalid Transaction Amount
+        if (parseFloat(String(transactionAmount)) !== transaction.amount) {
+            return buildLegacyResponse("01", "Invalid Transaction Amount");
+        }
+
+        // 4. Invalid insertId
+        if (transaction.insert_id && String(insertId) !== String(transaction.insert_id)) {
+            return buildLegacyResponse("01", "Invalid insertId");
+        }
+
+        // 5. Invalid AuthCode
+        const secretKey = bankConfig.secret_key || "c438ca42baba01ffa2b9b5748ed897a4";
+        const authPayload = `${transactionNo}${transactionAmount}${channelId}${transactionStatus}${insertId}${secretKey}`;
+        const calculatedAuthCode = await sha256Hex(authPayload);
+
+        if (authCode !== calculatedAuthCode) {
+            console.warn("[api/Legacy] AuthCode mismatch:", { received: authCode, calculated: calculatedAuthCode });
+            // In dev we might want to be lenient or strict. Let's be strict.
+            return buildLegacyResponse("01", "Invalid AuthCode");
+        }
+
+        // 6. Invalid Currency
+        if (!currency || currency !== "IDR") {
+            return buildLegacyResponse("01", "Invalid Currency");
+        }
+
+        // 7. Invalid Transaction Status (SUCCESS = 00)
+        if (transactionStatus !== "00") {
+            return buildLegacyResponse("01", "Invalid Transaction Status");
+        }
+
+        // 8. Invalid VA Number (customerAccount matching va_number)
+        // Only check if customerAccount is provided (E-wallets might not send it)
+        if (customerAccount && transaction.va_number && String(customerAccount) !== String(transaction.va_number)) {
+            return buildLegacyResponse("01", "Invalid VA Number");
+        }
+
+        // 9. Double Payment
+        if (transaction.status === "success" || transaction.status === "paid") {
+            return buildLegacyResponse("02", "Transaction has been paid");
+        }
+
+        console.log(`[api/Legacy] Success detected for Order ${transaction.order_id}. Updating DB...`);
+
+        // Update database
+        const { error: updateError } = await supabase
+            .from("transactions")
+            .update({
+                status: "success",
+                paid_at: new Date().toISOString(),
+                paid_amount: parseFloat(String(transactionAmount)),
+                bank_trx_id: String(insertId),
+                bank_reference: paymentReffId || null,
+                provider_raw_response: body
+            })
+            .eq("id", transaction.id);
+
+        if (updateError) {
+            console.error("[api/Legacy] DB Update Error (transactions):", updateError);
+            return buildLegacyResponse("01", "Internal DB Error");
+        }
+
+        // Update associated order and tickets
+        await supabase.from("orders").update({ status: "paid" }).eq("id", transaction.order_id);
+        const { data: activatedTickets } = await supabase.from("tickets")
+            .update({ status: "unused" })
+            .eq("order_id", transaction.order_id)
+            .select("ticket_type_id");
+
+        // Quota update
+        if (activatedTickets && activatedTickets.length > 0) {
+            const typeCounts: Record<string, number> = {};
+            activatedTickets.forEach((t: any) => {
+                typeCounts[t.ticket_type_id] = (typeCounts[t.ticket_type_id] || 0) + 1;
+            });
+            for (const [typeId, count] of Object.entries(typeCounts)) {
+                const { data: curr } = await supabase.from("ticket_types").select("sold").eq("id", typeId).single();
+                if (curr) {
+                    await supabase.from("ticket_types").update({ sold: (curr.sold || 0) + count }).eq("id", typeId);
+                }
+            }
+        }
+
+        // Trigger Email
+        try {
+            await supabase.functions.invoke("send-ticket-email", { body: { order_id: transaction.order_id } });
+        } catch (e: any) {
+            console.error("[api/Legacy] Email trigger failed:", e.message);
+        }
+
+        return buildLegacyResponse("00", "Success");
+
+    } catch (err: any) {
+        console.error("[api/Legacy] Exception:", err);
+        return new Response(JSON.stringify({ paymentStatus: "01", paymentMessage: "System Error" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+    }
+}
+
+// =============================================
 // HANDLER: /api/v1.0/transfer-va/payment
 // =============================================
 
@@ -132,6 +304,18 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
 
         if (!isInternalCall) {
             if (!timestamp || !signature || !partnerId) {
+                // 🔥 DETECT LEGACY FLAG FALLBACK
+                // If SNAP headers are missing, we check if the body looks like a legacy flag
+                const rawBodyTemp = await req.clone().text();
+                if (rawBodyTemp.includes('"channelId"') && rawBodyTemp.includes('"transactionNo"')) {
+                    console.warn("[api/transfer-va/payment] Missing SNAP headers but found legacy body. Routing to legacy handler.");
+                    const supabase = createClient(
+                        Deno.env.get("SUPABASE_URL") ?? "",
+                        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+                    );
+                    return handleLegacyFlag(rawBodyTemp, supabase);
+                }
+
                 return new Response(
                     JSON.stringify({
                         responseCode: "4012501",

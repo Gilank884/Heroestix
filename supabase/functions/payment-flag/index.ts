@@ -21,6 +21,19 @@ serve(async (req: Request) => {
         return new Response("ok", { status: 200, headers: corsHeaders });
     }
 
+    // Explicitly handle non-POST methods (e.g., GET from browser)
+    if (req.method !== "POST") {
+        console.warn(`[Payment Flag] Method ${req.method} not allowed on this endpoint`);
+        return new Response(JSON.stringify({
+            paymentStatus: "01",
+            paymentMessage: "Method Not Allowed. This is a webhook endpoint for POST requests only.",
+            help: "Please do not access this URL directly via browser. This endpoint expects payment notifications from the gateway."
+        }), {
+            status: 405, // Method Not Allowed
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+    }
+
     try {
         const rawBody = await req.text();
         console.log("[Payment Flag] Raw Body:", rawBody);
@@ -147,7 +160,8 @@ serve(async (req: Request) => {
         }
 
         // 8. Invalid VA Number (customerAccount matching va_number)
-        if (transaction.va_number && String(customerAccount) !== String(transaction.va_number)) {
+        // Only validate if customerAccount is provided in the body
+        if (customerAccount && transaction.va_number && String(customerAccount) !== String(transaction.va_number)) {
             return buildResponse("01", "Invalid VA Number");
         }
 
@@ -166,8 +180,7 @@ serve(async (req: Request) => {
             return buildResponse("04", "Transaction has been expired");
         }
 
-        // 10. Success Transaction Logic
-        console.log(`[Payment Flag] Success detected for order: ${transaction.order_id}`);
+        console.log(`[Payment Flag] Success detected for order: ${transaction.order_id}. Updating DB...`);
 
         // Update database
         await supabase
@@ -181,6 +194,8 @@ serve(async (req: Request) => {
                 provider_raw_response: body
             })
             .eq("id", transaction.id);
+
+        console.log(`[Payment Flag] DB Updated for order: ${transaction.order_id}`);
 
         await supabase
             .from("orders")
@@ -208,9 +223,11 @@ serve(async (req: Request) => {
 
         // Trigger Email
         try {
+            console.log(`[Payment Flag] Triggering email for order: ${transaction.order_id}`);
             await supabase.functions.invoke("send-ticket-email", {
                 body: { order_id: transaction.order_id }
             });
+            console.log(`[Payment Flag] Email triggered successfully`);
         } catch (emailErr: any) {
             console.error("[Payment Flag] Email trigger failed:", emailErr.message);
         }

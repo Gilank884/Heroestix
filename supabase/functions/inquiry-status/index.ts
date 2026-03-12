@@ -457,6 +457,17 @@ serve(async (req: Request) => {
       if (ticketUpdateError) {
         console.error("DB Update Error (tickets):", ticketUpdateError);
       }
+
+      // Trigger Email
+      try {
+        console.log(`[Inquiry] Triggering email for order: ${singleTx.order_id}`);
+        await supabase.functions.invoke("send-ticket-email", {
+            body: { order_id: singleTx.order_id }
+        });
+        console.log(`[Inquiry] Email triggered successfully`);
+      } catch (emailErr: any) {
+        console.error("[Inquiry] Email trigger failed:", emailErr.message);
+      }
     }
 
 
