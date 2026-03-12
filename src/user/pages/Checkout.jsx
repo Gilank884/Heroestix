@@ -314,8 +314,11 @@ export default function Checkout() {
                         virtualAccountNo: gatewayData.va_number || gatewayData.url_qris || gatewayData.payment_code || gatewayData.virtualAccountNo,
                         bankName: selectedBank,
                         expiredDate: gatewayData.expiry_date || gatewayData.expiredDate,
-                        redirectUrl: gatewayData.redirect_url,
-                        urlQris: gatewayData.url_qris
+                        redirectUrl: gatewayData.redirect_url || gatewayData.app_payment_url || gatewayData.deeplink,
+                        redirectData: gatewayData.redirect_data,
+                        urlQris: gatewayData.url_qris,
+                        appPaymentUrl: gatewayData.app_payment_url,
+                        deeplink: gatewayData.deeplink
                     }
                 });
             } else {

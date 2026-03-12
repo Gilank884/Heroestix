@@ -18,7 +18,7 @@ const CALLBACK_URL =
 const VA_CHANNELS = ["MANDIRI", "BNI", "BRI"];
 
 // Channels that are E-Wallet / redirect based
-const EWALLET_CHANNELS = ["SHOPEEPAY", "DANA", "OVO", "LINKAJA", "QRIS"];
+const EWALLET_CHANNELS = ["SHOPEEPAY", "OVO", "LINKAJA", "QRIS"];
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -138,8 +138,8 @@ serve(async (req: Request) => {
       bayarindPayload.customerPhone = customer_phone;
     }
 
-    // ShopeePay/DANA description max 50 chars
-    if (method === "SHOPEEPAY" || method === "DANA") {
+    // ShopeePay description max 50 chars
+    if (method === "SHOPEEPAY") {
       bayarindPayload.description = `Order ${order_id}`.substring(0, 50);
     }
 

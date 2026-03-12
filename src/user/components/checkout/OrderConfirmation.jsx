@@ -160,7 +160,6 @@ export default function OrderConfirmation({
                         {[
                             { code: "QRIS", name: "QRIS", logo: "/Logo/qris.jpg", type: "QR Code" },
                             { code: "OVO", name: "OVO", logo: "/Logo/ovo.png", type: "E-Wallet" },
-                            { code: "DANA", name: "Dana", logo: "/Logo/dana.png", type: "E-Wallet" },
                             { code: "LINKAJA", name: "LinkAja", logo: "/Logo/linkaja.png", type: "E-Wallet" },
                             { code: "SHOPEEPAY", name: "ShopeePay", logo: "/Logo/shopeepay.png", type: "E-Wallet" }
                         ].map((method) => (

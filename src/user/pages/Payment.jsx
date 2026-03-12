@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import EventNavbar from "../../components/Layout/EventNavbar";
 import Footer from "../../components/Layout/Footer";
@@ -97,12 +97,15 @@ export default function Payment() {
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const { total, selectedPayment, orderId, eventTitle, visitorEmail, virtualAccountNo, bankName, expiredDate, redirectUrl, urlQris } = location.state || { total: 0, selectedPayment: "bayarind", orderId: null, eventTitle: "", visitorEmail: "", virtualAccountNo: "", bankName: "BAYARIND", expiredDate: "" };
+    const { total, selectedPayment, orderId, eventTitle, visitorEmail, virtualAccountNo, bankName, expiredDate, redirectUrl, redirectData, urlQris, appPaymentUrl, deeplink } = location.state || { total: 0, selectedPayment: "bayarind", orderId: null, eventTitle: "", visitorEmail: "", visitorPhone: "", virtualAccountNo: "", bankName: "BAYARIND", expiredDate: "" };
 
     const [timeLeft, setTimeLeft] = useState(24 * 60 * 60); // Default 24h
     const [activeTab, setActiveTab] = useState("MBanking");
     const [loading, setLoading] = useState(false);
     const [statusChecking, setStatusChecking] = useState(false);
+    const [isAutoRedirecting, setIsAutoRedirecting] = useState(false);
+    const [redirectTriggered, setRedirectTriggered] = useState(false);
+    const formRef = useRef(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [emailStatus, setEmailStatus] = useState('idle'); // idle, sending, sent, failed
     const [emailErrorMessage, setEmailErrorMessage] = useState('');
@@ -161,6 +164,52 @@ export default function Payment() {
             supabase.removeChannel(channel);
         };
     }, [orderId, virtualAccountNo, expiredDate, navigate, showSuccessModal, statusChecking]);
+
+    // 3. Expired Payment Handling
+    useEffect(() => {
+        if (timeLeft === 0) {
+            triggerToast("Waktu pembayaran habis", "warning");
+        }
+    }, [timeLeft]);
+
+    useEffect(() => {
+        const isEwallet = ['OVO', 'SHOPEEPAY', 'LINKAJA'].includes(bankName?.toUpperCase());
+        if (isEwallet && (redirectUrl || appPaymentUrl || deeplink)) {
+            if (redirectTriggered) return;
+            setRedirectTriggered(true);
+
+            console.log(`[Payment] E-Wallet detected (${bankName}). Initializing auto-redirect...`);
+            setIsAutoRedirecting(true);
+
+            const timer = setTimeout(() => {
+                let processedData = null;
+                if (redirectData) {
+                    if (typeof redirectData === "string") {
+                        try {
+                            processedData = JSON.parse(redirectData);
+                        } catch {
+                            processedData = null;
+                        }
+                    } else if (typeof redirectData === "object") {
+                        processedData = redirectData;
+                    }
+                }
+
+                if (redirectUrl && processedData && typeof processedData === 'object' && !appPaymentUrl && !deeplink) {
+                    // LINKAJA / POST REDIRECT
+                    console.log("[Payment] Auto-submitting POST form for LinkAja...");
+                    formRef.current?.submit();
+                } else {
+                    // OVO / SHOPEEPAY / DIRECT REDIRECT
+                    const target = deeplink || appPaymentUrl || redirectUrl;
+                    console.log("[Payment] Auto-redirecting to:", target);
+                    window.location.href = target;
+                }
+            }, 2500); // 2.5s delay for UX
+
+            return () => clearTimeout(timer);
+        }
+    }, [bankName, redirectUrl, redirectData, appPaymentUrl, deeplink]);
 
     // Show success modal when payment is detected
     const handlePaymentSuccess = () => {
@@ -250,6 +299,22 @@ export default function Payment() {
                 onSeeTicket={() => navigate(`/transaction-detail/${orderId}`)}
             />
 
+            {/* Auto Redirecting Overlay */}
+            {isAutoRedirecting && (
+                <div className="fixed inset-0 z-[110] bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
+                    <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center mb-6 shadow-2xl shadow-blue-500/50 animate-bounce">
+                        <Loader2 size={40} className="text-white animate-spin-slow" />
+                    </div>
+                    <h2 className="text-2xl font-black text-white mb-2">Mengalihkan ke {bankName}...</h2>
+                    <p className="text-blue-200 font-medium">Jangan tutup atau refresh halaman ini.</p>
+                    <div className="mt-8 flex gap-1">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
+                    </div>
+                </div>
+            )}
+
             <div className="pt-32 pb-20">
                 <div className="max-w-2xl mx-auto px-4">
                     <div className="text-center space-y-2 mb-8">
@@ -269,7 +334,14 @@ export default function Payment() {
                                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Scan QRIS</p>
                                         <div className="flex justify-center md:justify-start">
                                             <div className="bg-white p-4 rounded-3xl shadow-inner border-4 border-slate-50 inline-block overflow-hidden transition-all hover:scale-105 duration-500">
-                                                {virtualAccountNo ? (
+                                                {(urlQris?.startsWith('http') || urlQris?.startsWith('data:image')) ? (
+                                                    <div className="p-2 bg-white flex flex-col items-center">
+                                                        <img src={urlQris} alt="QRIS" className="w-[180px] h-auto rounded-lg" />
+                                                        <div className="mt-4 px-4 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-400 tracking-tighter uppercase">
+                                                            Pindai untuk membayar
+                                                        </div>
+                                                    </div>
+                                                ) : virtualAccountNo ? (
                                                     <div className="p-2 bg-white flex flex-col items-center">
                                                         <QRCode
                                                             value={virtualAccountNo}
@@ -304,16 +376,53 @@ export default function Payment() {
                                                 <HiOutlineDuplicate size={22} />
                                             </button>
                                         </div>
-                                        {redirectUrl && (
+                                        {(redirectUrl || appPaymentUrl || deeplink) && (
                                             <div className="pt-2">
-                                                <a
-                                                    href={redirectUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95"
-                                                >
-                                                    🚀 Bayar dengan Aplikasi {bankName}
-                                                </a>
+                                                {(() => {
+                                                    let processedData = null;
+                                                    if (redirectData) {
+                                                        if (typeof redirectData === "string") {
+                                                            try {
+                                                                processedData = JSON.parse(redirectData);
+                                                            } catch {
+                                                                processedData = null;
+                                                            }
+                                                        } else if (typeof redirectData === "object") {
+                                                            processedData = redirectData;
+                                                        }
+                                                    }
+
+                                                    const targetUrl = deeplink || appPaymentUrl || redirectUrl;
+
+                                                    if (processedData && typeof processedData === 'object' && !appPaymentUrl && !deeplink) {
+                                                        return (
+                                                            <form ref={formRef} method="POST" action={redirectUrl}>
+                                                                {Object.entries(processedData).map(([key, val]) => (
+                                                                    <input key={key} type="hidden" name={key} value={val} />
+                                                                ))}
+                                                                <button
+                                                                    type="submit"
+                                                                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95"
+                                                                >
+                                                                    {isAutoRedirecting ? 'Mengalihkan ke Pembayaran...' : `Bayar dengan Aplikasi ${bankName}`}
+                                                                </button>
+                                                            </form>
+                                                        );
+                                                    } else {
+                                                        return (
+                                                            <a
+                                                                href={targetUrl}
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95"
+                                                            >
+                                                                {isAutoRedirecting
+                                                                    ? 'Mengalihkan ke Aplikasi...'
+                                                                    : (appPaymentUrl || deeplink ? `Buka Aplikasi ${bankName}` : `Bayar dengan Aplikasi ${bankName}`)
+                                                                }
+                                                            </a>
+                                                        );
+                                                    }
+                                                })()}
                                             </div>
                                         )}
                                     </div>
@@ -341,10 +450,9 @@ export default function Payment() {
                                                     bankName === 'MANDIRI' ? '/Logo/mandiri.png' :
                                                         bankName === 'QRIS' ? '/Logo/qris.jpg' :
                                                             bankName === 'OVO' ? '/Logo/ovo.png' :
-                                                                bankName === 'Dana' ? '/Logo/dana.png' :
-                                                                    bankName === 'LINKAJA' ? '/Logo/linkaja.png' :
-                                                                        bankName === 'SHOPEEPAY' ? '/Logo/shopeepay.png' :
-                                                                            '/Logo/bayarind.png'
+                                                                bankName === 'LINKAJA' ? '/Logo/linkaja.png' :
+                                                                    bankName === 'SHOPEEPAY' ? '/Logo/shopeepay.png' :
+                                                                        '/Logo/bayarind.png'
                                         }
                                         alt={bankName}
                                         className="h-10 w-auto object-contain"
@@ -386,7 +494,7 @@ export default function Payment() {
                             <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">Cara Membayar</h2>
                         </div>
 
-                        {['OVO', 'Dana', 'LINKAJA', 'SHOPEEPAY'].includes(bankName) ? (
+                        {['OVO', 'LINKAJA', 'SHOPEEPAY'].includes(bankName) ? (
                             <div className="p-8 space-y-8">
                                 <div className="space-y-4">
                                     <h3 className="font-black text-slate-800 dark:text-white flex items-center gap-2">
@@ -409,7 +517,7 @@ export default function Payment() {
                                         Instruksi QRIS
                                     </h3>
                                     <ul className="space-y-3 text-sm font-bold text-slate-600 dark:text-slate-400 list-none">
-                                        <li className="flex gap-3"><span className="text-blue-500">•</span> Buka aplikasi pembayaran pilihan Anda (Gopay, ShopeePay, OVO, Dana, LinkAja, atau MBanking)</li>
+                                        <li className="flex gap-3"><span className="text-blue-500">•</span> Buka aplikasi pembayaran pilihan Anda (Gopay, ShopeePay, OVO, LinkAja, atau MBanking)</li>
                                         <li className="flex gap-3"><span className="text-blue-500">•</span> Pilih menu <strong>Scan / Bayar</strong></li>
                                         <li className="flex gap-3"><span className="text-blue-500">•</span> Arahkan kamera ke kode QR yang muncul di layar</li>
                                         <li className="flex gap-3"><span className="text-blue-500">•</span> Pastikan nominal dan nama merchant sudah sesuai</li>
