@@ -400,8 +400,7 @@ serve(async (req: Request) => {
       updatePayload.reference_no = referenceNo || null;
     } else {
       if (responseCode === "4042514") {
-        updatePayload.status = "success";
-        updatePayload.paid_at = new Date().toISOString();
+        updatePayload.status = "pending";
       }
       updatePayload.provider_response_code = responseCode;
       updatePayload.trx_message = result.responseMessage || "Provider Failed Response";

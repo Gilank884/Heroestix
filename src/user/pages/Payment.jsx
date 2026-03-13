@@ -18,6 +18,48 @@ const rupiah = (value) => {
 };
 
 
+const StatusModal = ({ isOpen, type, onClose, orderId }) => {
+    if (!isOpen) return null;
+
+    const isPending = type === 'pending';
+
+    return (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800" style={{ animation: 'zoomIn 0.3s ease-out' }}>
+                <div className="p-8 text-center">
+                    <div className={`w-20 h-20 ${isPending ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-500' : 'bg-red-50 dark:bg-red-900/30 text-red-500'} rounded-full flex items-center justify-center mx-auto mb-6`}>
+                        {isPending ? (
+                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        ) : (
+                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        )}
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
+                        {isPending ? 'Belum Terbayar' : 'Pembayaran Gagal'}
+                    </h3>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8 text-sm">
+                        {isPending
+                            ? 'Kami belum menerima konfirmasi pembayaran Anda. Jika Anda baru saja membayar, tunggu 1-2 menit lalu cek kembali.'
+                            : 'Maaf, terjadi kesalahan atau pembayaran Anda dibatalkan oleh sistem.'}
+                    </p>
+
+                    <button
+                        onClick={onClose}
+                        className={`w-full py-4 rounded-full font-bold ${isPending ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20' : 'bg-slate-900 hover:bg-slate-800 shadow-slate-900/20'} text-white shadow-lg active:scale-[0.98] transition-all`}
+                    >
+                        {isPending ? 'Selesaikan Pembayaran' : 'Tutup'}
+                    </button>
+                </div>
+            </div>
+            <style>{`
+                @keyframes zoomIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+            `}</style>
+        </div>
+    );
+};
 
 export default function Payment() {
     const { id } = useParams();
@@ -32,6 +74,9 @@ export default function Payment() {
     const [isAutoRedirecting, setIsAutoRedirecting] = useState(false);
     const [redirectTriggered, setRedirectTriggered] = useState(false);
     const formRef = useRef(null);
+    const [showStatusModal, setShowStatusModal] = useState(false);
+    const [modalType, setModalType] = useState('pending'); // pending, failed
+
 
     const [showToast, setShowToast] = useState(false);
     const [toastMsg, setToastMsg] = useState("");
@@ -172,19 +217,21 @@ export default function Payment() {
 
             console.log("[Status Check] Response:", data);
 
-            if (data?.success || data?.responseCode === "4042514") {
+            if (data?.success) {
                 handlePaymentSuccess();
             } else {
-                triggerToast(data?.message || data?.responseMessage || "Pembayaran belum diterima. Silakan selesaikan pembayaran Anda.", "warning");
+                setModalType('pending');
+                setShowStatusModal(true);
             }
         } catch (err) {
             console.error("Status check error:", err);
             // Fallback: check DB directly
             const { data: order } = await supabase.from('orders').select('status').eq('id', orderId).single();
-            if (order?.status === 'paid') {
+            if (order?.status === 'paid' || order?.status === 'success') {
                 handlePaymentSuccess();
             } else {
-                triggerToast("Gagal mengecek status: " + (err.message || "Terjadi kesalahan"), "warning");
+                setModalType('failed');
+                setShowStatusModal(true);
             }
         } finally {
             setStatusChecking(false);
@@ -194,6 +241,13 @@ export default function Payment() {
     return (
         <div className="bg-white min-h-screen font-sans text-slate-900 relative">
             <EventNavbar />
+
+            <StatusModal
+                isOpen={showStatusModal}
+                type={modalType}
+                onClose={() => setShowStatusModal(false)}
+                orderId={orderId}
+            />
 
             <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
                 <div className={`${toastType === 'warn' ? 'bg-amber-600' : 'bg-slate-900'} dark:bg-white text-white dark:text-slate-900 px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 font-bold text-sm border border-slate-800 dark:border-slate-200`}>
@@ -318,7 +372,7 @@ export default function Payment() {
                                                             </form>
                                                         );
                                                     } else {
-                                                        const targetUrl = bankName?.toUpperCase() === 'SHOPEEPAY' && processedData 
+                                                        const targetUrl = bankName?.toUpperCase() === 'SHOPEEPAY' && processedData
                                                             ? (processedData.redirect_url_app || processedData.redirect_url_http || deeplink || appPaymentUrl || redirectUrl)
                                                             : (deeplink || appPaymentUrl || redirectUrl);
 
