@@ -101,9 +101,15 @@ export default function OrderSummary({
                             </div>
                         )}
                         <div className="flex items-center justify-between text-sm font-bold">
-                            <span className="text-slate-600 dark:text-slate-300">Platform Fee</span>
-                            <span className="text-slate-900 dark:text-white">{rupiah(platformFee)}</span>
+                            <span className="text-slate-600 dark:text-slate-300">Biaya Platform</span>
+                            <span className="text-slate-900 dark:text-white">{rupiah(5000)}</span>
                         </div>
+                        {platformFee > 5000 && (
+                            <div className="flex items-center justify-between text-sm font-bold text-amber-600 dark:text-amber-400">
+                                <span>Biaya Pembayaran</span>
+                                <span>{rupiah(platformFee - 5000)}</span>
+                            </div>
+                        )}
                     </>
                 )}
             </div>

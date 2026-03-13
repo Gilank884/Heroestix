@@ -142,6 +142,28 @@ export default function Payment() {
         }
     }, [timeLeft]);
 
+    // Helper for POST redirection
+    const postForm = (url, data) => {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        let params = data;
+        if (typeof data === 'string') {
+            try { params = JSON.parse(data); } catch (e) { }
+        }
+        if (params && typeof params === 'object') {
+            Object.keys(params).forEach(key => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = params[key];
+                form.appendChild(input);
+            });
+        }
+        document.body.appendChild(form);
+        form.submit();
+    };
+
     useEffect(() => {
         const isEwallet = ['OVO', 'SHOPEEPAY', 'LINKAJA'].includes(bankName?.toUpperCase());
         if (isEwallet && (redirectUrl || appPaymentUrl || deeplink || redirectData)) {
@@ -152,33 +174,14 @@ export default function Payment() {
             setIsAutoRedirecting(true);
 
             const timer = setTimeout(() => {
-                let processedData = null;
-                if (redirectData) {
-                    if (typeof redirectData === "string") {
-                        try {
-                            processedData = JSON.parse(redirectData);
-                        } catch {
-                            processedData = null;
-                        }
-                    } else if (typeof redirectData === "object") {
-                        processedData = redirectData;
-                    }
-                }
-
-                if (bankName?.toUpperCase() === 'LINKAJA' && processedData && typeof processedData === 'object') {
-                    // LINKAJA / POST REDIRECT
-                    console.log("[Payment] Auto-submitting POST form for LinkAja...");
-                    formRef.current?.submit();
-                } else if (bankName?.toUpperCase() === 'SHOPEEPAY' && processedData && typeof processedData === 'object') {
-                    // SHOPEEPAY / DIRECT REDIRECT (redirectData has redirect_url_http or redirect_url_app)
-                    const target = processedData.redirect_url_app || processedData.redirect_url_http || deeplink || appPaymentUrl || redirectUrl;
-                    console.log("[Payment] Auto-redirecting to ShopeePay:", target);
-                    window.location.href = target;
-                } else {
-                    // OVO / DIRECT REDIRECT
-                    const target = deeplink || appPaymentUrl || redirectUrl;
-                    console.log("[Payment] Auto-redirecting to:", target);
-                    window.location.href = target;
+                if (redirectUrl && redirectData) {
+                    postForm(redirectUrl, redirectData);
+                } else if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                } else if (appPaymentUrl) {
+                    window.location.href = appPaymentUrl;
+                } else if (deeplink) {
+                    window.location.href = deeplink;
                 }
             }, 2500); // 2.5s delay for UX
 
@@ -349,53 +352,17 @@ export default function Payment() {
                                         </div>
                                         {(redirectUrl || appPaymentUrl || deeplink || redirectData) && (
                                             <div className="pt-2">
-                                                {(() => {
-                                                    let processedData = null;
-                                                    if (redirectData) {
-                                                        if (typeof redirectData === "string") {
-                                                            try {
-                                                                processedData = JSON.parse(redirectData);
-                                                            } catch {
-                                                                processedData = null;
-                                                            }
-                                                        } else if (typeof redirectData === "object") {
-                                                            processedData = redirectData;
-                                                        }
-                                                    }
-
-                                                    if (bankName?.toUpperCase() === 'LINKAJA' && processedData && typeof processedData === 'object') {
-                                                        return (
-                                                            <form ref={formRef} method="POST" action={redirectUrl}>
-                                                                {Object.entries(processedData).map(([key, val]) => (
-                                                                    <input key={key} type="hidden" name={key} value={val} />
-                                                                ))}
-                                                                <button
-                                                                    type="submit"
-                                                                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95"
-                                                                >
-                                                                    {isAutoRedirecting ? 'Mengalihkan ke Pembayaran...' : `Bayar dengan Aplikasi ${bankName}`}
-                                                                </button>
-                                                            </form>
-                                                        );
-                                                    } else {
-                                                        const targetUrl = bankName?.toUpperCase() === 'SHOPEEPAY' && processedData
-                                                            ? (processedData.redirect_url_app || processedData.redirect_url_http || deeplink || appPaymentUrl || redirectUrl)
-                                                            : (deeplink || appPaymentUrl || redirectUrl);
-
-                                                        return (
-                                                            <a
-                                                                href={targetUrl}
-                                                                rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95"
-                                                            >
-                                                                {isAutoRedirecting
-                                                                    ? 'Mengalihkan ke Aplikasi...'
-                                                                    : (appPaymentUrl || deeplink || redirectData ? `Buka Aplikasi ${bankName}` : `Bayar dengan Aplikasi ${bankName}`)
-                                                                }
-                                                            </a>
-                                                        );
-                                                    }
-                                                })()}
+                                                <button
+                                                    onClick={() => {
+                                                        if (redirectUrl && redirectData) postForm(redirectUrl, redirectData);
+                                                        else if (redirectUrl) window.location.href = redirectUrl;
+                                                        else if (appPaymentUrl) window.location.href = appPaymentUrl;
+                                                        else if (deeplink) window.location.href = deeplink;
+                                                    }}
+                                                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95"
+                                                >
+                                                    {isAutoRedirecting ? 'Mengalihkan ke Pembayaran...' : `Buka Aplikasi ${bankName}`}
+                                                </button>
                                             </div>
                                         )}
                                     </div>

@@ -146,11 +146,12 @@ serve(async (req: Request) => {
       bayarindPayload.description = `Order ${order_id}`.substring(0, 50);
     }
 
-    console.log("PAYLOAD:", JSON.stringify(bayarindPayload, null, 2));
+    console.log("PAYLOAD BEING SENT TO BAYARIND:", JSON.stringify(bayarindPayload, null, 2));
 
     // Step 8: Call Bayarind API (hardcoded — BAYARIND_PAYMENT_URL env var may be wrong)
     const BAYARIND_PAYMENT_URL = "https://paytest.bayarind.id/PaymentRegister";
     console.log("BAYARIND URL:", BAYARIND_PAYMENT_URL);
+
     const bayarindResponse = await fetch(BAYARIND_PAYMENT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -158,6 +159,9 @@ serve(async (req: Request) => {
     });
 
     const bayarindText = await bayarindResponse.text();
+    console.log("RAW BAYARIND RESPONSE TEXT:", bayarindText);
+    console.log("BAYARIND RESPONSE STATUS:", bayarindResponse.status);
+
     let bayarindData: Record<string, unknown>;
     try {
       bayarindData = JSON.parse(bayarindText);

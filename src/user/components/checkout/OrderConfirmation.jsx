@@ -105,9 +105,15 @@ export default function OrderConfirmation({
                             </div>
                         )}
                         <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-50 dark:border-slate-800">
-                            <span className="text-slate-500 dark:text-slate-400">Platform Fee</span>
-                            <span className="font-bold text-slate-800 dark:text-slate-200">{rupiah(platformFee)}</span>
+                            <span className="text-slate-500 dark:text-slate-400">Biaya Layanan Platform</span>
+                            <span className="font-bold text-slate-800 dark:text-200">{rupiah(5000)}</span>
                         </div>
+                        {platformFee > 5000 && (
+                            <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-50 dark:border-slate-800 text-amber-600 dark:text-amber-400">
+                                <span className="font-medium">Biaya Metode Pembayaran</span>
+                                <span className="font-bold">{rupiah(platformFee - 5000)}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
                             <span className="font-bold text-slate-800 dark:text-slate-200">Total Pembayaran</span>
                             <span className="text-xl font-black text-blue-600 dark:text-blue-400">{rupiah(finalTotal)}</span>

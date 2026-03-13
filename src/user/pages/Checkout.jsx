@@ -134,9 +134,46 @@ export default function Checkout() {
         window.scrollTo(0, 0);
     }, [id, navigate]);
 
+    // Helper for POST redirection
+    const postForm = (url, data) => {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+
+        // Parse data if it's a string
+        let params = data;
+        if (typeof data === 'string') {
+            try { params = JSON.parse(data); } catch (e) { console.error("Failed to parse redirectData", e); }
+        }
+
+        if (params && typeof params === 'object') {
+            Object.keys(params).forEach(key => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = params[key];
+                form.appendChild(input);
+            });
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+    };
+
     if (!event) return null;
 
-    const platformFee = 8500;
+    // Calculate Dynamic Platform Fee
+    const getPlatformFee = () => {
+        const baseFee = 5000;
+        let pMethodFee = 0;
+        if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) pMethodFee = 5000;
+        else if (selectedBank === "QRIS") pMethodFee = 3000;
+        else if (["OVO", "SHOPEEPAY"].includes(selectedBank)) pMethodFee = 3500;
+        else if (selectedBank === "LINKAJA") pMethodFee = 5000;
+        return baseFee + pMethodFee;
+    };
+
+    const currentPlatformFee = getPlatformFee();
 
     // Calculate Tax Amount
     const taxAmount = eventTax ? (
@@ -221,7 +258,38 @@ export default function Checkout() {
 
         const bookingCode = `HT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
         const discountAmount = appliedVoucher?.discount_amount || 0;
-        const finalCalculatedTotal = Math.max(0, totalAmount - discountAmount) + platformFee + taxAmount;
+
+        // Fee Structure
+        const basePlatformFee = 5000;
+        let paymentFee = 0;
+
+        if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) {
+            paymentFee = 5000;
+        } else if (selectedBank === "QRIS") {
+            paymentFee = 3000;
+        } else if (["OVO", "SHOPEEPAY"].includes(selectedBank)) {
+            paymentFee = 3500;
+        } else if (selectedBank === "LINKAJA") {
+            paymentFee = 5000;
+        }
+
+        const totalPlatformFee = basePlatformFee + paymentFee;
+        const subtotal = Math.max(0, (Number(totalAmount) || 0) - (Number(discountAmount) || 0));
+        const finalCalculatedTotal = Math.round(subtotal + totalPlatformFee + (Number(taxAmount) || 0));
+
+        console.log("[Checkout] Fee breakdown:", {
+            subtotal,
+            totalPlatformFee,
+            taxAmount,
+            discountAmount,
+            finalCalculatedTotal
+        });
+
+        if (isNaN(finalCalculatedTotal) || finalCalculatedTotal <= 0) {
+            triggerToast("Nominal pembayaran tidak valid. Silakan coba lagi.");
+            setLoading(false);
+            return;
+        }
 
         setLoading(true);
         try {
@@ -304,21 +372,47 @@ export default function Checkout() {
             }
 
             if (gatewayData?.success) {
-                navigate(`/payment/${gatewayData.transaction_id || order.id}`, {
+                const { 
+                    redirect_url, 
+                    redirect_data, 
+                    app_payment_url, 
+                    deeplink, 
+                    url_qris,
+                    transaction_id 
+                } = gatewayData;
+
+                // 1. Handle POST Redirect (e.g. LinkAja)
+                if (redirect_url && redirect_data) {
+                    postForm(redirect_url, redirect_data);
+                    return;
+                }
+
+                // 2. Handle Simple Redirect (e.g. OVO)
+                if (redirect_url) {
+                    window.location.href = redirect_url;
+                    return;
+                }
+
+                // 3. Handle App/Deeplink (e.g. ShopeePay)
+                const appUrl = app_payment_url || deeplink;
+                if (appUrl) {
+                    window.location.href = appUrl;
+                    return;
+                }
+
+                // 4. Handle QRIS (Stay on page or redirect to specialized status page)
+                // For QRIS, we navigate to the payment status page where the QR is displayed
+                navigate(`/payment/${transaction_id || order.id}`, {
                     state: {
                         total: finalCalculatedTotal,
                         selectedPayment: isSnap ? "snap" : "bayarind",
                         orderId: order.id,
                         eventTitle: eventData?.title || event.title,
                         visitorEmail: ticketHolders[0].email,
-                        virtualAccountNo: gatewayData.va_number || gatewayData.url_qris || gatewayData.payment_code || gatewayData.virtualAccountNo,
+                        virtualAccountNo: gatewayData.va_number || url_qris || gatewayData.payment_code,
                         bankName: selectedBank,
                         expiredDate: gatewayData.expiry_date || gatewayData.expiredDate,
-                        redirectUrl: gatewayData.redirect_url || gatewayData.app_payment_url || gatewayData.deeplink,
-                        redirectData: gatewayData.redirect_data,
-                        urlQris: gatewayData.url_qris,
-                        appPaymentUrl: gatewayData.app_payment_url,
-                        deeplink: gatewayData.deeplink
+                        urlQris: url_qris
                     }
                 });
             } else {
@@ -404,7 +498,7 @@ export default function Checkout() {
                                     selectedTickets={selectedTickets}
                                     ticketTypes={ticketTypes}
                                     totalAmount={totalAmount}
-                                    platformFee={platformFee}
+                                    platformFee={currentPlatformFee}
                                     taxAmount={taxAmount}
                                     eventTax={eventTax}
                                     appliedVoucher={appliedVoucher}
@@ -421,7 +515,7 @@ export default function Checkout() {
                                 selectedTickets={selectedTickets}
                                 ticketTypes={ticketTypes}
                                 totalAmount={totalAmount}
-                                platformFee={platformFee}
+                                platformFee={currentPlatformFee}
                                 taxAmount={taxAmount}
                                 eventTax={eventTax}
                                 currentStep={currentStep}
