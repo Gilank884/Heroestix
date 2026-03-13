@@ -302,8 +302,11 @@ export default function Payment() {
                                                 {(urlQris?.startsWith('http') || urlQris?.startsWith('data:image')) ? (
                                                     <div className="p-2 bg-white flex flex-col items-center">
                                                         <img src={urlQris} alt="QRIS" className="w-[180px] h-auto rounded-lg" />
-                                                        <div className="mt-4 px-4 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-400 tracking-tighter uppercase">
-                                                            Pindai untuk membayar
+                                                        <div className="mt-4 flex flex-col items-center gap-3">
+                                                            <div className="px-4 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-400 tracking-tighter uppercase">
+                                                                Pindai untuk membayar
+                                                            </div>
+                                                            <img src="/Logo/qris.jpg" alt="QRIS Logo" className="h-8 w-auto object-contain" />
                                                         </div>
                                                     </div>
                                                 ) : virtualAccountNo ? (
@@ -315,8 +318,11 @@ export default function Payment() {
                                                             viewBox={`0 0 256 256`}
                                                             className="rounded-lg"
                                                         />
-                                                        <div className="mt-4 px-4 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-400 tracking-tighter uppercase">
-                                                            Pindai untuk membayar
+                                                        <div className="mt-4 flex flex-col items-center gap-3">
+                                                            <div className="px-4 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-400 tracking-tighter uppercase">
+                                                                Pindai untuk membayar
+                                                            </div>
+                                                            <img src="/Logo/qris.jpg" alt="QRIS Logo" className="h-8 w-auto object-contain" />
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -408,23 +414,24 @@ export default function Payment() {
                             </div>
 
                             {/* Right Side: Logo */}
-                            <div className="md:w-1/3 p-8 flex items-center justify-center bg-slate-50/50 dark:bg-slate-800/30">
-                                <div className={`${bankName === 'BAYARIND' ? 'bg-[#003380]' : 'bg-white'} p-6 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 flex items-center justify-center min-w-[120px] transition-transform hover:scale-105`}>
-                                    <img
-                                        src={
-                                            bankName === 'BNI' ? '/Logo/bni.png' :
-                                                bankName === 'BRI' ? '/Logo/bri.png' :
-                                                    bankName === 'MANDIRI' ? '/Logo/mandiri.png' :
-                                                        bankName === 'QRIS' ? '/Logo/qris.jpg' :
+                            <div className={`md:w-1/3 p-8 flex items-center justify-center bg-slate-50/50 dark:bg-slate-800/30 ${bankName === 'QRIS' ? 'hidden md:flex' : ''}`}>
+                                {bankName !== 'QRIS' && (
+                                    <div className={`${bankName === 'BAYARIND' ? 'bg-[#003380]' : 'bg-white'} p-6 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 flex items-center justify-center min-w-[120px] transition-transform hover:scale-105`}>
+                                        <img
+                                            src={
+                                                bankName === 'BNI' ? '/Logo/bni.png' :
+                                                    bankName === 'BRI' ? '/Logo/bri.png' :
+                                                        bankName === 'MANDIRI' ? '/Logo/mandiri.png' :
                                                             bankName === 'OVO' ? '/Logo/ovo.png' :
                                                                 bankName === 'LINKAJA' ? '/Logo/linkaja.png' :
                                                                     bankName === 'SHOPEEPAY' ? '/Logo/shopeepay.png' :
                                                                         '/Logo/bayarind.png'
-                                        }
-                                        alt={bankName}
-                                        className="h-10 w-auto object-contain"
-                                    />
-                                </div>
+                                            }
+                                            alt={bankName}
+                                            className="h-10 w-auto object-contain"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
