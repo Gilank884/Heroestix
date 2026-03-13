@@ -3,6 +3,7 @@ import Navbar from '../../components/Layout/Navbar';
 import Footer from '../../components/Layout/Footer';
 import AboutHero from "../../components/home/AboutHero";
 import AboutDescription from "../../components/home/AboutDescription";
+import FeaturesSection from "../../components/home/FeaturesSection";
 import AboutDeveloper from "../../components/home/AboutDeveloper";
 import { motion } from "framer-motion";
 
@@ -18,11 +19,11 @@ export default function AboutUsPage() {
                 {/* What is Heroestix Section */}
                 <AboutDescription />
 
+                {/* Kenapa Harus Heroestix Section - Moved from Home */}
+                <FeaturesSection />
+
                 {/* Developer Section - PT Peristiwa Kreatif Nusantara */}
                 <AboutDeveloper />
-
-
-
             </main>
 
             <Footer />

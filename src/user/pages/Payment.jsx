@@ -295,9 +295,9 @@ export default function Payment() {
                             {/* Left Side: Info */}
                             <div className="flex-1 p-8 space-y-6">
                                 {bankName === 'QRIS' ? (
-                                    <div className="space-y-4 text-center md:text-left">
+                                    <div className="space-y-4 text-center">
                                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Scan QRIS</p>
-                                        <div className="flex justify-center md:justify-start">
+                                        <div className="flex justify-center">
                                             <div className="bg-white p-4 rounded-3xl shadow-inner border-4 border-slate-50 inline-block overflow-hidden transition-all hover:scale-105 duration-500">
                                                 {(urlQris?.startsWith('http') || urlQris?.startsWith('data:image')) ? (
                                                     <div className="p-2 bg-white flex flex-col items-center">

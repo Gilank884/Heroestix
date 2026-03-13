@@ -309,9 +309,9 @@ export default function EventDetail() {
                                 />
                             </div>
 
-                            <div className="space-y-4 px-2">
-                                <h2 className="text-xl text-slate-900 dark:text-slate-100 transition-all">Deskripsi</h2>
-                                <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm line-clamp-2 md:line-clamp-none whitespace-pre-wrap">
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Deskripsi</h2>
+                                <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm whitespace-pre-wrap">
                                     {event.description || "Tidak ada deskripsi tersedia untuk event ini."}
                                 </p>
                             </div>

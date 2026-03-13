@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import Navbar from "../../components/Layout/Navbar";
 import EventSection from "../../components/home/EventSection";
 import HeroSection from "../../components/home/HeroSection";
-import FeaturesSection from "../../components/home/FeaturesSection";
 import BottomBar from "../../components/Layout/Footer";
 
 import { Ticket } from "lucide-react";
@@ -27,7 +26,7 @@ export default function Home() {
                 {/* UNIFIED GRID BACKGROUND - Restricted to Hero + Event + Features sections */}
                 <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
                     {/* BASE LIGHT GRID (Gray) */}
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] [mask-image:radial-gradient(ellipse_100%_100%_at_50%_0%,#000_60%,transparent_100%)]"></div>
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] [mask-image:radial-gradient(ellipse_100%_100%_at_50%_0%,#000_60%,transparent_100%)] opacity-30"></div>
 
                     {/* INTERACTIVE GLOWING GRID (Blue - Neon Glow Layer) */}
                     <div
@@ -35,7 +34,7 @@ export default function Home() {
                         style={{
                             maskImage: `radial-gradient(180px circle at ${mousePos.x}px ${mousePos.y}px, black 0%, transparent 100%)`,
                             WebkitMaskImage: `radial-gradient(180px circle at ${mousePos.x}px ${mousePos.y}px, black 0%, transparent 100%)`,
-                            opacity: 0.8
+                            opacity: 0.3
                         }}
                     ></div>
 
@@ -45,6 +44,7 @@ export default function Home() {
                         style={{
                             maskImage: `radial-gradient(150px circle at ${mousePos.x}px ${mousePos.y}px, black 0%, transparent 100%)`,
                             WebkitMaskImage: `radial-gradient(150px circle at ${mousePos.x}px ${mousePos.y}px, black 0%, transparent 100%)`,
+                            opacity: 0.4
                         }}
                     ></div>
                 </div>
@@ -67,8 +67,7 @@ export default function Home() {
                         </div>
                     </main>
 
-                    {/* FEATURES SECTION - Now inside the grid wrapper */}
-                    <FeaturesSection />
+                    {/* FEATURES SECTION - Removed from here, moved to About Us */}
                 </div>
             </div>
 
