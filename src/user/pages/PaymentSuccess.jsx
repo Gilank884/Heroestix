@@ -1,15 +1,37 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Layout/Navbar";
 import Footer from "../../components/Layout/Footer";
+import { supabase } from "../../lib/supabaseClient";
 
 export default function PaymentSuccess() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [externalId, setExternalId] = useState("");
 
     useEffect(() => {
         window.scrollTo(0, 0);
-    }, []);
+
+        const fetchTransactionId = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("transactions")
+                    .select("external_id")
+                    .eq("order_id", id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (data?.external_id) {
+                    setExternalId(data.external_id);
+                }
+            } catch (err) {
+                console.error("Error fetching external_id:", err);
+            }
+        };
+
+        if (id) fetchTransactionId();
+    }, [id]);
 
     return (
         <div className="bg-[#fbffff] min-h-screen font-sans text-slate-900 flex flex-col">
@@ -22,15 +44,17 @@ export default function PaymentSuccess() {
                         </svg>
                     </div>
                     <h2 className="text-3xl font-black text-slate-800 mb-2">Pembayaran Berhasil!</h2>
-                    <p className="text-slate-500 mb-8 font-medium">Terima kasih, pembayaran Anda untuk pesanan <span className="font-bold text-slate-700">#{id?.substring(0, 8).toUpperCase()}</span> telah kami terima. Tiket telah dikirimkan ke email Anda.</p>
-                    
-                    <button 
+                    <p className="text-slate-500 mb-8 font-medium">
+                        Terima kasih, pembayaran untuk Transaksi <span className="font-bold text-slate-700">{externalId || id?.substring(0, 8).toUpperCase()}</span> telah kami terima. Tiket telah dikirimkan ke email Anda.
+                    </p>
+
+                    <button
                         onClick={() => navigate(`/transaction-detail/${id}`)}
                         className="w-full bg-[#1b3bb6] hover:bg-blue-800 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/30"
                     >
                         Lihat E-Tiket Saya
                     </button>
-                    <button 
+                    <button
                         onClick={() => navigate('/')}
                         className="w-full mt-4 bg-white border-2 border-slate-100 hover:bg-slate-50 text-slate-600 font-bold py-4 rounded-2xl transition-all"
                     >
