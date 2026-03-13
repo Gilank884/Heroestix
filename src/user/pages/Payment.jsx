@@ -208,8 +208,7 @@ export default function Payment() {
 
     const handleCheckStatus = async () => {
         setStatusChecking(true);
-        try {
-            // Check status via inquiry endpoint
+        try {            // Check status via inquiry endpoint
             const { data, error } = await supabase.functions.invoke('inquiry-status', {
                 body: {
                     order_id: orderId

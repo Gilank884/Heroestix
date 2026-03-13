@@ -132,8 +132,8 @@ serve(async (req: Request) => {
       customerEmail: customer_email || "customer@email.com",
       customerAccount: customerAccount,
       description: `Payment for Order ${order_id}`,
-      callbackUrl: CALLBACK_URL,
-      redirectUrl: `${FRONTEND_URL}/payment/status/${order_id}`
+      callbackURL: CALLBACK_URL,
+      redirectURL: `${FRONTEND_URL}/payment/status/${order_id}`
     };
 
     // Add customerPhone for e-wallet channels
