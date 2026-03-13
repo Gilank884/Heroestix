@@ -21,15 +21,39 @@ serve(async (req: Request) => {
         return new Response("ok", { status: 200, headers: corsHeaders });
     }
 
-    // Explicitly handle non-POST methods (e.g., GET from browser)
+    // Handle GET requests (Browser Redirects)
+    if (req.method === "GET") {
+        console.warn(`[Payment Flag] GET request detected. Redirecting to frontend...`);
+        
+        // Try to get transactionNo from query params if available
+        const url = new URL(req.url);
+        const transactionNo = url.searchParams.get("transactionNo") || url.searchParams.get("trxId");
+        
+        // If we have a transaction number, we can try to find the order and redirect to its detail page
+        // But for now, a general redirect to profile/history or home is safer if we don't want to query DB here
+        // The user mentioned "redirect ke halaman url tersebut", usually means the order detail.
+        
+        const FRONTEND_URL = "https://heroestix.com";
+        let redirectTarget = `${FRONTEND_URL}/profile`; // Fallback to profile
+        
+        if (transactionNo) {
+             // We could fetch the transaction here to get the order_id, 
+             // but to keep this webhook fast and robust against DB lag, 
+             // we'll redirect to a generic "success" or "profile" page 
+             // where the frontend can handle the status check.
+             // Given the project structure, /transaction-detail/:id is common.
+             console.log(`[Payment Flag] Found transactionNo in redirect: ${transactionNo}`);
+        }
+
+        return Response.redirect(FRONTEND_URL, 302);
+    }
+
     if (req.method !== "POST") {
-        console.warn(`[Payment Flag] Method ${req.method} not allowed on this endpoint`);
         return new Response(JSON.stringify({
             paymentStatus: "01",
             paymentMessage: "Method Not Allowed. This is a webhook endpoint for POST requests only.",
-            help: "Please do not access this URL directly via browser. This endpoint expects payment notifications from the gateway."
         }), {
-            status: 405, // Method Not Allowed
+            status: 405,
             headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
     }

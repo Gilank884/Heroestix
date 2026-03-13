@@ -14,6 +14,8 @@ const DEFAULT_SECRET_KEY = "c438ca42baba01ffa2b9b5748ed897a4";
 const CALLBACK_URL =
   "https://qftuhnkzyegcxfozdfyz.functions.supabase.co/payment-flag";
 
+const FRONTEND_URL = "https://heroestix.com";
+
 // Channels that are Virtual Account based
 const VA_CHANNELS = ["MANDIRI", "BNI", "BRI"];
 
@@ -94,7 +96,7 @@ serve(async (req: Request) => {
     // Formula: Date.now() + 7h for WIB.
     const now = new Date();
     const wibOffset = 7 * 60 * 60 * 1000;
-    
+
     const transactionDate = new Date(now.getTime() + wibOffset).toISOString()
       .replace("T", " ")
       .substring(0, 19);
@@ -130,7 +132,8 @@ serve(async (req: Request) => {
       customerEmail: customer_email || "customer@email.com",
       customerAccount: customerAccount,
       description: `Payment for Order ${order_id}`,
-      callbackURL: CALLBACK_URL
+      callbackUrl: CALLBACK_URL,
+      redirectUrl: `${FRONTEND_URL}/payment/status/${order_id}`
     };
 
     // Add customerPhone for e-wallet channels

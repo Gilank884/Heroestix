@@ -101,7 +101,14 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify({ error: "Order not found", details: orderError }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { tickets, profiles, booking_code } = order;
+    const { tickets, profiles, booking_code, status } = order;
+    
+    // VERIFY PAYMENT STATUS BEFORE SENDING
+    if (status !== 'paid' && status !== 'success') {
+      console.warn(`⚠️ [Email] Order ${order_id} status is '${status}'. Emails are only sent for paid orders. Aborting.`);
+      return new Response(JSON.stringify({ success: false, message: `Order is ${status}, no email sent.` }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (!tickets || tickets.length === 0) {
       console.error("❌ [Email] No tickets found for this order");
       return new Response(JSON.stringify({ error: "No tickets found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });

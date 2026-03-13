@@ -16,6 +16,10 @@ import Checkout from "./user/pages/Checkout";
 import Payment from "./user/pages/Payment";
 import TransactionDetail from "./user/pages/TransactionDetail";
 import PaymentReceipt from "./user/pages/PaymentReceipt";
+import PaymentStatus from "./user/pages/PaymentStatus";
+import PaymentSuccess from "./user/pages/PaymentSuccess";
+import PaymentPending from "./user/pages/PaymentPending";
+import PaymentFailed from "./user/pages/PaymentFailed";
 import MockBayarind from "./user/pages/MockBayarind"; // Mock Import
 import CreatorPage from "./user/pages/CreatorPage";
 import ResetPassword from "./user/pages/ResetPassword";
@@ -435,6 +439,10 @@ export default function App() {
         <Route path="/select-ticket/:id" element={<SelectTicket />} />
         <Route path="/checkout/:id" element={<Checkout />} />
         <Route path="/payment/:id" element={<Payment />} />
+        <Route path="/payment/status/:id" element={<PaymentStatus />} />
+        <Route path="/payment/success/:id" element={<PaymentSuccess />} />
+        <Route path="/payment/pending/:id" element={<PaymentPending />} />
+        <Route path="/payment/failed/:id" element={<PaymentFailed />} />
         <Route path="/payment/receipt" element={<PaymentReceipt />} />
         <Route path="/payment/mock-bayarind" element={<MockBayarind />} />
         <Route path="/transaction-detail/:id" element={<TransactionDetail />} />
