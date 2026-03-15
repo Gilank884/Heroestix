@@ -138,12 +138,13 @@ serve(async (req: Request) => {
 
     // Add customerPhone for e-wallet channels
     if (EWALLET_CHANNELS.includes(method) && customer_phone) {
-      bayarindPayload.customerPhone = customer_phone;
+      // Keep only numbers and plus sign for max compatibility
+      bayarindPayload.customerPhone = customer_phone.replace(/[^\d+]/g, "");
     }
 
-    // ShopeePay description max 50 chars
+    // ShopeePay description max 50 chars, alphanumeric only to prevent 400 errors
     if (method === "SHOPEEPAY") {
-      bayarindPayload.description = `Order ${order_id}`.substring(0, 50);
+      bayarindPayload.description = `Order ${order_id}`.replace(/[^a-zA-Z0-9 ]/g, "").substring(0, 50);
     }
 
     console.log("PAYLOAD BEING SENT TO BAYARIND:", JSON.stringify(bayarindPayload, null, 2));
@@ -207,11 +208,28 @@ serve(async (req: Request) => {
 
       // E-wallet response fields
       if (bayarindData.redirectURL) result.redirect_url = bayarindData.redirectURL;
-      if (bayarindData.redirectData) result.redirect_data = bayarindData.redirectData;
+      
+      let redirectDataObj = bayarindData.redirectData;
+      if (typeof redirectDataObj === "string") {
+        try { redirectDataObj = JSON.parse(redirectDataObj); } catch (e) { /* ignore */ }
+      }
+
+      if (redirectDataObj) {
+        if (method === "SHOPEEPAY") {
+          // ShopeePay returns URLs in redirectData, not form data
+          const rdo = redirectDataObj as Record<string, string>;
+          result.app_payment_url = rdo.redirect_url_http || rdo.redirect_url_app;
+        } else {
+          result.redirect_data = redirectDataObj;
+        }
+      }
+
       if (bayarindData.deeplink) result.deeplink = bayarindData.deeplink;
       if (bayarindData.urlQris) result.url_qris = bayarindData.urlQris;
       if (bayarindData.qrisText) result.qris_text = bayarindData.qrisText;
       if (bayarindData.paymentCode) result.payment_code = bayarindData.paymentCode;
+      
+      // If gateway explicitly sent appPaymentUrl, use it
       if (bayarindData.appPaymentUrl) result.app_payment_url = bayarindData.appPaymentUrl;
 
       return new Response(JSON.stringify(result), {
