@@ -372,13 +372,13 @@ export default function Checkout() {
             }
 
             if (gatewayData?.success) {
-                const { 
-                    redirect_url, 
-                    redirect_data, 
-                    app_payment_url, 
-                    deeplink, 
+                const {
+                    redirect_url,
+                    redirect_data,
+                    app_payment_url,
+                    deeplink,
                     url_qris,
-                    transaction_id 
+                    transaction_id
                 } = gatewayData;
 
                 // 1. Handle POST Redirect (e.g. LinkAja)

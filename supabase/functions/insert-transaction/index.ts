@@ -11,10 +11,9 @@ const corsHeaders = {
 const DEFAULT_SECRET_KEY = "c438ca42baba01ffa2b9b5748ed897a4";
 
 // Supabase callback URL for Payment Flag (Non-SNAP)
+// Supabase callback URL for Payment Flag (Non-SNAP)
 const CALLBACK_URL =
   "https://qftuhnkzyegcxfozdfyz.functions.supabase.co/payment-flag";
-
-const FRONTEND_URL = "https://heroestix.com";
 
 // Channels that are Virtual Account based
 const VA_CHANNELS = ["MANDIRI", "BNI", "BRI"];
@@ -42,6 +41,8 @@ serve(async (req: Request) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
+
+    const BASE_URL = "https://heroestix.com";
 
     // Step 1: Fetch bank config
     const { data: bankConfig, error: configError } = await supabaseClient
@@ -133,7 +134,9 @@ serve(async (req: Request) => {
       customerAccount: customerAccount,
       description: `Payment for Order ${order_id}`,
       callbackURL: CALLBACK_URL,
-      redirectURL: `${FRONTEND_URL}/payment/status/${order_id}`
+      redirectURL: ["OVO", "LINKAJA", "SHOPEEPAY"].includes(method)
+        ? `${BASE_URL}/payment/success/${order_id}`
+        : `${BASE_URL}/payment/status/${order_id}`
     };
 
     // Add customerPhone for e-wallet channels
@@ -148,6 +151,7 @@ serve(async (req: Request) => {
     }
 
     console.log("PAYLOAD BEING SENT TO BAYARIND:", JSON.stringify(bayarindPayload, null, 2));
+    console.log("REDIRECT URL SENT:", bayarindPayload.redirectURL);
 
     // Step 8: Call Bayarind API (hardcoded — BAYARIND_PAYMENT_URL env var may be wrong)
     const BAYARIND_PAYMENT_URL = "https://paytest.bayarind.id/PaymentRegister";
@@ -208,7 +212,7 @@ serve(async (req: Request) => {
 
       // E-wallet response fields
       if (bayarindData.redirectURL) result.redirect_url = bayarindData.redirectURL;
-      
+
       let redirectDataObj = bayarindData.redirectData;
       if (typeof redirectDataObj === "string") {
         try { redirectDataObj = JSON.parse(redirectDataObj); } catch (e) { /* ignore */ }
@@ -228,7 +232,7 @@ serve(async (req: Request) => {
       if (bayarindData.urlQris) result.url_qris = bayarindData.urlQris;
       if (bayarindData.qrisText) result.qris_text = bayarindData.qrisText;
       if (bayarindData.paymentCode) result.payment_code = bayarindData.paymentCode;
-      
+
       // If gateway explicitly sent appPaymentUrl, use it
       if (bayarindData.appPaymentUrl) result.app_payment_url = bayarindData.appPaymentUrl;
 
