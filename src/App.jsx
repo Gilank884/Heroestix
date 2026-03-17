@@ -66,6 +66,7 @@ import DevDashboard from "./dev/pages/Dashboard";
 import DevCreators from "./dev/pages/Creators";
 import DevCreatorDetail from "./dev/pages/CreatorDetail";
 import DevEvents from "./dev/pages/Events";
+import DevEventConfig from "./dev/pages/EventConfig";
 import DevCash from "./dev/pages/Cash";
 import DevWithdrawals from "./dev/pages/Withdrawals";
 
@@ -409,6 +410,7 @@ export default function App() {
                   <Route path="/creators" element={<DevCreators />} />
                   <Route path="/creators/:id" element={<DevCreatorDetail />} />
                   <Route path="/events" element={<DevEvents />} />
+                  <Route path="/events/:eventId/config" element={<DevEventConfig />} />
                   <Route path="/cash" element={<DevCash />} />
                   <Route path="/withdrawals" element={<DevWithdrawals />} />
                   <Route path="*" element={<Navigate to="/" />} />

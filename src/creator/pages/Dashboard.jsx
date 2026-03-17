@@ -216,7 +216,7 @@ const CreatorDashboard = () => {
     if (!isVerified) return <VerificationPending />;
 
     return (
-        <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-6 pb-20">
             {/* Dashboard Sections */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 

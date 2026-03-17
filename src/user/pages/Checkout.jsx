@@ -25,6 +25,7 @@ export default function Checkout() {
     const [eventData, setEventData] = useState(null);
     const [eventTax, setEventTax] = useState(null);
     const [eventPlatformFee, setEventPlatformFee] = useState(null);
+    const [eventPaymentConfigs, setEventPaymentConfigs] = useState([]);
     const [termsAgreed, setTermsAgreed] = useState(false);
     const [showValidationErrors, setShowValidationErrors] = useState(false);
     const [appliedVoucher, setAppliedVoucher] = useState(null);
@@ -143,10 +144,24 @@ export default function Checkout() {
             }
         };
 
+        const fetchEventPaymentConfigs = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("event_payment_configs")
+                    .select("*")
+                    .eq("event_id", id);
+                if (error) throw error;
+                setEventPaymentConfigs(data || []);
+            } catch (error) {
+                console.error("Error fetching event payment configs:", error);
+            }
+        };
+
         fetchTicketTypes();
         fetchEventData();
         fetchEventTax();
         fetchEventPlatformFee();
+        fetchEventPaymentConfigs();
         window.scrollTo(0, 0);
     }, [id, navigate]);
 
@@ -185,10 +200,20 @@ export default function Checkout() {
             : (parseFloat(eventPlatformFee?.value) || 5000);
 
         let pMethodFee = 0;
-        if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) pMethodFee = 5000;
-        else if (selectedBank === "QRIS") pMethodFee = 3000;
-        else if (["OVO", "SHOPEEPAY"].includes(selectedBank)) pMethodFee = 3500;
-        else if (selectedBank === "LINKAJA") pMethodFee = 5000;
+        const config = eventPaymentConfigs.find(c => c.method_code === selectedBank);
+        
+        if (config) {
+            pMethodFee = config.fee_type === 'percentage'
+                ? Math.round((totalAmount * (parseFloat(config.fee_value) || 0)) / 100)
+                : (parseFloat(config.fee_value) || 0);
+        } else {
+            // Fallback to defaults if no config found (older events)
+            if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) pMethodFee = 5000;
+            else if (selectedBank === "QRIS") pMethodFee = 3000;
+            else if (["OVO", "SHOPEEPAY"].includes(selectedBank)) pMethodFee = 3500;
+            else if (selectedBank === "LINKAJA") pMethodFee = 5000;
+        }
+        
         return baseFee + pMethodFee;
     };
 
@@ -284,15 +309,22 @@ export default function Checkout() {
             : (parseFloat(eventPlatformFee?.value) || 5000);
 
         let paymentFee = 0;
+        const config = eventPaymentConfigs.find(c => c.method_code === selectedBank);
 
-        if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) {
-            paymentFee = 5000;
-        } else if (selectedBank === "QRIS") {
-            paymentFee = 3000;
-        } else if (["OVO", "SHOPEEPAY"].includes(selectedBank)) {
-            paymentFee = 3500;
-        } else if (selectedBank === "LINKAJA") {
-            paymentFee = 5000;
+        if (config) {
+            paymentFee = config.fee_type === 'percentage'
+                ? Math.round((totalAmount * (parseFloat(config.fee_value) || 0)) / 100)
+                : (parseFloat(config.fee_value) || 0);
+        } else {
+            if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) {
+                paymentFee = 5000;
+            } else if (selectedBank === "QRIS") {
+                paymentFee = 3000;
+            } else if (["OVO", "SHOPEEPAY"].includes(selectedBank)) {
+                paymentFee = 3500;
+            } else if (selectedBank === "LINKAJA") {
+                paymentFee = 5000;
+            }
         }
 
         const totalPlatformFee = basePlatformFee + paymentFee;
@@ -527,6 +559,7 @@ export default function Checkout() {
                                     appliedVoucher={appliedVoucher}
                                     selectedBank={selectedBank}
                                     setSelectedBank={setSelectedBank}
+                                    eventPaymentConfigs={eventPaymentConfigs}
                                 />
                             )}
                         </div>

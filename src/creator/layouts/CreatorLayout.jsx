@@ -30,6 +30,20 @@ const CreatorLayout = ({ children }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [stats, setStats] = useState({ brand_name: 'PT. Peristiwa Kreatif...' });
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    // Live Clock Update
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const formatDateTime = (date) => {
+        const options = { day: 'numeric', month: 'short', year: 'numeric' };
+        const dateStr = date.toLocaleDateString('id-ID', options);
+        const timeStr = date.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        return `${dateStr} • ${timeStr}`;
+    };
 
     // Fetch Creator Data
     useEffect(() => {
@@ -81,103 +95,34 @@ const CreatorLayout = ({ children }) => {
         }
     ];
 
-    const getColorClasses = (color, isActive) => {
-        const schemes = {
-            blue: {
-                activeBg: "from-blue-500/10 to-transparent",
-                activeText: "text-blue-400",
-                iconBg: "bg-gradient-to-br from-blue-600 to-blue-400",
-                iconText: "text-white",
-                shadow: "shadow-blue-500/20",
-                indicator: "bg-blue-500",
-                hoverText: "group-hover:text-blue-400",
-                iconIdleBg: "bg-slate-800/50",
-                iconIdleText: "text-slate-400"
-            },
-            orange: {
-                activeBg: "from-orange-500/10 to-transparent",
-                activeText: "text-orange-400",
-                iconBg: "bg-gradient-to-br from-orange-600 to-orange-400",
-                iconText: "text-white",
-                shadow: "shadow-orange-500/20",
-                indicator: "bg-orange-500",
-                hoverText: "group-hover:text-orange-400",
-                iconIdleBg: "bg-slate-800/50",
-                iconIdleText: "text-slate-400"
-            },
-            purple: {
-                activeBg: "from-purple-500/10 to-transparent",
-                activeText: "text-purple-400",
-                iconBg: "bg-gradient-to-br from-purple-600 to-purple-400",
-                iconText: "text-white",
-                shadow: "shadow-purple-500/20",
-                indicator: "bg-purple-500",
-                hoverText: "group-hover:text-purple-400",
-                iconIdleBg: "bg-slate-800/50",
-                iconIdleText: "text-slate-400"
-            },
-            emerald: {
-                activeBg: "from-emerald-500/10 to-transparent",
-                activeText: "text-emerald-400",
-                iconBg: "bg-gradient-to-br from-emerald-600 to-emerald-400",
-                iconText: "text-white",
-                shadow: "shadow-emerald-500/20",
-                indicator: "bg-emerald-500",
-                hoverText: "group-hover:text-emerald-400",
-                iconIdleBg: "bg-slate-800/50",
-                iconIdleText: "text-slate-400"
-            }
-        };
-        return schemes[color] || schemes.blue;
-    };
+
 
     return (
         <div className="flex h-screen bg-[#F8FAFC] text-slate-800 selection:bg-blue-100 selection:text-blue-700">
             {/* Sidebar */}
             <aside
                 className={`
-                    fixed inset-y-0 left-0 z-50 w-72 bg-[#0F172A] border-r border-slate-800 transition-all duration-500 ease-in-out transform
+                    fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transition-all duration-500 ease-in-out transform
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                    lg:relative lg:translate-x-0 overflow-y-auto no-scrollbar
+                    lg:relative lg:translate-x-0 overflow-y-auto no-scrollbar shadow-sm
                 `}
             >
-                {/* Decorative Blur Blobs for "Colorful" feel */}
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                    <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-600/10 rounded-full blur-[80px]" />
-                    <div className="absolute top-1/2 -right-24 w-48 h-48 bg-purple-600/10 rounded-full blur-[60px]" />
-                </div>
-                {/* Content Container */}
-                <div className="flex flex-col h-full relative z-10">
+
+                <div className="flex flex-col h-full relative z-10 bg-white">
                     {/* User Identity Header - High End Design */}
-                    <div className="p-6 pb-6 border-b border-slate-800/50 bg-gradient-to-b from-blue-900/10 to-transparent">
+                    <div className="h-20 flex items-center px-6 border-b border-slate-100">
                         <div className="flex items-center gap-4 group">
-                            <div className="relative">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-400 p-[2px] shadow-lg shadow-blue-900/40 group-hover:rotate-3 transition-transform duration-500 overflow-hidden">
-                                    <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center text-white text-xl overflow-hidden">
-                                        {stats.image_url ? (
-                                            <img
-                                                src={stats.image_url}
-                                                alt={stats.brand_name}
-                                                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                                            />
-                                        ) : (
-                                            user?.email?.charAt(0).toUpperCase()
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-[#0F172A] rounded-full shadow-sm" />
+                            <div className="w-11 h-11 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-3 transition-transform duration-500">
+                                <Sparkles className="text-white" size={20} />
                             </div>
                             <div className="flex flex-col min-w-0">
-                                <span className="text-[10px] text-blue-400 uppercase tracking-[0.2em] mb-1">Creator Panel</span>
-                                <h3 className="text-lg text-white truncate leading-tight tracking-tight uppercase group-hover:text-blue-400 transition-colors">
+                                <span className="text-[10px] text-blue-600 font-bold uppercase tracking-[0.2em] mb-1">Creator Panel</span>
+                                <h3 className="text-sm font-black text-slate-900 line-clamp-2 leading-tight uppercase group-hover:text-blue-600 transition-colors">
                                     {stats.brand_name || 'Creator'}
                                 </h3>
-                                <div className="flex items-center gap-1.5 mt-1">
-                                    <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{user?.email}</span>
-                                </div>
                             </div>
-                            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden ml-auto p-2 hover:bg-slate-800 rounded-xl transition-colors">
-                                <X size={20} className="text-slate-500" />
+                            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden ml-auto p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                                <X size={20} className="text-slate-400" />
                             </button>
                         </div>
                     </div>
@@ -189,38 +134,37 @@ const CreatorLayout = ({ children }) => {
                                 <h3 className="text-[10px] text-slate-500 uppercase tracking-[0.2em] px-4">
                                     {section.title}
                                 </h3>
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                     {section.items.map((item) => {
                                         const isActive = location.pathname === item.path;
                                         const Icon = item.icon;
-                                        const colors = getColorClasses(item.color, isActive);
 
                                         return (
                                             <Link
                                                 key={item.name}
                                                 to={item.path}
                                                 className={`
-                                                group flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-300 relative
+                                                group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-300 relative
                                                 ${isActive
-                                                        ? `bg-gradient-to-r ${colors.activeBg} ${colors.activeText}`
-                                                        : `text-slate-400 hover:bg-slate-800/60 ${colors.hoverText} hover:translate-x-1`
+                                                        ? `bg-blue-50 text-blue-600 font-bold`
+                                                        : `text-slate-500 hover:bg-slate-50 hover:text-slate-900`
                                                     }
                                             `}
                                             >
                                                 <div className={`
                                                 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300
                                                 ${isActive
-                                                        ? `${colors.iconBg} ${colors.iconText} shadow-lg ${colors.shadow}`
-                                                        : `${colors.iconIdleBg} ${colors.iconIdleText} group-hover:bg-slate-700/50 group-hover:shadow-md transition-all`
+                                                        ? `bg-white text-blue-600 shadow-sm border border-blue-100`
+                                                        : `bg-slate-50 text-slate-400 group-hover:bg-white group-hover:shadow-sm transition-all`
                                                     }
                                             `}>
                                                     <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                                                 </div>
-                                                <span className={`text-[14px] tracking-tight ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white transition-colors'}`}>
+                                                <span className="text-sm tracking-tight transition-colors">
                                                     {item.name}
                                                 </span>
                                                 {isActive && (
-                                                    <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 ${colors.indicator} rounded-l-full shadow-[0_0_12px_rgba(37,99,235,0.4)]`} />
+                                                    <div className="absolute right-3 w-1.5 h-1.5 bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.3)]" />
                                                 )}
                                             </Link>
                                         );
@@ -231,16 +175,16 @@ const CreatorLayout = ({ children }) => {
                     </nav>
 
                     {/* Footer / Sign Out Section */}
-                    <div className="p-6 border-t border-slate-800/50">
+                    <div className="p-4 border-t border-slate-100 bg-white">
                         <button
                             onClick={logout}
-                            className="group w-full flex items-center justify-between gap-2 px-6 py-4 bg-slate-800/30 hover:bg-red-500/10 text-slate-400 hover:text-red-400 rounded-2xl transition-all duration-300 border border-transparent hover:border-red-500/20"
+                            className="group w-full flex items-center justify-between gap-2 px-6 py-4 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-2xl transition-all duration-300 border border-slate-100 hover:border-red-100"
                         >
                             <div className="flex items-center gap-3">
                                 <LogOut size={18} className="transition-transform group-hover:-translate-x-1" />
-                                <span className="text-xs uppercase tracking-widest">Sign Out</span>
+                                <span className="text-xs font-black uppercase tracking-widest">Sign Out</span>
                             </div>
-                            <div className="w-1.5 h-1.5 bg-slate-700 rounded-full group-hover:bg-red-400 transition-colors" />
+                            <div className="w-1.5 h-1.5 bg-slate-200 rounded-full group-hover:bg-red-400 transition-colors" />
                         </button>
                     </div>
                 </div>
@@ -315,10 +259,11 @@ const CreatorLayout = ({ children }) => {
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <button className="relative p-2.5 text-slate-400 hover:bg-slate-50 rounded-xl transition-all">
-                            <Bell size={20} />
-                            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 border-2 border-white rounded-full" />
-                        </button>
+                        <div className="hidden md:flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100 shadow-sm">
+                            <span className="text-[11px] font-black text-slate-800 uppercase tracking-widest tabular-nums">
+                                {formatDateTime(currentTime)}
+                            </span>
+                        </div>
 
                         <div className="h-8 w-px bg-slate-200" />
 

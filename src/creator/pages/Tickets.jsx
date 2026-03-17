@@ -58,7 +58,7 @@ const Tickets = () => {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
+        <div className="space-y-8">
             {/* Header */}
             <div>
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight text-left uppercase">

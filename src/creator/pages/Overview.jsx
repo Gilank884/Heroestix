@@ -160,7 +160,7 @@ export default function Overview() {
     }
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-6xl mx-auto space-y-6 pb-20">
             <div className="flex items-center gap-3 py-2">
                 <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
                 <h2 className="text-2xl text-slate-900 tracking-tight">Statistik Data</h2>
