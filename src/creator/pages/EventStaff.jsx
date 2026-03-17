@@ -12,10 +12,13 @@ import {
     Clock,
     XCircle,
     Copy,
-    Send
+    Send,
+    Link as LinkIcon,
+    RefreshCw
 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import useAuthStore from '../../auth/useAuthStore';
+import { getBaseDomain, getSubdomainUrl } from '../../lib/navigation';
 
 // Helper for invocation if not standard
 const invokeFunction = async (name, body) => {
@@ -39,6 +42,8 @@ const EventStaff = () => {
     const [inviteEmail, setInviteEmail] = useState('');
     const [isInviting, setIsInviting] = useState(false);
     const [inviteStatus, setInviteStatus] = useState(null); // success, error
+    const [assistantToken, setAssistantToken] = useState(null);
+    const [isGeneratingToken, setIsGeneratingToken] = useState(false);
 
     useEffect(() => {
         if (eventId) {
@@ -77,6 +82,17 @@ const EventStaff = () => {
 
             if (inviteError) throw inviteError;
             setInvitations(inviteData || []);
+
+            // Fetch Event Assistant Token
+            const { data: eventData, error: eventError } = await supabase
+                .from('events')
+                .select('assistant_token')
+                .eq('id', eventId)
+                .single();
+
+            if (!eventError && eventData) {
+                setAssistantToken(eventData.assistant_token);
+            }
 
         } catch (error) {
             console.error("Error fetching staff data:", error);
@@ -163,6 +179,25 @@ const EventStaff = () => {
             fetchStaffData();
         } catch (error) {
             console.error("Error canceling invite:", error);
+        }
+    };
+
+    const handleGenerateToken = async () => {
+        setIsGeneratingToken(true);
+        try {
+            const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            const { error } = await supabase
+                .from('events')
+                .update({ assistant_token: newToken })
+                .eq('id', eventId);
+
+            if (error) throw error;
+            setAssistantToken(newToken);
+        } catch (error) {
+            console.error("Error generating token:", error);
+            alert("Gagal membuat link check-in.");
+        } finally {
+            setIsGeneratingToken(false);
         }
     };
 
@@ -306,42 +341,47 @@ const EventStaff = () => {
 
                 {/* Right Column: Sidebar */}
                 <aside className="lg:col-span-3 order-1 lg:order-2 space-y-6 lg:sticky lg:top-6">
-                    {/* Invite Form Card */}
+                    {/* Quick Access Card */}
                     <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 space-y-5">
                         <div>
-                            <h3 className="text-base font-black text-slate-900 tracking-tight border-b border-slate-100 pb-3">Undang Staff Baru</h3>
-                            <p className="text-xs text-slate-500 font-medium leading-relaxed pt-3">Kirim undangan via email untuk memberikan akses manajemen event ini.</p>
+                            <h3 className="text-base font-black text-slate-900 tracking-tight border-b border-slate-100 pb-3">Link Check-In Cepat</h3>
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed pt-3">Gunakan link ini untuk staff lapangan/volunteer agar bisa langsung melakukan check-in tanpa login.</p>
                         </div>
 
-                        <form onSubmit={handleInvite} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Staff</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                    <input
-                                        type="email"
-                                        required
-                                        value={inviteEmail}
-                                        onChange={(e) => setInviteEmail(e.target.value)}
-                                        placeholder="contoh@email.com"
-                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                    />
-                                </div>
-                            </div>
-
+                        {!assistantToken ? (
                             <button
-                                type="submit"
-                                disabled={isInviting || !inviteEmail}
-                                className="w-full py-3 bg-[#1a36c7] text-white rounded-xl font-bold text-xs hover:bg-[#152ba3] transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
+                                onClick={handleGenerateToken}
+                                disabled={isGeneratingToken}
+                                className="w-full py-3 bg-slate-100 text-slate-900 rounded-xl font-bold text-xs hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
                             >
-                                {isInviting ? 'Mengirim...' : <><Send size={16} /> Kirim Undangan</>}
+                                {isGeneratingToken ? 'Memproses...' : <><LinkIcon size={16} /> Buat Link Check-In</>}
                             </button>
-                        </form>
-
-                        {inviteStatus && (
-                            <div className={`p-4 rounded-xl border flex items-start gap-3 ${inviteStatus.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}`}>
-                                {inviteStatus.type === 'success' ? <CheckCircle2 size={18} className="shrink-0 mt-0.5" /> : <XCircle size={18} className="shrink-0 mt-0.5" />}
-                                <p className="text-xs font-medium">{inviteStatus.message}</p>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 overflow-hidden">
+                                    <p className="text-[10px] font-mono text-slate-400 break-all leading-relaxed">
+                                        {`${getSubdomainUrl(null)}scan-tiket/${eventId}/${assistantToken}`}
+                                    </p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(`${getSubdomainUrl(null)}scan-tiket/${eventId}/${assistantToken}`);
+                                            alert("Link tersalin!");
+                                        }}
+                                        className="flex-1 py-2.5 bg-[#1a36c7] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+                                    >
+                                        <Copy size={14} /> Salin
+                                    </button>
+                                    <button
+                                        onClick={handleGenerateToken}
+                                        disabled={isGeneratingToken}
+                                        className="p-2.5 bg-slate-100 text-slate-400 rounded-xl hover:text-slate-600 transition-all active:rotate-180 duration-500"
+                                        title="Reset Link"
+                                    >
+                                        <RefreshCw size={14} className={isGeneratingToken ? 'animate-spin' : ''} />
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -1,35 +1,66 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { HiQrcode, HiCheckCircle, HiExclamationCircle, HiChevronLeft, HiCamera, HiPencilAlt, HiLightningBolt } from 'react-icons/hi';
-import { Html5Qrcode } from 'html5-qrcode';
 import { supabase } from '../../lib/supabaseClient';
+import { Html5Qrcode } from 'html5-qrcode';
+import {
+    QrCode,
+    Keyboard,
+    CheckCircle2,
+    XCircle,
+    Search,
+    User,
+    Ticket,
+    ArrowRight,
+    Loader2,
+    Camera,
+    CameraOff,
+    Layers,
+    Zap
+} from 'lucide-react';
 
-const PublicScan = () => {
+export default function PublicScan() {
     const { eventId, token } = useParams();
     const [event, setEvent] = useState(null);
-    const [qrValue, setQrValue] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [ticketInfo, setTicketInfo] = useState(null);
-    const [error, setError] = useState(null);
     const [isValidating, setIsValidating] = useState(true);
-    const [scanMode, setScanMode] = useState('camera'); // camera | manual
-    const [isScanning, setIsScanning] = useState(false);
+    const [error, setError] = useState(null);
 
+    const [mode, setMode] = useState('qr'); // 'qr' or 'manual'
+    const [isCameraActive, setIsCameraActive] = useState(false);
+    const [inputValue, setInputValue] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState(null);
+    const [hasUserClosedCamera, setHasUserClosedCamera] = useState(false);
+    const inputRef = useRef(null);
     const scannerRef = useRef(null);
-    const qrRegionId = "public-reader";
+    const scannerContainerId = "public-reader";
 
     useEffect(() => {
         validateAssistant();
     }, [eventId, token]);
 
     useEffect(() => {
-        if (scanMode === 'camera' && event && !isScanning) {
-            startScanner();
-        } else if (scanMode === 'manual') {
-            stopScanner();
+        if (event && mode === 'qr' && !isCameraActive && !result && !hasUserClosedCamera) {
+            // Small delay to ensure DOM is ready for scanner container
+            const timer = setTimeout(() => {
+                startScanner();
+            }, 500);
+            return () => clearTimeout(timer);
         }
-        return () => stopScanner();
-    }, [scanMode, event]);
+    }, [event, mode, result, hasUserClosedCamera]);
+
+    useEffect(() => {
+        if (inputRef.current && mode === 'manual') {
+            inputRef.current.focus();
+        }
+    }, [mode]);
+
+    useEffect(() => {
+        return () => {
+            if (scannerRef.current) {
+                scannerRef.current.stop().catch(err => console.error("Error stopping scanner:", err));
+            }
+        };
+    }, []);
 
     const validateAssistant = async () => {
         setIsValidating(true);
@@ -52,251 +83,328 @@ const PublicScan = () => {
         }
     };
 
-    const startScanner = async () => {
-        try {
-            const html5QrCode = new Html5Qrcode(qrRegionId);
-            scannerRef.current = html5QrCode;
+    const stopScanner = async () => {
+        if (scannerRef.current) {
+            try {
+                await scannerRef.current.stop();
+                scannerRef.current = null;
+            } catch (err) {
+                console.error("Error stopping scanner:", err);
+            }
+        }
+        setIsCameraActive(false);
+        setHasUserClosedCamera(true);
+    };
 
-            const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+    const startScanner = async () => {
+        if (scannerRef.current) await stopScanner();
+
+        setIsCameraActive(true);
+        setResult(null);
+        setHasUserClosedCamera(false);
+        
+        try {
+            const html5QrCode = new Html5Qrcode(scannerContainerId);
+            scannerRef.current = html5QrCode;
+            
+            // Dynamic qrbox size based on container width
+            const qrboxFunction = (viewfinderWidth, viewfinderHeight) => {
+                let minEdgePercentage = 0.7; // 70%
+                let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+                let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+                return {
+                    width: qrboxSize,
+                    height: qrboxSize
+                };
+            };
+
+            const config = { 
+                fps: 20, 
+                qrbox: qrboxFunction,
+                aspectRatio: 1.0
+            };
 
             await html5QrCode.start(
                 { facingMode: "environment" },
                 config,
                 (decodedText) => {
-                    handleDecodedText(decodedText);
+                    handleCheckIn(decodedText);
+                    stopScanner();
                 }
             );
-            setIsScanning(true);
         } catch (err) {
             console.error("Camera error:", err);
-            setScanMode('manual');
+            setIsCameraActive(false);
         }
     };
 
-    const stopScanner = async () => {
-        if (scannerRef.current && scannerRef.current.isScanning) {
-            try {
-                await scannerRef.current.stop();
-                setIsScanning(false);
-            } catch (err) {
-                console.error("Failed to stop scanner:", err);
-            }
-        }
-    };
-
-    const handleDecodedText = (text) => {
-        setQrValue(text);
-        processScan(text);
-        if (navigator.vibrate) navigator.vibrate(50);
-    };
-
-    const processScan = async (value) => {
-        if (!value.trim() || !event) return;
+    const handleCheckIn = async (code) => {
+        if (!code || !event) return;
         setLoading(true);
-        setError(null);
-        setTicketInfo(null);
+        setResult(null);
 
         try {
-            const { data, error: fetchError } = await supabase
+            const { data: ticket, error: fetchError } = await supabase
                 .from('tickets')
                 .select(`
                     *,
                     ticket_types!inner (
                         name,
                         event_id
+                    ),
+                    orders (
+                        status
                     )
                 `)
-                .eq('qr_code', value.trim())
+                .eq('qr_code', code.trim())
                 .eq('ticket_types.event_id', eventId)
                 .single();
 
-            if (fetchError || !data) {
-                setError("Tiket tidak ditemukan.");
-            } else {
-                setTicketInfo(data);
+            if (fetchError || !ticket) {
+                setResult({
+                    status: 'error',
+                    message: 'Tiket tidak ditemukan atau tidak terdaftar untuk event ini.'
+                });
+                return;
             }
-        } catch (err) {
-            setError("Kesalahan koneksi.");
-        } finally {
-            setLoading(false);
-            if (scanMode === 'manual') setQrValue('');
-        }
-    };
 
-    const handleVerifyAccess = async () => {
-        if (!ticketInfo) return;
-        setLoading(true);
-        try {
+            if (ticket.orders?.status !== 'paid') {
+                setResult({
+                    status: 'error',
+                    ticket,
+                    message: 'Tiket belum dibayar.'
+                });
+                return;
+            }
+
+            if (ticket.status === 'used') {
+                setResult({
+                    status: 'error',
+                    ticket,
+                    message: 'Tiket sudah digunakan sebelumnya.'
+                });
+                return;
+            }
+
             const { error: updateError } = await supabase
                 .from('tickets')
                 .update({ status: 'used', used_at: new Date().toISOString() })
-                .eq('id', ticketInfo.id);
+                .eq('id', ticket.id);
 
             if (updateError) throw updateError;
-            setTicketInfo(prev => ({ ...prev, status: 'used' }));
-        } catch (err) {
-            alert("Gagal: " + err.message);
+
+            setResult({
+                status: 'success',
+                ticket,
+                message: 'Check-in berhasil! Selamat datang.'
+            });
+
+            if (mode === 'qr') setInputValue('');
+
+        } catch (error) {
+            setResult({
+                status: 'error',
+                message: 'Terjadi kesalahan sistem.'
+            });
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        handleCheckIn(inputValue);
     };
 
     if (isValidating) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="min-h-screen flex items-center justify-center bg-white font-sans">
+                <Loader2 className="animate-spin text-blue-600" size={32} />
             </div>
         );
     }
 
     if (error && !event) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 font-sans">
                 <div className="max-w-md w-full bg-white rounded-3xl p-8 text-center shadow-lg border border-slate-100">
-                    <HiExclamationCircle size={40} className="text-red-500 mx-auto mb-4" />
-                    <h2 className="text-lg font-bold text-slate-900 mb-2">Akses Ditolak</h2>
-                    <p className="text-slate-500 text-sm mb-6">{error}</p>
+                    <XCircle size={48} className="text-red-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-slate-900 mb-2">Akses Ditolak</h2>
+                    <p className="text-slate-500 text-sm">{error}</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-            {/* Tighter Header */}
-            <div className="sticky top-0 z-50 bg-white border-b border-slate-100 px-5 py-4 flex items-center justify-between shadow-sm">
+        <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
+            <div className="sticky top-0 z-50 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md">
-                        <HiLightningBolt size={16} />
+                    <div className="w-8 h-8 bg-[#1a36c7] rounded-lg flex items-center justify-center shadow-lg">
+                        <Layers size={18} className="text-white" />
                     </div>
-                    <div>
-                        <p className="text-[8px] font-black uppercase tracking-widest text-blue-600 leading-tight">Scanner Assistant</p>
-                        <h2 className="text-[13px] font-bold text-slate-900 truncate max-w-[180px] leading-tight mt-0.5">{event?.title}</h2>
+                    <div className="min-w-0">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#1a36c7] leading-none mb-1">Backstage Assistant</p>
+                        <h2 className="text-[13px] font-bold text-slate-900 truncate max-w-[180px] leading-tight">
+                            {event?.title}
+                        </h2>
                     </div>
                 </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 rounded-full border border-green-100">
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-green-50 rounded-full border border-green-100">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                    <span className="text-[9px] font-black uppercase text-green-600">Ready</span>
+                    <span className="text-[9px] font-bold uppercase text-green-600 tracking-wider">Ready</span>
                 </div>
             </div>
 
-            <div className="flex-1 max-w-md mx-auto w-full px-5 py-6 space-y-6">
-                {/* Tighter Mode Selector */}
-                <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-100">
+            <main className="flex-1 max-w-lg mx-auto w-full px-5 py-6 space-y-6">
+                <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
                     <button
-                        onClick={() => setScanMode('camera')}
-                        className={`flex-1 py-2.5 rounded-lg flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-tight transition-all ${scanMode === 'camera' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400'
-                            }`}
+                        onClick={() => { setMode('qr'); setInputValue(''); setResult(null); stopScanner(); setHasUserClosedCamera(false); }}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[11px] uppercase tracking-wider transition-all ${mode === 'qr' ? 'bg-[#1a36c7] text-white shadow-md shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
                     >
-                        <HiCamera size={14} /> Scan Kamera
+                        <QrCode size={16} /> Auto Scanner
                     </button>
                     <button
-                        onClick={() => setScanMode('manual')}
-                        className={`flex-1 py-2.5 rounded-lg flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-tight transition-all ${scanMode === 'manual' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400'
-                            }`}
+                        onClick={() => { setMode('manual'); setInputValue(''); setResult(null); stopScanner(); }}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[11px] uppercase tracking-wider transition-all ${mode === 'manual' ? 'bg-[#1a36c7] text-white shadow-md shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
                     >
-                        <HiPencilAlt size={14} /> Input Manual
+                        <Keyboard size={16} /> Input Kode
                     </button>
                 </div>
 
-                {/* Scan Area - STAYS LARGE */}
-                <div className="space-y-6">
-                    {scanMode === 'camera' ? (
-                        <div className="relative">
-                            <div className="bg-black rounded-3xl shadow-xl relative overflow-hidden aspect-square border-4 border-white">
-                                <div id={qrRegionId} className="w-full h-full" />
-                                {isScanning && (
-                                    <div className="absolute left-0 top-0 w-full h-0.5 bg-blue-500 shadow-[0_0_10px_rgba(37,99,235,1)] animate-[scan_2.5s_linear_infinite] z-10 pointer-events-none" />
-                                )}
-                            </div>
-                            <p className="text-center mt-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest">Arahkan kamera ke QR tiket</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            <input
-                                autoFocus
-                                type="text"
-                                value={qrValue}
-                                onChange={(e) => setQrValue(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && processScan(qrValue)}
-                                placeholder="Masukkan Kode Manual..."
-                                className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-center text-lg font-bold text-blue-600 placeholder:text-slate-200 focus:border-blue-500 outline-none shadow-sm"
-                            />
-                            <button
-                                onClick={() => processScan(qrValue)}
-                                className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest active:scale-95 transition-all"
-                            >
-                                Cari Tiket
-                            </button>
-                        </div>
-                    )}
-                </div>
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col items-center justify-center min-h-[340px] relative overflow-hidden">
+                    {mode === 'qr' && (
+                        <div className="w-full flex flex-col items-center gap-6">
+                            <div className={`relative w-full max-w-[300px] aspect-square bg-slate-900 rounded-2xl overflow-hidden border-4 border-white shadow-2xl transition-all duration-500 ${isCameraActive ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute pointer-events-none'}`}>
+                                <div id={scannerContainerId} className="w-full h-full" />
+                                
+                                {/* Scanning Overlay Interface */}
+                                <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none">
+                                    <div className="w-full h-full border-2 border-white/50 relative">
+                                        {/* Corner Accents */}
+                                        <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-[#1a36c7]" />
+                                        <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-[#1a36c7]" />
+                                        <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-[#1a36c7]" />
+                                        <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-[#1a36c7]" />
+                                        
+                                        {/* Moving Laser Line */}
+                                        <div className="absolute left-0 w-full h-0.5 bg-[#1a36c7] shadow-[0_0_15px_rgba(26,54,199,0.8)] animate-[scan_2s_ease-in-out_infinite]" />
+                                    </div>
+                                </div>
 
-                {/* Tighter Result Card */}
-                <div className="min-h-[220px]">
-                    {ticketInfo ? (
-                        <div className="bg-white rounded-3xl border border-slate-100 p-6 space-y-6 shadow-xl animate-in fade-in zoom-in-95 duration-300">
-                            <div className="flex items-center justify-between border-b border-slate-50 pb-4">
-                                <div>
-                                    <p className="text-[10px] font-bold text-blue-600 uppercase mb-0.5">{ticketInfo.ticket_types?.name}</p>
-                                    <h3 className="text-xl font-black text-slate-900 tracking-tight">{ticketInfo.full_name || 'GUEST_USER'}</h3>
-                                </div>
-                                <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${ticketInfo.status === 'unused' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                    }`}>
-                                    {ticketInfo.status === 'unused' ? 'UNUSED' : 'Terpakai'}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-0.5">
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Waktu Masuk</p>
-                                    <p className="text-[10px] font-bold text-slate-700">
-                                        {ticketInfo.used_at
-                                            ? new Date(ticketInfo.used_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                                            : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                                        } WIB
-                                    </p>
-                                </div>
-                                <div className="space-y-0.5 text-right">
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">ID Tiket</p>
-                                    <p className="text-[10px] font-mono font-bold text-slate-500 truncate">{ticketInfo.qr_code}</p>
-                                </div>
-                            </div>
-
-                            {ticketInfo.status === 'unused' ? (
                                 <button
-                                    onClick={handleVerifyAccess}
-                                    disabled={loading}
-                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2 active:scale-95"
+                                    onClick={stopScanner}
+                                    className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-red-600/90 backdrop-blur-sm text-white rounded-full font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-lg border border-red-500/50 active:scale-95 transition-all"
                                 >
-                                    {loading ? "PROSES..." : <><HiCheckCircle size={18} /> Konfirmasi</>}
+                                    <CameraOff size={12} /> Tutup Kamera
                                 </button>
-                            ) : (
-                                <div className="w-full py-4 bg-slate-100 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 cursor-not-allowed">
-                                    <HiExclamationCircle size={18} /> Sudah Digunakan
-                                </div>
+                            </div>
+
+                            {!isCameraActive && (
+                                <button
+                                    onClick={startScanner}
+                                    className="px-8 py-10 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center gap-4 text-slate-400 hover:border-[#1a36c7] hover:text-[#1a36c7] group transition-all w-full max-w-[300px]"
+                                >
+                                    <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                        <Camera size={40} className="text-slate-300 group-hover:text-[#1a36c7]" />
+                                    </div>
+                                    <div className="text-center">
+                                        <span className="block font-black text-xs uppercase tracking-widest mb-1">Kamera Mati</span>
+                                        <span className="text-[10px] font-bold text-slate-400">Klik untuk menyalakan ulang</span>
+                                    </div>
+                                </button>
                             )}
                         </div>
-                    ) : error ? (
-                        <div className="bg-red-50 rounded-2xl border border-red-100 p-6 text-center">
-                            <HiExclamationCircle size={24} className="text-red-500 mx-auto mb-2" />
-                            <p className="text-red-700 font-bold text-xs uppercase tracking-widest">{error}</p>
+                    )}
+
+                    <form onSubmit={handleSubmit} className={`w-full max-w-xs transition-all ${isCameraActive ? 'mt-8' : (mode === 'qr' ? 'mt-4' : '')}`}>
+                        <div className="relative flex gap-2">
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                placeholder={mode === 'qr' ? 'Awaiting QR...' : 'Scan / Input Kode...'}
+                                className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-xl text-slate-900 outline-none focus:border-[#1a36c7] focus:bg-white transition-all text-center placeholder:text-slate-300 shadow-inner"
+                            />
+                            {mode === 'manual' && (
+                                <button
+                                    type="submit"
+                                    disabled={loading || !inputValue}
+                                    className="px-5 bg-[#1a36c7] text-white rounded-2xl font-bold hover:bg-blue-700 transition-all disabled:opacity-50 shadow-lg shadow-blue-900/20 active:scale-95"
+                                >
+                                    {loading ? <Loader2 className="animate-spin" size={20} /> : <ArrowRight size={20} />}
+                                </button>
+                            )}
                         </div>
-                    ) : (
-                        <div className="text-center py-10 opacity-30">
-                            <HiQrcode size={32} className="mx-auto mb-3 text-slate-400" />
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Menunggu Input/Scan</p>
+                    </form>
+                </div>
+
+                <div className="min-h-[220px]">
+                    {!result && !loading && (
+                        <div className="text-center py-10 opacity-20 space-y-4">
+                            {mode === 'qr' ? <QrCode size={48} className="mx-auto" /> : <Search size={48} className="mx-auto" />}
+                            <p className="font-bold text-slate-900 uppercase tracking-[0.2em] text-[10px]">Ready for validation</p>
+                        </div>
+                    )}
+
+                    {loading && (
+                        <div className="text-center py-10 space-y-4">
+                            <div className="relative inline-block">
+                                <Loader2 size={48} className="text-[#1a36c7] animate-spin" />
+                                <Zap size={16} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#1a36c7]" />
+                            </div>
+                            <p className="font-bold text-[#1a36c7] uppercase tracking-[0.2em] text-[10px] animate-pulse">Verifying Access...</p>
+                        </div>
+                    )}
+
+                    {result && !loading && (
+                        <div className={`bg-white rounded-3xl p-6 border shadow-2xl animate-in zoom-in-95 duration-300 ${result.status === 'success' ? 'border-green-100 shadow-green-900/5' : 'border-red-100 shadow-red-900/5'}`}>
+                            <div className="flex flex-col items-center gap-6">
+                                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center ${result.status === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                    {result.status === 'success' ? <CheckCircle2 size={40} /> : <XCircle size={40} />}
+                                </div>
+
+                                <div className="space-y-4 w-full text-center">
+                                    <div className="space-y-1">
+                                        <h3 className={`text-2xl font-black tracking-tight ${result.status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                                            {result.status === 'success' ? 'VALID' : 'INVALID'}
+                                        </h3>
+                                        <p className="text-slate-500 font-bold text-[11px] uppercase tracking-wide">{result.message}</p>
+                                    </div>
+
+                                    {result.ticket && (
+                                        <div className="grid grid-cols-1 gap-3 text-left">
+                                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Visitor Name</p>
+                                                <p className="font-black text-slate-900 text-base">{result.ticket.full_name || 'GUEST_USER'}</p>
+                                            </div>
+                                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket Type</p>
+                                                <p className="font-black text-slate-700 text-sm">{result.ticket.ticket_types?.name}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={() => { setResult(null); setInputValue(''); if (mode === 'qr' && !hasUserClosedCamera) startScanner(); }}
+                                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] hover:bg-slate-800 transition-all mt-4"
+                                    >
+                                        Lanjut Scan
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
-            </div>
+            </main>
+
+            <footer className="p-8 text-center pb-12">
+                <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">Authorized by HeroesTix</p>
+            </footer>
 
             <style dangerouslySetInnerHTML={{
                 __html: `
-                @keyframes scan {
-                    0% { top: 0; }
-                    100% { top: 100%; }
-                }
                 #public-reader video {
                     width: 100% !important;
                     height: 100% !important;
@@ -305,13 +413,11 @@ const PublicScan = () => {
                 #public-reader {
                     border: none !important;
                 }
+                @keyframes scan {
+                    0%, 100% { top: 0%; }
+                    50% { top: 100%; }
+                }
             `}} />
-
-            <div className="mt-auto p-6 text-center">
-                <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.3em]">Verified by HeroesTix</p>
-            </div>
         </div>
     );
-};
-
-export default PublicScan;
+}

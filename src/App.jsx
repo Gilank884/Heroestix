@@ -60,6 +60,7 @@ import RequestWithdrawal from "./creator/pages/RequestWithdrawal";
 import EventRequestWithdrawal from "./creator/pages/EventRequestWithdrawal";
 import EventStaff from "./creator/pages/EventStaff";
 import SalesDetail from "./creator/pages/SalesDetail";
+import PublicScan from "./creator/pages/PublicScan";
 
 // Dev Pages
 import DevDashboard from "./dev/pages/Dashboard";
@@ -333,6 +334,8 @@ export default function App() {
         <Route path="/masuk" element={<Masuk role="creator" />} />
         <Route path="/daftar" element={<CreatorDaftar />} />
         <Route path="/accept-invite" element={<AcceptInvite />} />
+        <Route path="/check-in/:eventId/:token" element={<Navigate to={`/scan-tiket/${window.location.pathname.split('/')[2]}/${window.location.pathname.split('/')[3]}`} replace />} />
+        <Route path="/scan-tiket/:eventId/:token" element={<PublicScan />} />
 
         {/* Event Management Routes - Protected by StaffGuard (allows both creators and staff tokens) */}
         <Route path="/manage/event/:id/*" element={
@@ -450,7 +453,8 @@ export default function App() {
         <Route path="/transaction-detail/:id" element={<TransactionDetail />} />
         <Route path="/become-creator" element={<BecomeCreator />} />
         <Route path="/creator/:id" element={<CreatorPage />} />
-        <Route path="/accept-invite" element={<AcceptInvite />} />
+        <Route path="/check-in/:eventId/:token" element={<Navigate to={`/scan-tiket/${window.location.pathname.split('/')[2]}/${window.location.pathname.split('/')[3]}`} replace />} />
+        <Route path="/scan-tiket/:eventId/:token" element={<PublicScan />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
