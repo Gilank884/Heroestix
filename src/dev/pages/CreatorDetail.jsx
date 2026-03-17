@@ -9,7 +9,11 @@ import {
     Mail,
     CreditCard,
     ShieldCheck,
-    Clock
+    Clock,
+    Settings,
+    Save,
+    Layout,
+    Check
 } from 'lucide-react';
 
 const CreatorDetail = () => {
@@ -17,6 +21,11 @@ const CreatorDetail = () => {
     const navigate = useNavigate();
     const [creator, setCreator] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [events, setEvents] = useState([]);
+    const [selectedEvent, setSelectedEvent] = useState(null);
+    const [feeData, setFeeData] = useState({ name: 'Biaya Platform', type: 'fixed', value: 5000 });
+    const [saving, setSaving] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
 
     useEffect(() => {
         const fetchCreator = async () => {
@@ -65,8 +74,89 @@ const CreatorDetail = () => {
 
         if (id) {
             fetchCreator();
+            fetchActiveEvents();
         }
     }, [id, navigate]);
+
+    const fetchActiveEvents = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('events')
+                .select('id, title, poster_url')
+                .eq('creator_id', id)
+                .eq('status', 'active');
+
+            if (error) throw error;
+            setEvents(data || []);
+        } catch (error) {
+            console.error("Error fetching creator events:", error);
+        }
+    };
+
+    const handleSelectEvent = async (event) => {
+        setSelectedEvent(event);
+        try {
+            const { data, error } = await supabase
+                .from('event_platform_fees')
+                .select('*')
+                .eq('event_id', event.id)
+                .maybeSingle();
+
+            if (data) {
+                setFeeData({
+                    name: data.name || 'Biaya Platform',
+                    type: data.type || 'fixed',
+                    value: data.value || 0
+                });
+            } else {
+                setFeeData({ name: 'Biaya Platform', type: 'fixed', value: 5000 });
+            }
+        } catch (error) {
+            console.error("Error fetching event fee:", error);
+        }
+    };
+
+    const handleSaveFee = async () => {
+        if (!selectedEvent) return;
+        setSaving(true);
+        try {
+            const payload = {
+                event_id: selectedEvent.id,
+                name: feeData.name,
+                type: feeData.type,
+                value: parseFloat(feeData.value) || 0
+            };
+
+            const { data: existing } = await supabase
+                .from('event_platform_fees')
+                .select('id')
+                .eq('event_id', selectedEvent.id)
+                .maybeSingle();
+
+            let error;
+            if (existing) {
+                const { error: updateError } = await supabase
+                    .from('event_platform_fees')
+                    .update(payload)
+                    .eq('event_id', selectedEvent.id);
+                error = updateError;
+            } else {
+                const { error: insertError } = await supabase
+                    .from('event_platform_fees')
+                    .insert(payload);
+                error = insertError;
+            }
+
+            if (error) throw error;
+            
+            setSuccessMessage(`Fee for "${selectedEvent.title}" updated!`);
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (error) {
+            alert('Gagal menyimpan: ' + error.message);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const handleToggleVerification = async () => {
         try {
@@ -217,6 +307,151 @@ const CreatorDetail = () => {
                                 )}
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Platform Fee Management Section */}
+            <div className="mt-12 space-y-8">
+                <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
+                    <h2 className="text-2xl font-extrabold text-slate-900 italic">Ongoing <span className="text-blue-600 not-italic">Event Fees</span></h2>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Event List */}
+                    <div className="lg:col-span-1 space-y-4">
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Active Events</h4>
+                        <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                            {events.length > 0 ? (
+                                events.map((ev) => (
+                                    <button
+                                        key={ev.id}
+                                        onClick={() => handleSelectEvent(ev)}
+                                        className={`w-full p-4 rounded-2xl border transition-all text-left flex items-center gap-4 group ${selectedEvent?.id === ev.id
+                                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:border-blue-400'
+                                            }`}
+                                    >
+                                        <div className="w-12 h-12 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden shrink-0">
+                                            <img
+                                                src={ev.poster_url || 'https://via.placeholder.com/150'}
+                                                alt={ev.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className={`font-black text-xs uppercase tracking-tight truncate ${selectedEvent?.id === ev.id ? 'text-white' : 'text-slate-900'}`}>{ev.title}</p>
+                                            <p className={`text-[9px] font-bold mt-1 ${selectedEvent?.id === ev.id ? 'text-blue-100' : 'text-slate-400'}`}>ID: {ev.id.substring(0, 8)}...</p>
+                                        </div>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                    <Layout size={24} className="mx-auto text-slate-300 mb-2" />
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No Active Events</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Fee Configuration Form */}
+                    <div className="lg:col-span-2">
+                        {selectedEvent ? (
+                            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-[#1a36c7] flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                                            <Settings size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                                Platform Configuration
+                                            </h3>
+                                            <p className="text-[10px] font-bold text-slate-400 italic mt-0.5">Adjusting fees for: {selectedEvent.title}</p>
+                                        </div>
+                                    </div>
+                                    {successMessage && (
+                                        <div className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl border border-emerald-100 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 animate-in zoom-in duration-300">
+                                            <Check size={14} /> {successMessage}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-8 space-y-8">
+                                    <div className="space-y-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-300 ml-1">Label Name</label>
+                                            <input
+                                                type="text"
+                                                value={feeData.name}
+                                                onChange={e => setFeeData({ ...feeData, name: e.target.value })}
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/5 transition-all"
+                                                placeholder="e.g. Platform Fee"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-300 ml-1">Fee Engine</label>
+                                                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-50 rounded-2xl border border-slate-100">
+                                                    {['fixed', 'percentage'].map((type) => (
+                                                        <button
+                                                            key={type}
+                                                            onClick={() => setFeeData({ ...feeData, type })}
+                                                            className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${feeData.type === type
+                                                                ? 'bg-white text-blue-600 shadow-sm border border-slate-200'
+                                                                : 'text-slate-400 hover:text-slate-600'
+                                                                }`}
+                                                        >
+                                                            {type}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-300 ml-1">
+                                                    {feeData.type === 'fixed' ? 'Nominal Value (IDR)' : 'Percentage Value (%)'}
+                                                </label>
+                                                <div className="relative group">
+                                                    <input
+                                                        type="number"
+                                                        value={feeData.value}
+                                                        onChange={e => setFeeData({ ...feeData, value: e.target.value })}
+                                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/5 transition-all text-xl"
+                                                    />
+                                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-slate-300 text-xl group-focus-within:text-blue-600 transition-colors">
+                                                        {feeData.type === 'fixed' ? 'Rp' : '%'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={handleSaveFee}
+                                        disabled={saving}
+                                        className="w-full bg-[#1a36c7] text-white py-5 rounded-3xl font-black text-xs uppercase tracking-[0.2em] hover:bg-[#152ba3] transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 group"
+                                    >
+                                        {saving ? (
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                            <Save size={18} className="group-hover:rotate-12 transition-transform" />
+                                        )}
+                                        {saving ? 'Updating System...' : 'Synchronize Fee Data'}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="h-full min-h-[400px] bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center opacity-60">
+                                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm mb-6">
+                                    <Settings size={32} className="text-slate-300" />
+                                </div>
+                                <h3 className="text-lg font-black text-slate-400 uppercase tracking-widest italic">Node Selection Required</h3>
+                                <p className="text-[11px] font-bold text-slate-400 mt-2 max-w-[280px]">Select an active event from the left panel to begin configuring its financial parameters.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
