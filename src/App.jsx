@@ -23,6 +23,7 @@ import PaymentFailed from "./user/pages/PaymentFailed";
 import MockBayarind from "./user/pages/MockBayarind"; // Mock Import
 import CreatorPage from "./user/pages/CreatorPage";
 import ResetPassword from "./user/pages/ResetPassword";
+import TicketValidation from "./user/pages/TicketValidation";
 
 import PrivacyPolicy from "./user/pages/PrivacyPolicy";
 import TermsOfService from "./user/pages/TermsOfService";
@@ -456,6 +457,7 @@ export default function App() {
         <Route path="/check-in/:eventId/:token" element={<Navigate to={`/scan-tiket/${window.location.pathname.split('/')[2]}/${window.location.pathname.split('/')[3]}`} replace />} />
         <Route path="/scan-tiket/:eventId/:token" element={<PublicScan />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/validasi-tiket" element={<TicketValidation />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>

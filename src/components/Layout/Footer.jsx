@@ -47,6 +47,7 @@ export default function BottomBar() {
                                 { name: "Cari Event", path: "/#events" },
                                 { name: "Jadi Kreator", path: "/become-creator" },
                                 { name: "Tentang Kami", path: "/about-us" },
+                                { name: "Cek Validasi Tiket", path: "/validasi-tiket" },
                             ].map((link, idx) => (
                                 <li key={idx}>
                                     <Link
