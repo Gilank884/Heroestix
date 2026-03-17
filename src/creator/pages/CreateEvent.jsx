@@ -6,6 +6,7 @@ import { INDONESIA_REGIONS } from '../../constants/locations';
 import useAuthStore from '../../auth/useAuthStore';
 import GeneralInfoSection from '../components/create-event/GeneralInfoSection';
 import TaxConfigurationSection from '../components/create-event/TaxConfigurationSection';
+import PlatformFeeConfigurationSection from '../components/create-event/PlatformFeeConfigurationSection';
 import DateTimeLocationSection from '../components/create-event/DateTimeLocationSection';
 
 const CreateEvent = () => {
@@ -60,6 +61,15 @@ const CreateEvent = () => {
         };
     });
 
+    const [platformFeeData, setPlatformFeeData] = useState(() => {
+        const saved = localStorage.getItem('heroestix_platform_fee_draft');
+        return saved ? JSON.parse(saved) : {
+            name: 'Biaya Platform',
+            type: 'fixed',
+            value: '5000'
+        };
+    });
+
     useEffect(() => {
         localStorage.setItem('heroestix_event_draft', JSON.stringify(eventData));
     }, [eventData]);
@@ -71,6 +81,10 @@ const CreateEvent = () => {
     useEffect(() => {
         localStorage.setItem('heroestix_tax_draft', JSON.stringify(taxData));
     }, [taxData]);
+
+    useEffect(() => {
+        localStorage.setItem('heroestix_platform_fee_draft', JSON.stringify(platformFeeData));
+    }, [platformFeeData]);
 
     useEffect(() => {
         if (creatorId) {
@@ -188,10 +202,24 @@ const CreateEvent = () => {
                 if (taxError) throw taxError;
             }
 
-            // 5. Clear Drafts
+            // 5. Create Platform Fee (Refactored to separate table)
+            if (platformFeeData.name && platformFeeData.value) {
+                const { error: pfError } = await supabase
+                    .from('event_platform_fees')
+                    .insert({
+                        event_id: event.id,
+                        name: platformFeeData.name,
+                        type: platformFeeData.type,
+                        value: parseFloat(platformFeeData.value) || 0
+                    });
+                if (pfError) throw pfError;
+            }
+
+            // 6. Clear Drafts
             localStorage.removeItem('heroestix_event_draft');
             localStorage.removeItem('heroestix_ticket_draft');
             localStorage.removeItem('heroestix_tax_draft');
+            localStorage.removeItem('heroestix_platform_fee_draft');
 
             // Success redirect to management
             navigate(`/manage/event/${event.id}/ticket-categories`);
@@ -275,6 +303,11 @@ const CreateEvent = () => {
                             <TaxConfigurationSection
                                 taxData={taxData}
                                 setTaxData={setTaxData}
+                            />
+
+                            <PlatformFeeConfigurationSection
+                                platformFeeData={platformFeeData}
+                                setPlatformFeeData={setPlatformFeeData}
                             />
 
                             <DateTimeLocationSection

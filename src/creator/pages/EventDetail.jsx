@@ -10,13 +10,15 @@ import {
     Edit,
     Clock,
     CheckCircle2,
-    Tag
+    Tag,
+    Settings
 } from 'lucide-react';
 import { getCategoryName, getSubCategoryName } from '../../constants/categories';
 import VerificationPending from '../components/VerificationPending';
 import TaxManagementSection from '../components/event-detail/TaxManagementSection';
 import DateTimeLocationManagement from '../components/event-detail/DateTimeLocationManagement';
 import GeneralInfoManagement from '../components/event-detail/GeneralInfoManagement';
+import PlatformFeeManagementSection from '../components/event-detail/PlatformFeeManagementSection';
 
 const EventDetail = () => {
     const { id: eventId } = useParams();
@@ -28,7 +30,8 @@ const EventDetail = () => {
     const tabs = [
         "Informasi Umum",
         "Tanggal Dan Lokasi",
-        "Pajak Hiburan"
+        "Pajak Hiburan",
+        "Biaya Platform"
     ];
 
     useEffect(() => {
@@ -113,6 +116,11 @@ const EventDetail = () => {
                             {activeTab === 'Pajak Hiburan' && (
                                 <TaxManagementSection eventId={eventId} />
                             )}
+
+                            {/* Platform Fee Tab */}
+                            {activeTab === 'Biaya Platform' && (
+                                <PlatformFeeManagementSection eventId={eventId} />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -127,6 +135,7 @@ const EventDetail = () => {
                                 let Icon = Info;
                                 if (tab === "Tanggal Dan Lokasi") Icon = Calendar;
                                 if (tab === "Pajak Hiburan") Icon = Tag;
+                                if (tab === "Biaya Platform") Icon = Settings;
 
                                 return (
                                     <button

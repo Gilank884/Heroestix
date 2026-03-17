@@ -18,6 +18,7 @@ export default function OrderSummary({
     platformFee,
     taxAmount,
     eventTax,
+    eventPlatformFee,
     currentStep,
     onNext,
     onPrev,
@@ -101,13 +102,21 @@ export default function OrderSummary({
                             </div>
                         )}
                         <div className="flex items-center justify-between text-sm font-bold">
-                            <span className="text-slate-600 dark:text-slate-300">Biaya Platform</span>
-                            <span className="text-slate-900 dark:text-white">{rupiah(5000)}</span>
+                            <span className="text-slate-600 dark:text-slate-300">
+                                {eventPlatformFee?.name || "Biaya Platform"}
+                            </span>
+                            <span className="text-slate-900 dark:text-white">
+                                {rupiah(
+                                    eventPlatformFee?.type === 'percentage'
+                                        ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100)
+                                        : (parseFloat(eventPlatformFee?.value) || 5000)
+                                )}
+                            </span>
                         </div>
-                        {platformFee > 5000 && (
+                        {platformFee > (eventPlatformFee?.type === 'percentage' ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100) : (parseFloat(eventPlatformFee?.value) || 5000)) && (
                             <div className="flex items-center justify-between text-sm font-bold text-amber-600 dark:text-amber-400">
-                                <span>Biaya Pembayaran</span>
-                                <span>{rupiah(platformFee - 5000)}</span>
+                                <span>Biaya Layanan</span>
+                                <span>{rupiah(platformFee - (eventPlatformFee?.type === 'percentage' ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100) : (parseFloat(eventPlatformFee?.value) || 5000)))}</span>
                             </div>
                         )}
                     </>

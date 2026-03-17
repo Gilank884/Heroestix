@@ -24,6 +24,7 @@ export default function Checkout() {
     const [ticketTypes, setTicketTypes] = useState([]);
     const [eventData, setEventData] = useState(null);
     const [eventTax, setEventTax] = useState(null);
+    const [eventPlatformFee, setEventPlatformFee] = useState(null);
     const [termsAgreed, setTermsAgreed] = useState(false);
     const [showValidationErrors, setShowValidationErrors] = useState(false);
     const [appliedVoucher, setAppliedVoucher] = useState(null);
@@ -128,9 +129,24 @@ export default function Checkout() {
             }
         };
 
+        const fetchEventPlatformFee = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("event_platform_fees")
+                    .select("*")
+                    .eq("event_id", id)
+                    .maybeSingle();
+                if (error) throw error;
+                setEventPlatformFee(data);
+            } catch (error) {
+                console.error("Error fetching event platform fee:", error);
+            }
+        };
+
         fetchTicketTypes();
         fetchEventData();
         fetchEventTax();
+        fetchEventPlatformFee();
         window.scrollTo(0, 0);
     }, [id, navigate]);
 
@@ -164,7 +180,10 @@ export default function Checkout() {
 
     // Calculate Dynamic Platform Fee
     const getPlatformFee = () => {
-        const baseFee = 5000;
+        const baseFee = eventPlatformFee?.type === 'percentage'
+            ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100)
+            : (parseFloat(eventPlatformFee?.value) || 5000);
+
         let pMethodFee = 0;
         if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) pMethodFee = 5000;
         else if (selectedBank === "QRIS") pMethodFee = 3000;
@@ -260,7 +279,10 @@ export default function Checkout() {
         const discountAmount = appliedVoucher?.discount_amount || 0;
 
         // Fee Structure
-        const basePlatformFee = 5000;
+        const basePlatformFee = eventPlatformFee?.type === 'percentage'
+            ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100)
+            : (parseFloat(eventPlatformFee?.value) || 5000);
+
         let paymentFee = 0;
 
         if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) {
@@ -501,6 +523,7 @@ export default function Checkout() {
                                     platformFee={currentPlatformFee}
                                     taxAmount={taxAmount}
                                     eventTax={eventTax}
+                                    eventPlatformFee={eventPlatformFee}
                                     appliedVoucher={appliedVoucher}
                                     selectedBank={selectedBank}
                                     setSelectedBank={setSelectedBank}
@@ -518,6 +541,7 @@ export default function Checkout() {
                                 platformFee={currentPlatformFee}
                                 taxAmount={taxAmount}
                                 eventTax={eventTax}
+                                eventPlatformFee={eventPlatformFee}
                                 currentStep={currentStep}
                                 onNext={handleNextStep}
                                 onPrev={handlePrevStep}
