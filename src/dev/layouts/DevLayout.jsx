@@ -16,12 +16,18 @@ import {
     User
 } from 'lucide-react';
 import useAuthStore from '../../auth/useAuthStore';
+import { supabase } from '../../lib/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DevLayout = ({ children }) => {
     const { logout, user } = useAuthStore();
     const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        logout();
+    };
 
     const navItems = [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -106,7 +112,7 @@ const DevLayout = ({ children }) => {
                                 </div>
                             </div>
                             <button
-                                onClick={logout}
+                                onClick={handleLogout}
                                 className="w-full flex items-center justify-center gap-2 px-4 py-3 text-slate-500 hover:text-red-600 font-bold text-xs uppercase tracking-widest hover:bg-red-50 rounded-xl transition-all whitespace-nowrap"
                             >
                                 <LogOut size={16} />
@@ -115,7 +121,7 @@ const DevLayout = ({ children }) => {
                         </div>
                     ) : (
                         <button
-                            onClick={logout}
+                            onClick={handleLogout}
                             className="w-full flex items-center justify-center py-4 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                         >
                             <LogOut size={20} />

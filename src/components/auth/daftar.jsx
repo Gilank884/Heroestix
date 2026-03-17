@@ -285,7 +285,7 @@ const Daftar = ({ role = "user" }) => {
                                             <input
                                                 type="text"
                                                 name="nama"
-                                                placeholder="Sesuai ID"
+                                                placeholder="Masukkan Nama Lengkap"
                                                 value={form.nama}
                                                 onChange={handleChange}
                                                 required

@@ -177,7 +177,10 @@ const CreatorLayout = ({ children }) => {
                     {/* Footer / Sign Out Section */}
                     <div className="p-4 border-t border-slate-100 bg-white">
                         <button
-                            onClick={logout}
+                            onClick={async () => {
+                                await supabase.auth.signOut();
+                                logout();
+                            }}
                             className="group w-full flex items-center justify-between gap-2 px-6 py-4 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-2xl transition-all duration-300 border border-slate-100 hover:border-red-100"
                         >
                             <div className="flex items-center gap-3">
