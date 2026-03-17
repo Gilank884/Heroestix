@@ -93,87 +93,108 @@ const CreatorDashboard = () => {
             setIsVerified(verified);
             if (!verified) { setLoading(false); return; }
 
-            // Fetch Events & Transactions
+            // 1. Fetch Events
             const { data: eventsData, error: eventsError } = await supabase
                 .from('events')
-                .select('*, ticket_types(price, quota, sold)')
+                .select('*, ticket_types(id, price, quota, sold)')
                 .eq('creator_id', user.id);
 
             if (eventsError) throw eventsError;
 
-            // Fetch Tickets with joined Orders to calculate revenue
-            const eventIds = eventsData.map(e => e.id);
-            let totalRev = 0;
-            let ticketsDataForDemographics = [];
-
-            if (eventIds.length > 0) {
-                const { data: ticketsWithOrders, error: tError } = await supabase
-                    .from('tickets')
-                    .select(`
-                        id,
-                        created_at,
-                        gender,
-                        order_id,
-                        orders!inner (id, total, status),
-                        ticket_types!inner (event_id)
-                    `)
-                    .in('ticket_types.event_id', eventIds)
-                    .eq('orders.status', 'paid');
-
-                if (tError) throw tError;
-
-                if (ticketsWithOrders && ticketsWithOrders.length > 0) {
-                    // To handle orders with multiple tickets fairly:
-                    // 1. Get all unique order IDs
-                    const orderIds = [...new Set(ticketsWithOrders.map(t => t.order_id))];
-
-                    // 2. Fetch total ticket count for EACH of these orders (to split revenue)
-                    const { data: allTicketsInOrders } = await supabase
-                        .from('tickets')
-                        .select('order_id')
-                        .in('order_id', orderIds);
-
-                    const orderTicketCounts = {};
-                    allTicketsInOrders?.forEach(t => {
-                        orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
-                    });
-
-                    // 3. Calculate revenue: (Order Total / Total Tickets) - 8500 per ticket
-                    let calculatedTotalRev = 0;
-                    ticketsWithOrders.forEach(t => {
-                        const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
-                        const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
-                        calculatedTotalRev += (shareOfGross - 8500);
-                    });
-
-                    totalRev = calculatedTotalRev;
-                    ticketsDataForDemographics = ticketsWithOrders;
-                    setTicketsData(ticketsWithOrders);
-                }
-            }
-
-            setEvents(eventsData);
-
-            // Calculate Stats
+            // Initialize stats with base events data
             let totalSold = 0;
             eventsData?.forEach(ev => {
                 ev.ticket_types?.forEach(tt => {
                     totalSold += tt.sold || 0;
                 });
+                ev.calculatedRevenue = 0; // default
             });
 
-            // Demographics using already fetched data
+            // 2. Fetch Tickets & Orders for Revenue Calculation (if events exist)
+            const eventIds = eventsData?.map(e => e.id) || [];
+            let totalRev = 0;
+            let ticketsDataForDemographics = [];
+
+            if (eventIds.length > 0) {
+                try {
+                    // Get all ticket type IDs for these events
+                    const allTTIds = [];
+                    eventsData.forEach(ev => {
+                        ev.ticket_types?.forEach(tt => allTTIds.push(tt.id));
+                    });
+
+                    if (allTTIds.length > 0) {
+                        const { data: ticketsWithOrders, error: tError } = await supabase
+                            .from('tickets')
+                            .select(`
+                                id,
+                                created_at,
+                                gender,
+                                order_id,
+                                ticket_type_id,
+                                orders!inner (id, total, status)
+                            `)
+                            .in('ticket_type_id', allTTIds)
+                            .eq('orders.status', 'paid');
+
+                        if (!tError && ticketsWithOrders?.length > 0) {
+                            const orderIds = [...new Set(ticketsWithOrders.map(t => t.order_id))];
+                            const { data: allTicketsInOrders } = await supabase
+                                .from('tickets')
+                                .select('order_id')
+                                .in('order_id', orderIds);
+
+                            const orderTicketCounts = {};
+                            allTicketsInOrders?.forEach(t => {
+                                orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
+                            });
+
+                            const eventRevenueMap = {};
+                            let calculatedTotalRev = 0;
+
+                            ticketsWithOrders.forEach(t => {
+                                const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
+                                const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
+                                const netPerTicket = (shareOfGross - 8500);
+                                
+                                calculatedTotalRev += netPerTicket;
+                                
+                                // Find which event this ticket belongs to
+                                const event = eventsData.find(ev => 
+                                    ev.ticket_types?.some(tt => tt.id === t.ticket_type_id)
+                                );
+                                if (event) {
+                                    eventRevenueMap[event.id] = (eventRevenueMap[event.id] || 0) + netPerTicket;
+                                }
+                            });
+
+                            totalRev = calculatedTotalRev;
+                            ticketsDataForDemographics = ticketsWithOrders;
+                            setTicketsData(ticketsWithOrders);
+
+                            eventsData.forEach(ev => {
+                                ev.calculatedRevenue = eventRevenueMap[ev.id] || 0;
+                            });
+                        }
+                    }
+                } catch (revError) {
+                    console.error('Error calculating revenue:', revError);
+                    // Continue anyway to show at least the events
+                }
+            }
+
+            setEvents(eventsData || []);
+
+            // 3. Demographics calculation
             let genderResult = [];
             if (ticketsDataForDemographics.length > 0) {
                 let maleCount = 0;
                 let femaleCount = 0;
-
                 ticketsDataForDemographics.forEach(ticket => {
                     const g = ticket.gender?.toLowerCase();
                     if (g === 'laki - laki' || g === 'laki-laki' || g === 'male') maleCount++;
                     else if (g === 'perempuan' || g === 'female') femaleCount++;
                 });
-
                 if (maleCount > 0 || femaleCount > 0) {
                     genderResult = [
                         { name: 'Laki - Laki', value: maleCount, color: '#3B82F6' },
@@ -181,6 +202,7 @@ const CreatorDashboard = () => {
                     ];
                 }
             }
+
             setStats({
                 totalEvents: eventsData?.length || 0,
                 totalTickets: totalSold,
@@ -432,7 +454,9 @@ const CreatorDashboard = () => {
                                 <th className="pb-6 pl-4">Operation Identity</th>
                                 <th className="pb-6 text-center">Operational Status</th>
                                 <th className="pb-6">Event Schedule</th>
-                                <th className="pb-6 text-right pr-4">Units Sold / Quota</th>
+                                <th className="pb-6 text-right">Units Distribution</th>
+                                <th className="pb-6 text-right">Net Revenue</th>
+                                <th className="pb-6 text-right pr-4">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -464,16 +488,29 @@ const CreatorDashboard = () => {
                                             <p className="text-sm font-medium text-slate-900 uppercase tracking-tight">{new Date(ev.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                                             <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">{ev.event_time}</p>
                                         </td>
-                                        <td className="py-8 text-right pr-4">
-                                            <p className="text-sm font-medium text-slate-900">
-                                                {ev.ticket_types?.reduce((acc, curr) => acc + (curr.sold || 0), 0)} / {ev.ticket_types?.reduce((acc, curr) => acc + (curr.quota || 0), 0)}
-                                            </p>
-                                            <div className="w-32 bg-slate-100 h-1.5 rounded-full overflow-hidden ml-auto mt-3">
-                                                <div
-                                                    className="bg-blue-600 h-full rounded-full transition-all duration-1000"
-                                                    style={{ width: `${(ev.ticket_types?.reduce((acc, curr) => acc + (curr.sold || 0), 0) / ev.ticket_types?.reduce((acc, curr) => acc + (curr.quota || 0), 0)) * 100 || 0}%` }}
-                                                />
+                                        <td className="py-8 text-right">
+                                            <div className="flex flex-col items-end gap-2 text-right">
+                                                <p className="text-sm font-black text-slate-900 tabular-nums">
+                                                    {ev.ticket_types?.reduce((acc, curr) => acc + (curr.sold || 0), 0)} <span className="text-slate-400 font-medium">/ {ev.ticket_types?.reduce((acc, curr) => acc + (curr.quota || 0), 0)}</span>
+                                                </p>
+                                                <div className="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="bg-blue-600 h-full rounded-full transition-all duration-1000"
+                                                        style={{ width: `${(ev.ticket_types?.reduce((acc, curr) => acc + (curr.sold || 0), 0) / ev.ticket_types?.reduce((acc, curr) => acc + (curr.quota || 0), 0)) * 100 || 0}%` }}
+                                                    />
+                                                </div>
                                             </div>
+                                        </td>
+                                        <td className="py-8 text-right font-black text-[#1b3bb6] tabular-nums text-base">
+                                            {rupiah(ev.calculatedRevenue || 0)}
+                                        </td>
+                                        <td className="py-8 text-right pr-4">
+                                            <button
+                                                onClick={() => navigate(`/manage/event/${ev.id}`)}
+                                                className="bg-white border border-slate-200 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 shadow-sm"
+                                            >
+                                                Manage
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
