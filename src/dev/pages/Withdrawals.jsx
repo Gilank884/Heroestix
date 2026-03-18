@@ -30,6 +30,9 @@ export default function Withdrawals() {
     const [stats, setStats] = useState({ total_pending: 0, total_processed: 0, pending_amount: 0 });
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
+    const [actionType, setActionType] = useState('approve');
+    const [actionAmount, setActionAmount] = useState(0);
+    const [processing, setProcessing] = useState(false);
 
     const [creatorStats, setCreatorStats] = useState(null);
     const [statsLoading, setStatsLoading] = useState(false);
@@ -306,14 +309,16 @@ export default function Withdrawals() {
                                         <StatusBadge status={req.status} />
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        {req.status === 'pending' && (
-                                            <button
-                                                onClick={() => handleOpenProcessModal(req)}
-                                                className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-colors"
-                                            >
-                                                Review
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={() => handleOpenProcessModal(req)}
+                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                                                req.status === 'pending'
+                                                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                                    : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            {req.status === 'pending' ? 'Review' : 'Detail'}
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -403,62 +408,77 @@ export default function Withdrawals() {
                                     </div>
                                 </div>
 
-                                {/* Action Form */}
-                                <div className="space-y-4">
-                                    <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                                {/* Action Form — hanya tampil jika masih pending */}
+                                {selectedRequest.status === 'pending' ? (
+                                    <div className="space-y-4">
+                                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                                            <button
+                                                onClick={() => setActionType('approve')}
+                                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${actionType === 'approve'
+                                                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                                                    : 'text-slate-500 hover:bg-slate-200'
+                                                    }`}
+                                            >
+                                                Approve
+                                            </button>
+                                            <button
+                                                onClick={() => setActionType('reject')}
+                                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${actionType === 'reject'
+                                                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                                                    : 'text-slate-500 hover:bg-slate-200'
+                                                    }`}
+                                            >
+                                                Reject
+                                            </button>
+                                        </div>
+
+                                        {actionType === 'approve' && (
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Confirmed Amount</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
+                                                    <input
+                                                        type="number"
+                                                        value={actionAmount}
+                                                        onChange={(e) => setActionAmount(e.target.value)}
+                                                        className="w-full pl-10 pr-4 py-3 bg-white border-2 border-emerald-100 rounded-xl font-bold text-emerald-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none"
+                                                    />
+                                                </div>
+                                                <p className="text-[10px] text-slate-400 font-medium">Original Request: {rupiah(selectedRequest.amount)}</p>
+                                            </div>
+                                        )}
+
+                                        {actionType === 'reject' && (
+                                            <div className="p-4 bg-red-50 rounded-xl border border-red-100 text-red-700 text-sm font-medium">
+                                                This action will reject the withdrawal request. The creator will be notified (if implemented).
+                                            </div>
+                                        )}
+
                                         <button
-                                            onClick={() => setActionType('approve')}
-                                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${actionType === 'approve'
-                                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                                                : 'text-slate-500 hover:bg-slate-200'
+                                            onClick={handleProcess}
+                                            disabled={processing}
+                                            className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider text-sm shadow-xl transition-all active:scale-95 ${actionType === 'approve'
+                                                ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20'
+                                                : 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20'
                                                 }`}
                                         >
-                                            Approve
-                                        </button>
-                                        <button
-                                            onClick={() => setActionType('reject')}
-                                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${actionType === 'reject'
-                                                ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
-                                                : 'text-slate-500 hover:bg-slate-200'
-                                                }`}
-                                        >
-                                            Reject
+                                            {processing ? 'Processing...' : (actionType === 'approve' ? 'Confirm Transfer ✓' : 'Reject Request')}
                                         </button>
                                     </div>
-
-                                    {actionType === 'approve' && (
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Confirmed Amount</label>
-                                            <div className="relative">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                                                <input
-                                                    type="number"
-                                                    value={actionAmount}
-                                                    onChange={(e) => setActionAmount(e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-3 bg-white border-2 border-emerald-100 rounded-xl font-bold text-emerald-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none"
-                                                />
-                                            </div>
-                                            <p className="text-[10px] text-slate-400 font-medium">Original Request: {rupiah(selectedRequest.amount)}</p>
-                                        </div>
-                                    )}
-
-                                    {actionType === 'reject' && (
-                                        <div className="p-4 bg-red-50 rounded-xl border border-red-100 text-red-700 text-sm font-medium">
-                                            This action will reject the withdrawal request. The creator will be notified (if implemented).
-                                        </div>
-                                    )}
-                                </div>
-
-                                <button
-                                    onClick={handleProcess}
-                                    disabled={processing}
-                                    className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider text-sm shadow-xl transition-all active:scale-95 ${actionType === 'approve'
-                                        ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20'
-                                        : 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20'
-                                        }`}
-                                >
-                                    {processing ? 'Processing...' : (actionType === 'approve' ? 'Confirm Transfer' : 'Reject Request')}
-                                </button>
+                                ) : (
+                                    // Read-only view untuk status yang sudah diproses
+                                    <div className={`p-4 rounded-xl border text-sm font-medium flex items-center gap-3 ${
+                                        selectedRequest.status === 'approved'
+                                            ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                                            : 'bg-red-50 border-red-100 text-red-700'
+                                    }`}>
+                                        {selectedRequest.status === 'approved' ? (
+                                            <><CheckCircle2 size={20} /> Transfer sudah dikonfirmasi. Jumlah: <strong>{rupiah(selectedRequest.amount)}</strong></>
+                                        ) : (
+                                            <><XCircle size={20} /> Withdrawal ini telah ditolak.</>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </div>

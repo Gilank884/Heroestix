@@ -27,7 +27,9 @@ export default function OrderSummary({
     isNextDisabled,
     appliedVoucher,
     onApplyVoucher,
-    voucherLoading
+    voucherLoading,
+    selectedBank,
+    eventPaymentConfigs = []
 }) {
     const discountAmount = appliedVoucher?.discount_amount || 0;
     const subtotalAfterDiscount = Math.max(0, totalAmount - discountAmount);
@@ -93,34 +95,51 @@ export default function OrderSummary({
                     </div>
                 )}
 
-                {currentStep === 2 && (
-                    <>
-                        {eventTax && parseFloat(eventTax.value) > 0 && (
+                {currentStep === 2 && (() => {
+                    const basePlatformFee = eventPlatformFee?.type === 'percentage'
+                        ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100)
+                        : (parseFloat(eventPlatformFee?.value) || 5000);
+
+                    let paymentMethodFee = 0;
+                    if (selectedBank) {
+                        const config = eventPaymentConfigs.find(c => c.method_code === selectedBank);
+                        if (config && parseFloat(config.fee_value) > 0) {
+                            paymentMethodFee = config.fee_type === 'percentage'
+                                ? Math.round((totalAmount * (parseFloat(config.fee_value)) / 100))
+                                : parseFloat(config.fee_value);
+                        } else {
+                            if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) paymentMethodFee = 5000;
+                            else if (selectedBank === "QRIS") paymentMethodFee = 3000;
+                            else if (["OVO", "SHOPEEPAY"].includes(selectedBank)) paymentMethodFee = 3500;
+                            else if (selectedBank === "LINKAJA") paymentMethodFee = 5000;
+                        }
+                    }
+
+                    return (
+                        <>
+                            {eventTax && parseFloat(eventTax.value) > 0 && (
+                                <div className="flex items-center justify-between text-sm font-bold">
+                                    <span className="text-slate-600 dark:text-slate-300">Pajak Hiburan ({eventTax.value}%)</span>
+                                    <span className="text-slate-900 dark:text-white">{rupiah(taxAmount)}</span>
+                                </div>
+                            )}
                             <div className="flex items-center justify-between text-sm font-bold">
-                                <span className="text-slate-600 dark:text-slate-300">Pajak Hiburan ({eventTax.value}%)</span>
-                                <span className="text-slate-900 dark:text-white">{rupiah(taxAmount)}</span>
+                                <span className="text-slate-600 dark:text-slate-300">
+                                    {eventPlatformFee?.name || "Biaya Platform"}
+                                </span>
+                                <span className="text-slate-900 dark:text-white">
+                                    {rupiah(basePlatformFee)}
+                                </span>
                             </div>
-                        )}
-                        <div className="flex items-center justify-between text-sm font-bold">
-                            <span className="text-slate-600 dark:text-slate-300">
-                                {eventPlatformFee?.name || "Biaya Platform"}
-                            </span>
-                            <span className="text-slate-900 dark:text-white">
-                                {rupiah(
-                                    eventPlatformFee?.type === 'percentage'
-                                        ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100)
-                                        : (parseFloat(eventPlatformFee?.value) || 5000)
-                                )}
-                            </span>
-                        </div>
-                        {platformFee > (eventPlatformFee?.type === 'percentage' ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100) : (parseFloat(eventPlatformFee?.value) || 5000)) && (
-                            <div className="flex items-center justify-between text-sm font-bold text-amber-600 dark:text-amber-400">
-                                <span>Biaya Layanan</span>
-                                <span>{rupiah(platformFee - (eventPlatformFee?.type === 'percentage' ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100) : (parseFloat(eventPlatformFee?.value) || 5000)))}</span>
-                            </div>
-                        )}
-                    </>
-                )}
+                            {paymentMethodFee > 0 && (
+                                <div className="flex items-center justify-between text-sm font-bold text-amber-600 dark:text-amber-400">
+                                    <span>Biaya Metode Pembayaran</span>
+                                    <span>{rupiah(paymentMethodFee)}</span>
+                                </div>
+                            )}
+                        </>
+                    );
+                })()}
             </div>
 
             <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl space-y-3">

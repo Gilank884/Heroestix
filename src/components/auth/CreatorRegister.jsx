@@ -34,8 +34,7 @@ const CreatorRegister = () => {
     const [photoPreview, setPhotoPreview] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [otpCode, setOtpCode] = useState("");
-    // const [userId, setUserId] = useState(null); // No longer needed
+    const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
     useEffect(() => {
         const checkExistingSession = async () => {
@@ -63,7 +62,7 @@ const CreatorRegister = () => {
         }
     };
 
-    const handleStep1Submit = (e) => {
+    const handleStep1Submit = async (e) => {
         e.preventDefault();
         setErrorMsg("");
 
@@ -77,6 +76,30 @@ const CreatorRegister = () => {
             setErrorMsg("Kata sandi tidak cocok.");
             return;
         }
+
+        // Cek apakah email sudah terdaftar
+        setIsCheckingEmail(true);
+        try {
+            const { data: existingProfile } = await supabase
+                .from('profiles')
+                .select('id, role')
+                .eq('email', form.email)
+                .maybeSingle();
+
+            if (existingProfile) {
+                const roleLabel = existingProfile.role === 'creator'
+                    ? 'Creator'
+                    : existingProfile.role === 'developer'
+                    ? 'Developer'
+                    : 'Pengguna (User)';
+                setErrorMsg(`Email ini sudah digunakan sebagai ${roleLabel}. Harap gunakan email lain.`);
+                setIsCheckingEmail(false);
+                return;
+            }
+        } catch (err) {
+            console.error('Email check error:', err);
+        }
+        setIsCheckingEmail(false);
 
         // Proceed to Step 2
         setStep(2);
@@ -115,7 +138,7 @@ const CreatorRegister = () => {
                 setForm(prev => ({ ...prev, photoUrl: publicUrl }));
             }
 
-            // 2. Create user in auth.users first (this triggers profile creation)
+            // 2. Daftar akun baru
             let authUser = null;
             const { data: authData, error: signUpError } = await supabase.auth.signUp({
                 email: form.email,
@@ -130,18 +153,8 @@ const CreatorRegister = () => {
                 }
             });
 
-            if (signUpError) {
-                // If user already exists, check if we have a current session
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session && session.user.email === form.email) {
-                    console.log("Using existing active session for registration upgrade");
-                    authUser = session.user;
-                } else {
-                    throw signUpError;
-                }
-            } else {
-                authUser = authData.user;
-            }
+            if (signUpError) throw signUpError;
+            authUser = authData.user;
 
             if (!authUser) {
                 throw new Error("Failed to identify user for registration");
@@ -150,21 +163,16 @@ const CreatorRegister = () => {
             console.log("Target User ID for Creator Profile:", authUser.id);
 
             // 2b. Ensure Profile Exists (Fix for 'profiles' FK constraint)
-            let resultSession = authData.session;
+            // authData may be null if we went through the login/upgrade path
+            let resultSession = authData?.session;
 
             if (!resultSession) {
-                // Try to fetch session if sign up didn't return it (rare, but possible if auto-confirm)
+                // Fetch active session (set by signUp or signInWithPassword above)
                 const { data: { session } } = await supabase.auth.getSession();
                 resultSession = session;
             }
 
             console.log("Current Session for Profile Creation:", resultSession);
-
-            if (!resultSession) {
-                // Without a session, client-side insert to 'profiles' will likely fail due to RLS unless anon Key has access
-                console.warn("No active session. Profile creation may fail if RLS requires auth.");
-                // In this case, we might need to rely on the trigger or use the Edge Function (which user removed)
-            }
 
             const { error: profileUpsertError } = await supabase.from('profiles').upsert({
                 id: authUser.id,
@@ -175,25 +183,13 @@ const CreatorRegister = () => {
 
             if (profileUpsertError) {
                 console.error("Profile Upsert Error:", profileUpsertError);
-
-                // DEBUG: Check if user exists in auth via Edge Function
-                try {
-                    const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-user', {
-                        body: { user_id: authData.user.id }
-                    });
-                    console.log("DEBUG USER CHECK:", debugData, debugError);
-                    alert(`DEBUG INFO: Auth User: ${debugData?.auth_user?.user?.id ? 'FOUND' : 'MISSING'}. Profile: ${debugData?.profile_data?.length > 0 ? 'FOUND' : 'MISSING'}. Error: ${profileUpsertError.message}`);
-                } catch (e) {
-                    console.error("Debug invoke failed", e);
-                }
-
-                throw new Error(`Profile creation failed. See alert for debug info.`);
+                throw new Error(`Gagal memperbarui profil: ${profileUpsertError.message}`);
             }
 
             // 3. DIRECT PROFILE CREATION (Client-side Insert)
             // No Edge Function. Data will be reviewed by admin in dashboard.
 
-            const { error: profileError } = await supabase.from("creators").insert({
+            const { error: profileError } = await supabase.from("creators").upsert({
                 id: authUser.id,
                 brand_name: form.brand_name,
                 description: form.description,
@@ -203,11 +199,11 @@ const CreatorRegister = () => {
                 tiktok_url: form.social_tiktok,
                 x_url: form.social_x,
                 facebook_url: form.social_facebook,
-                verified: false // Explicitly set to false for manual verification
-            });
+                verified: false // Tetap false — menunggu verifikasi admin
+            }, { onConflict: 'id' });
 
             if (profileError) {
-                console.error("Profile Creation Error:", profileError);
+                console.error("Profile Upsert Error:", profileError);
                 throw new Error("Gagal membuat profil kreator. Silakan coba lagi.");
             }
 
@@ -351,10 +347,12 @@ const CreatorRegister = () => {
 
                                 <button
                                     type="submit"
-                                    disabled={loading}
+                                    disabled={loading || isCheckingEmail}
                                     className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] mt-4 flex items-center justify-center disabled:opacity-50"
                                 >
-                                    {loading ? "Memproses..." : "Lanjutkan"}
+                                    {isCheckingEmail ? (
+                                        <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />Memeriksa Email...</>
+                                    ) : 'Lanjutkan'}
                                 </button>
 
                                 <p className="text-center text-[13px] text-slate-500 font-bold mt-6">

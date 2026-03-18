@@ -7,20 +7,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Search,
     Upload,
-    Ticket as TicketIcon,
     CheckCircle2,
     XCircle,
     User,
-    Calendar,
-    ArrowRight,
     Loader2,
     ShieldCheck,
     AlertCircle,
     Copy,
     Image as ImageIcon,
-    Zap,
     MoveRight,
-    MapPin,
     MessageCircle,
     ExternalLink,
     Info
@@ -50,7 +45,7 @@ export default function TicketValidation() {
             const cleanCode = code.trim();
             const { data, error: fetchError } = await supabase
                 .from("tickets")
-                .select("id,qr_code,status,full_name,ticket_types(name,events(id,title,start_date,location,))")
+                .select("id,qr_code,status,full_name,ticket_types(events(id,title))")
                 .eq("qr_code", cleanCode)
                 .single();
 
@@ -290,54 +285,40 @@ export default function TicketValidation() {
 
                                     {/* Event Context Card */}
                                     <div className="px-5 pb-5">
-                                        <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[2.5rem] p-8 space-y-10">
-                                            {/* Event Info Row */}
-                                            <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center border-b border-slate-200/50 dark:border-slate-700/50 pb-8">
-                                                <div className="w-24 h-24 bg-slate-200 dark:bg-slate-700 rounded-3xl overflow-hidden shrink-0 shadow-lg">
-                                                    {result.ticket_types?.events?.poster_url ? (
-                                                        <img src={result.ticket_types.events.poster_url} alt="Event" className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-slate-400"><ImageIcon size={32} /></div>
-                                                    )}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                                                        <TicketIcon size={12} /> {result.ticket_types?.name}
-                                                    </p>
-                                                    <h4 className="text-xl font-black text-slate-900 dark:text-white leading-tight uppercase line-clamp-2">
+                                            <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[2.5rem] p-8 space-y-10">
+                                                {/* Event Info Row */}
+                                                <div className="border-b border-slate-200/50 dark:border-slate-700/50 pb-8 text-center">
+                                                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2">Event</p>
+                                                    <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-tight uppercase">
                                                         {result.ticket_types?.events?.title}
                                                     </h4>
-                                                    <div className="mt-3 flex flex-wrap gap-4 text-[11px] font-bold text-slate-500">
-                                                        <span className="flex items-center gap-1.5"><Calendar size={14} className="text-slate-300" /> {result.ticket_types?.events?.start_date ? new Date(result.ticket_types.events.start_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : "-"}</span>
-                                                        <span className="flex items-center gap-1.5 shrink-0"><MapPin size={14} className="text-slate-300" /> {result.ticket_types?.events?.location || "TBA"}</span>
-                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            {/* Order Details Grid */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                                <div className="space-y-1.5">
-                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pemegang Tiket</p>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500">
-                                                            <User size={14} />
+                                                {/* Order Details Grid */}
+                                                <div className="space-y-6">
+                                                    <div className="space-y-2 text-center">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pemegang Tiket</p>
+                                                        <div className="flex items-center justify-center gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500">
+                                                                <User size={18} />
+                                                            </div>
+                                                            <p className="font-black text-slate-900 dark:text-white text-xl uppercase">{result.full_name || "HEROES_MEMBER"}</p>
                                                         </div>
-                                                        <p className="font-black text-slate-900 dark:text-white text-base leading-none uppercase">{result.full_name || "HEROES_MEMBER"}</p>
+                                                    </div>
+                                                    
+                                                    <div className="space-y-2 text-center border-t border-slate-200/50 dark:border-slate-700/50 pt-6">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kode Verifikasi</p>
+                                                        <div className="flex items-center justify-center gap-3">
+                                                            <p className="font-mono text-base font-bold text-slate-900 dark:text-white tracking-wider uppercase">{result.qr_code}</p>
+                                                            <button
+                                                                onClick={() => { navigator.clipboard.writeText(result.qr_code); alert("Kode tersalin!"); }}
+                                                                className="p-1.5 px-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 hover:text-blue-600 transition-colors shadow-sm"
+                                                            >
+                                                                <Copy size={14} />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="space-y-1.5">
-                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Kode Verifikasi</p>
-                                                    <div className="flex items-center gap-3">
-                                                        <p className="font-mono text-base font-bold text-slate-900 dark:text-white tracking-wider uppercase">{result.qr_code}</p>
-                                                        <button
-                                                            onClick={() => { navigator.clipboard.writeText(result.qr_code); alert("Kode tersalin!"); }}
-                                                            className="p-1 px-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 hover:text-blue-600 transition-colors"
-                                                        >
-                                                            <Copy size={12} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
 
                                             {/* Action Buttons */}
                                             <div className="flex flex-col gap-3 pt-4">

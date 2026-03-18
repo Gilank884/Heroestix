@@ -121,26 +121,45 @@ export default function OrderConfirmation({
                                 <span className="font-bold text-slate-800 dark:text-slate-200">{rupiah(taxAmount)}</span>
                             </div>
                         )}
-                        <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-50 dark:border-slate-800">
-                            <span className="text-slate-500 dark:text-slate-400">
-                                {eventPlatformFee?.name || "Biaya Layanan Platform"}
-                            </span>
-                            <span className="font-bold text-slate-800 dark:text-200">
-                                {rupiah(
-                                    eventPlatformFee?.type === 'percentage'
-                                        ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100)
-                                        : (parseFloat(eventPlatformFee?.value) || 5000)
-                                )}
-                            </span>
-                        </div>
-                        {platformFee > (eventPlatformFee?.type === 'percentage' ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100) : (parseFloat(eventPlatformFee?.value) || 5000)) && (
-                            <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-50 dark:border-slate-800 text-amber-600 dark:text-amber-400">
-                                <span className="font-medium">Biaya Metode Pembayaran</span>
-                                <span className="font-bold">
-                                    {rupiah(platformFee - (eventPlatformFee?.type === 'percentage' ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100) : (parseFloat(eventPlatformFee?.value) || 5000)))}
-                                </span>
-                            </div>
-                        )}
+                        {(() => {
+                            const basePlatformFee = eventPlatformFee?.type === 'percentage'
+                                ? Math.round((totalAmount * (parseFloat(eventPlatformFee.value) || 0)) / 100)
+                                : (parseFloat(eventPlatformFee?.value) || 5000);
+
+                            let paymentMethodFee = 0;
+                            if (selectedBank) {
+                                const config = eventPaymentConfigs.find(c => c.method_code === selectedBank);
+                                if (config && parseFloat(config.fee_value) > 0) {
+                                    paymentMethodFee = config.fee_type === 'percentage'
+                                        ? Math.round((totalAmount * (parseFloat(config.fee_value)) / 100))
+                                        : parseFloat(config.fee_value);
+                                } else {
+                                    if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) paymentMethodFee = 5000;
+                                    else if (selectedBank === "QRIS") paymentMethodFee = 3000;
+                                    else if (["OVO", "SHOPEEPAY"].includes(selectedBank)) paymentMethodFee = 3500;
+                                    else if (selectedBank === "LINKAJA") paymentMethodFee = 5000;
+                                }
+                            }
+
+                            return (
+                                <>
+                                    <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-50 dark:border-slate-800">
+                                        <span className="text-slate-500 dark:text-slate-400">
+                                            {eventPlatformFee?.name || "Biaya Layanan Platform"}
+                                        </span>
+                                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                                            {rupiah(basePlatformFee)}
+                                        </span>
+                                    </div>
+                                    {paymentMethodFee > 0 && (
+                                        <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-50 dark:border-slate-800 text-amber-600 dark:text-amber-400">
+                                            <span className="font-medium">Biaya Metode Pembayaran</span>
+                                            <span className="font-bold">{rupiah(paymentMethodFee)}</span>
+                                        </div>
+                                    )}
+                                </>
+                            );
+                        })()}
                         <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
                             <span className="font-bold text-slate-800 dark:text-slate-200">Total Pembayaran</span>
                             <span className="text-xl font-black text-blue-600 dark:text-blue-400">{rupiah(finalTotal)}</span>

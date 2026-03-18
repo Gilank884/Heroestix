@@ -201,11 +201,11 @@ export default function Checkout() {
 
         let pMethodFee = 0;
         const config = eventPaymentConfigs.find(c => c.method_code === selectedBank);
-        
-        if (config) {
+
+        if (config && parseFloat(config.fee_value) > 0) {
             pMethodFee = config.fee_type === 'percentage'
-                ? Math.round((totalAmount * (parseFloat(config.fee_value) || 0)) / 100)
-                : (parseFloat(config.fee_value) || 0);
+                ? Math.round((totalAmount * (parseFloat(config.fee_value)) / 100))
+                : parseFloat(config.fee_value);
         } else {
             // Fallback to defaults if no config found (older events)
             if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) pMethodFee = 5000;
@@ -213,7 +213,7 @@ export default function Checkout() {
             else if (["OVO", "SHOPEEPAY"].includes(selectedBank)) pMethodFee = 3500;
             else if (selectedBank === "LINKAJA") pMethodFee = 5000;
         }
-        
+
         return baseFee + pMethodFee;
     };
 
@@ -311,10 +311,10 @@ export default function Checkout() {
         let paymentFee = 0;
         const config = eventPaymentConfigs.find(c => c.method_code === selectedBank);
 
-        if (config) {
+        if (config && parseFloat(config.fee_value) > 0) {
             paymentFee = config.fee_type === 'percentage'
-                ? Math.round((totalAmount * (parseFloat(config.fee_value) || 0)) / 100)
-                : (parseFloat(config.fee_value) || 0);
+                ? Math.round((totalAmount * (parseFloat(config.fee_value)) / 100))
+                : parseFloat(config.fee_value);
         } else {
             if (["BNI", "BRI", "MANDIRI"].includes(selectedBank)) {
                 paymentFee = 5000;
@@ -584,6 +584,8 @@ export default function Checkout() {
                                 appliedVoucher={appliedVoucher}
                                 onApplyVoucher={handleApplyVoucher}
                                 voucherLoading={voucherLoading}
+                                selectedBank={selectedBank}
+                                eventPaymentConfigs={eventPaymentConfigs}
                             />
                         </div>
                     </div>
