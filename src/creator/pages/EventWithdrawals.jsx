@@ -225,6 +225,10 @@ export default function EventWithdrawals() {
                                 <p className="text-sm font-bold text-slate-500 tracking-wider">
                                     {creatorInfo.bank_account}
                                 </p>
+                                <p className="text-sm font-bold text-slate-500 tracking-wider">
+                                    {creatorInfo.account_bank_name}
+                                </p>
+
                             </div>
                         ) : (
                             <p className="text-xs font-bold text-amber-500 uppercase tracking-widest">Belum Diatur</p>
