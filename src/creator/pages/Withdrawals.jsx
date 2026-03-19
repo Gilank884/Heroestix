@@ -244,7 +244,11 @@ export default function Withdrawals() {
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                 {requests.length > 0 ? requests.map((req) => (
-                                    <tr key={req.id} className="hover:bg-slate-50/50 transition-colors">
+                                    <tr 
+                                        key={req.id} 
+                                        onClick={() => navigate(`/withdrawals/${req.id}`)}
+                                        className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
+                                    >
                                         <td className="px-8 py-5">
                                             <p className="text-xs font-black text-slate-700 tracking-wider">WD-{req.id.substring(0, 8).toUpperCase()}</p>
                                         </td>
@@ -281,7 +285,7 @@ export default function Withdrawals() {
 function StatusBadge({ status }) {
     const configs = {
         pending: { label: 'Diproses', icon: Clock, className: 'bg-amber-50 text-amber-600 border-amber-100' },
-        approved: { label: 'Berhasil', icon: CheckCircle2, className: 'bg-green-50 text-green-600 border-green-100' },
+        approved: { label: 'Berhasil', icon: CheckCircle2, className: 'bg-blue-50 text-blue-600 border-blue-100' },
         rejected: { label: 'Ditolak', icon: XCircle, className: 'bg-red-50 text-red-600 border-red-100' },
     };
 

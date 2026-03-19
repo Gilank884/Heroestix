@@ -29,7 +29,6 @@ export default function Withdrawals() {
     const [requests, setRequests] = useState([]);
     const [stats, setStats] = useState({ total_pending: 0, total_processed: 0, pending_amount: 0 });
     const [selectedRequest, setSelectedRequest] = useState(null);
-    const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
     const [actionType, setActionType] = useState('approve');
     const [actionAmount, setActionAmount] = useState(0);
     const [processing, setProcessing] = useState(false);
@@ -143,45 +142,9 @@ export default function Withdrawals() {
     };
 
     const handleOpenProcessModal = (request) => {
-        setSelectedRequest(request);
-        setActionAmount(request.amount);
-        setActionType('approve');
-        setIsProcessModalOpen(true);
-        fetchCreatorStats(request.creator_id);
+        navigate(`/withdrawals/${request.id}`);
     };
 
-    const handleProcess = async () => {
-        if (!selectedRequest) return;
-        setProcessing(true);
-
-        try {
-            const updates = {
-                status: actionType === 'approve' ? 'approved' : 'rejected',
-                updated_at: new Date().toISOString()
-            };
-
-            if (actionType === 'approve') {
-                updates.amount = actionAmount; // Update amount with confirmed value
-            }
-
-            const { error } = await supabase
-                .from('withdrawals')
-                .update(updates)
-                .eq('id', selectedRequest.id);
-
-            if (error) throw error;
-
-            // Optimistic update
-            setRequests(prev => prev.map(r => r.id === selectedRequest.id ? { ...r, ...updates } : r));
-            calculateStats(requests.map(r => r.id === selectedRequest.id ? { ...r, ...updates } : r));
-
-            setIsProcessModalOpen(false);
-        } catch (error) {
-            alert('Error processing withdrawal: ' + error.message);
-        } finally {
-            setProcessing(false);
-        }
-    };
 
     if (loading) {
         return (
@@ -334,156 +297,7 @@ export default function Withdrawals() {
                 </div>
             </div>
 
-            {/* Process Modal */}
-            <AnimatePresence>
-                {isProcessModalOpen && selectedRequest && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsProcessModalOpen(false)}
-                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
-                        >
-                            <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                                <div>
-                                    <h3 className="text-lg font-black text-slate-900">Process Action</h3>
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">ID: #{selectedRequest.id.substring(0, 8)}</p>
-                                </div>
-                                <button
-                                    onClick={() => setIsProcessModalOpen(false)}
-                                    className="p-2 bg-white rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all border border-slate-200"
-                                >
-                                    <XCircle size={18} />
-                                </button>
-                            </div>
-
-                            <div className="p-6 space-y-6">
-                                {/* Creator Info */}
-                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">
-                                            {(selectedRequest.creators?.profiles?.full_name || selectedRequest.creators?.brand_name || 'U').charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-slate-900">{selectedRequest.creators?.profiles?.full_name || selectedRequest.creators?.brand_name || 'Unknown'}</p>
-                                            <p className="text-xs text-slate-500">{selectedRequest.creators?.profiles?.email}</p>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200/50">
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank Name</p>
-                                            <p className="text-sm font-bold text-slate-800">{selectedRequest.creators?.bank_name}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Account Number</p>
-                                            <p className="text-sm font-mono font-bold text-slate-800">{selectedRequest.creators?.bank_account}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Financial Stats in Modal */}
-                                    <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200/50">
-                                        {statsLoading ? (
-                                            <div className="col-span-2 text-center text-xs text-slate-400 py-2 italic animate-pulse">Calculating creator balance...</div>
-                                        ) : creatorStats ? (
-                                            <>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Net Sales (All Time)</p>
-                                                    <p className="text-sm font-bold text-slate-800">{rupiah(creatorStats.netSales)}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Balance</p>
-                                                    <p className="text-sm font-bold text-blue-600">{rupiah(creatorStats.balance)}</p>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="col-span-2 text-center text-xs text-slate-400 py-2">Stats unavailable</div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Action Form — hanya tampil jika masih pending */}
-                                {selectedRequest.status === 'pending' ? (
-                                    <div className="space-y-4">
-                                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                                            <button
-                                                onClick={() => setActionType('approve')}
-                                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${actionType === 'approve'
-                                                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                                                    : 'text-slate-500 hover:bg-slate-200'
-                                                    }`}
-                                            >
-                                                Approve
-                                            </button>
-                                            <button
-                                                onClick={() => setActionType('reject')}
-                                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${actionType === 'reject'
-                                                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
-                                                    : 'text-slate-500 hover:bg-slate-200'
-                                                    }`}
-                                            >
-                                                Reject
-                                            </button>
-                                        </div>
-
-                                        {actionType === 'approve' && (
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Confirmed Amount</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                                                    <input
-                                                        type="number"
-                                                        value={actionAmount}
-                                                        onChange={(e) => setActionAmount(e.target.value)}
-                                                        className="w-full pl-10 pr-4 py-3 bg-white border-2 border-emerald-100 rounded-xl font-bold text-emerald-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none"
-                                                    />
-                                                </div>
-                                                <p className="text-[10px] text-slate-400 font-medium">Original Request: {rupiah(selectedRequest.amount)}</p>
-                                            </div>
-                                        )}
-
-                                        {actionType === 'reject' && (
-                                            <div className="p-4 bg-red-50 rounded-xl border border-red-100 text-red-700 text-sm font-medium">
-                                                This action will reject the withdrawal request. The creator will be notified (if implemented).
-                                            </div>
-                                        )}
-
-                                        <button
-                                            onClick={handleProcess}
-                                            disabled={processing}
-                                            className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider text-sm shadow-xl transition-all active:scale-95 ${actionType === 'approve'
-                                                ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20'
-                                                : 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20'
-                                                }`}
-                                        >
-                                            {processing ? 'Processing...' : (actionType === 'approve' ? 'Confirm Transfer ✓' : 'Reject Request')}
-                                        </button>
-                                    </div>
-                                ) : (
-                                    // Read-only view untuk status yang sudah diproses
-                                    <div className={`p-4 rounded-xl border text-sm font-medium flex items-center gap-3 ${
-                                        selectedRequest.status === 'approved'
-                                            ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                                            : 'bg-red-50 border-red-100 text-red-700'
-                                    }`}>
-                                        {selectedRequest.status === 'approved' ? (
-                                            <><CheckCircle2 size={20} /> Transfer sudah dikonfirmasi. Jumlah: <strong>{rupiah(selectedRequest.amount)}</strong></>
-                                        ) : (
-                                            <><XCircle size={20} /> Withdrawal ini telah ditolak.</>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Withdrawal Modal Removed in favor of dedicated page */}
         </div>
     );
 }
@@ -491,7 +305,7 @@ export default function Withdrawals() {
 function StatusBadge({ status }) {
     const configs = {
         pending: { label: 'Pending Review', icon: Clock, className: 'bg-amber-50 text-amber-600 border-amber-100' },
-        approved: { label: 'Paid / Done', icon: CheckCircle2, className: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+        approved: { label: 'Paid / Done', icon: CheckCircle2, className: 'bg-blue-50 text-blue-600 border-blue-100' },
         rejected: { label: 'Rejected', icon: XCircle, className: 'bg-red-50 text-red-600 border-red-100' },
     };
 

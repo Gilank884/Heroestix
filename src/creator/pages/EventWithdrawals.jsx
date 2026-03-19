@@ -285,7 +285,11 @@ export default function EventWithdrawals() {
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                 {filteredRequests.length > 0 ? filteredRequests.map((req, index) => (
-                                    <tr key={req.id} className="group hover:bg-slate-50/50 transition-all cursor-default text-sm">
+                                    <tr 
+                                        key={req.id} 
+                                        onClick={() => navigate(`/manage/event/${eventId}/withdrawals/${req.id}`)}
+                                        className="group hover:bg-slate-50/50 transition-all cursor-pointer text-sm"
+                                    >
                                         <td className="px-8 py-6">
                                             <span className="text-[10px] font-black text-slate-300 group-hover:text-indigo-600 transition-colors uppercase tracking-widest">
                                                 {String(index + 1).padStart(2, '0')}
@@ -328,7 +332,7 @@ export default function EventWithdrawals() {
 function StatusBadge({ status }) {
     const configs = {
         pending: { label: 'Proses', icon: Clock, className: 'bg-amber-50 text-amber-600 border-amber-100' },
-        approved: { label: 'Cair', icon: FileCheck, className: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+        approved: { label: 'Cair', icon: FileCheck, className: 'bg-blue-50 text-blue-600 border-blue-100' },
         rejected: { label: 'Batu', icon: XCircle, className: 'bg-rose-50 text-rose-600 border-rose-100' },
     };
 

@@ -57,6 +57,7 @@ import VoucherDetail from "./creator/pages/VoucherDetail";
 import CreateTicket from "./creator/pages/CreateTicket";
 import TicketDetail from "./creator/pages/TicketDetail";
 import CreatorProfile from "./creator/pages/Profile";
+import CreatorWithdrawalDetail from "./creator/pages/WithdrawalDetail";
 import RequestWithdrawal from "./creator/pages/RequestWithdrawal";
 import EventRequestWithdrawal from "./creator/pages/EventRequestWithdrawal";
 import EventStaff from "./creator/pages/EventStaff";
@@ -71,6 +72,7 @@ import DevEvents from "./dev/pages/Events";
 import DevEventConfig from "./dev/pages/EventConfig";
 import DevCash from "./dev/pages/Cash";
 import DevWithdrawals from "./dev/pages/Withdrawals";
+import DevWithdrawalDetail from "./dev/pages/WithdrawalDetail";
 
 
 
@@ -356,6 +358,7 @@ export default function App() {
                 <Route path="/sales-report" element={<EventSalesReport />} />
                 <Route path="/sales-report/:ticketId" element={<SalesDetail />} />
                 <Route path="/withdrawals" element={<EventWithdrawals />} />
+                <Route path="/withdrawals/:id" element={<CreatorWithdrawalDetail />} />
                 <Route path="/withdrawals/request" element={<EventRequestWithdrawal />} />
                 <Route path="/additional-form" element={<AdditionalForm />} />
               </Routes>
@@ -381,6 +384,7 @@ export default function App() {
                       <Route path="/vouchers" element={<div className="p-10 font-medium text-2xl text-gray-800">Voucher & Promotions (Work in Progress)</div>} />
                       <Route path="/sales-report" element={<Overview />} />
                       <Route path="/withdrawals" element={<Withdrawals />} />
+                      <Route path="/withdrawals/:id" element={<CreatorWithdrawalDetail />} />
                       <Route path="/withdrawals/request" element={<RequestWithdrawal />} />
                       <Route path="/reports" element={<div className="p-10 font-medium text-2xl text-gray-800">Data Recap & Reports (Work in Progress)</div>} />
                       <Route path="/security/password" element={<div className="p-10 font-medium text-2xl text-gray-800">Change Password (Work in Progress)</div>} />
@@ -417,6 +421,7 @@ export default function App() {
                   <Route path="/events/:eventId/config" element={<DevEventConfig />} />
                   <Route path="/cash" element={<DevCash />} />
                   <Route path="/withdrawals" element={<DevWithdrawals />} />
+                  <Route path="/withdrawals/:id" element={<DevWithdrawalDetail />} />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </DevLayout>
