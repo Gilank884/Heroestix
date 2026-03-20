@@ -12,8 +12,10 @@ import {
     User,
     ShieldCheck,
     ArrowUpRight,
-    Info
+    Info,
+    Download
 } from 'lucide-react';
+import { exportToPDF } from '../../utils/pdfExport';
 
 const rupiah = (value) => {
     return new Intl.NumberFormat("id-ID", {
@@ -78,6 +80,11 @@ export default function WithdrawalDetail() {
         }
     };
 
+    const handleExport = async () => {
+        const filename = `WD-${request.id.substring(0, 8).toUpperCase()}-Receipt.pdf`;
+        await exportToPDF('withdrawal-receipt', filename);
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -101,7 +108,7 @@ export default function WithdrawalDetail() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 pt-10">
+        <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 pt-6">
             {/* Header */}
             <div className="flex items-center gap-4 px-4 lg:px-0">
                 <button
@@ -111,31 +118,31 @@ export default function WithdrawalDetail() {
                     <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
                 </button>
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Detail Penarikan</h1>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Ref: WD-{request.id.substring(0, 8).toUpperCase()}</p>
+                    <h1 className="text-xl font-black text-slate-900 tracking-tight">Detail Penarikan</h1>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Ref: WD-{request.id.substring(0, 8).toUpperCase()}</p>
                 </div>
             </div>
 
             <div className="space-y-8 px-4 lg:px-0">
                 <div className="bg-white rounded-[40px] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
                     {/* Status Header */}
-                    <div className={`px-8 py-5 flex items-center justify-between ${
+                    <div className={`px-8 py-3 flex items-center justify-between ${
                         request.status === 'pending' ? 'bg-amber-50 border-b border-amber-100' : 
                         request.status === 'approved' ? 'bg-blue-50 border-b border-blue-100' : 'bg-red-50 border-b border-red-100'
                     }`}>
-                        <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-xl ${
+                        <div className="flex items-center gap-2">
+                            <div className={`p-1.5 rounded-lg ${
                                 request.status === 'pending' ? 'bg-amber-100 text-amber-600' : 
                                 request.status === 'approved' ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'
                             }`}>
-                                {request.status === 'pending' ? <Clock size={20} /> : request.status === 'approved' ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
+                                {request.status === 'pending' ? <Clock size={16} /> : request.status === 'approved' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
                             </div>
                             <div>
-                                <p className={`text-[10px] font-black uppercase tracking-[0.2em] leading-none mb-1 ${
+                                <p className={`text-[8px] font-black uppercase tracking-[0.2em] leading-none mb-1 ${
                                     request.status === 'pending' ? 'text-amber-500' : 
                                     request.status === 'approved' ? 'text-blue-500' : 'text-red-500'
                                 }`}>Status Penarikan</p>
-                                <span className={`text-sm font-bold ${
+                                <span className={`text-xs font-bold ${
                                     request.status === 'pending' ? 'text-amber-900' : 
                                     request.status === 'approved' ? 'text-blue-900' : 'text-red-900'
                                 }`}>
@@ -144,32 +151,41 @@ export default function WithdrawalDetail() {
                             </div>
                         </div>
                         <div className="text-right hidden sm:block">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Diajukan Pada</p>
-                            <span className="text-sm font-bold text-slate-700">{new Date(request.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Diajukan Pada</p>
+                            <span className="text-xs font-bold text-slate-700">{new Date(request.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         </div>
                     </div>
 
-                    <div className="p-8 lg:p-12 space-y-12">
+                    <div className="p-5 lg:p-8 space-y-8">
                         {/* Summary Section */}
-                        <div className="flex flex-col md:flex-row gap-8 items-center justify-between bg-slate-50 rounded-[32px] p-8 border border-slate-100">
+                        <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-slate-50 rounded-[32px] p-6 border border-slate-100">
                             <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Nominal Penarikan</p>
-                                <h2 className="text-4xl font-black text-slate-900 tracking-tight">{rupiah(request.amount)}</h2>
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Nominal Penarikan</p>
+                                <h2 className="text-3xl font-black text-slate-900 tracking-tight">{rupiah(request.amount)}</h2>
                             </div>
-                            <div className="w-16 h-16 bg-white rounded-[24px] flex items-center justify-center shadow-sm">
-                                <Wallet size={32} className="text-blue-600" />
+                            <div className="w-14 h-14 bg-white rounded-[20px] flex items-center justify-center shadow-sm">
+                                <Wallet size={28} className="text-blue-600" />
                             </div>
                         </div>
 
                         {/* Redesigned Confirmation Section (Only for Approved) */}
                         {request.status === 'approved' && (
                             <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-                                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Konfirmasi Transfer</h3>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
+                                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Konfirmasi Transfer</h3>
+                                    </div>
+                                    <button 
+                                        onClick={handleExport}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors shadow-sm active:scale-95"
+                                    >
+                                        <Download size={14} />
+                                        Download PDF
+                                    </button>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                                <div id="withdrawal-receipt" className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
                                     {/* Sender (PT Peristiwa Kreatif Nusantara) */}
                                     <div className="md:col-span-5 bg-blue-600 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl shadow-blue-600/20">
                                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16" />
@@ -227,9 +243,9 @@ export default function WithdrawalDetail() {
                                     </div>
                                 </div>
 
-                                <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-3">
-                                    <Info size={16} className="text-blue-600" />
-                                    <p className="text-xs font-bold text-blue-800 italic">"Transaksi ini Berhasil Sudah Di transfer Ke {request.creators?.account_bank_name}."</p>
+                                <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-2">
+                                    <Info size={14} className="text-blue-600" />
+                                    <p className="text-[11px] font-bold text-blue-800 italic">"Transaksi ini Berhasil Sudah Di transfer Ke {request.creators?.account_bank_name}."</p>
                                 </div>
                             </div>
                         )}
@@ -242,17 +258,17 @@ export default function WithdrawalDetail() {
                                     Informasi Rekening
                                 </h4>
                                 <div className="space-y-4">
-                                    <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nama Bank</span>
-                                        <span className="text-sm font-bold text-slate-900">{request.creators?.bank_name}</span>
+                                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nama Bank</span>
+                                        <span className="text-xs font-bold text-slate-900">{request.creators?.bank_name}</span>
                                     </div>
-                                    <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">No. Rekening</span>
-                                        <span className="text-sm font-mono font-bold text-slate-900">{request.creators?.bank_account}</span>
+                                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No. Rekening</span>
+                                        <span className="text-xs font-mono font-bold text-slate-900">{request.creators?.bank_account}</span>
                                     </div>
-                                    <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Atas Nama</span>
-                                        <span className="text-sm font-bold text-slate-900">{request.creators?.account_bank_name || 'N/A'}</span>
+                                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Atas Nama</span>
+                                        <span className="text-xs font-bold text-slate-900">{request.creators?.account_bank_name || 'N/A'}</span>
                                     </div>
                                 </div>
                             </div>

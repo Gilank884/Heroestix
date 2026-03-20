@@ -43,13 +43,18 @@ const rupiah = (value) => {
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-2xl shadow-blue-500/10 active:scale-95 transition-all">
-                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">{label}</p>
-                <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-blue-600" />
-                    <p className="text-sm font-black text-slate-900 dark:text-white">
-                        {payload[0].value} <span className="text-slate-400 font-medium">Units</span>
-                    </p>
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-2xl shadow-blue-500/10 transition-all">
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">{label}</p>
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
+                        <div>
+                            <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest leading-none mb-1">Tickets Sold</p>
+                            <p className="text-sm font-black text-slate-900 dark:text-white leading-none">
+                                {payload.find(p => p.name === 'tickets')?.value || 0} <span className="text-slate-400 font-medium">Units</span>
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -62,13 +67,18 @@ const CreatorDashboard = () => {
     const { user } = useAuthStore();
     const [events, setEvents] = useState([]);
     const [ticketsData, setTicketsData] = useState([]);
+    const [dateRange, setDateRange] = useState({
+        startDate: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`,
+        endDate: new Date().toISOString().split('T')[0]
+    });
     const [stats, setStats] = useState({
         totalEvents: 0,
         totalTickets: 0,
         totalQuota: 0,
-        totalRevenue: 0,
         genderData: []
     });
+
+
     const [loading, setLoading] = useState(true);
     const [showControlModal, setShowControlModal] = useState(false);
     const [isVerified, setIsVerified] = useState(true);
@@ -101,87 +111,68 @@ const CreatorDashboard = () => {
 
             if (eventsError) throw eventsError;
 
-            // Initialize stats with base events data
+            // 2. Fetch Financial Data from creator_balances (Source of Truth)
+            const { data: balancesData, error: bError } = await supabase
+                .from('creator_balances')
+                .select('*')
+                .eq('creator_id', user.id);
+
+            if (bError) throw bError;
+
+            let totalRev = 0;
             let totalSold = 0;
-            eventsData?.forEach(ev => {
-                ev.ticket_types?.forEach(tt => {
-                    totalSold += tt.sold || 0;
-                });
-                ev.calculatedRevenue = 0; // default
+            let ticketsDataForDemographics = [];
+            const paidTicketIds = new Set();
+            const credits = balancesData?.filter(b => b.type === 'credit') || [];
+
+            credits.forEach(c => {
+                totalRev += Number(c.amount);
+                if (c.ticket_id) paidTicketIds.add(c.ticket_id);
             });
 
-            // 2. Fetch Tickets & Orders for Revenue Calculation (if events exist)
-            const eventIds = eventsData?.map(e => e.id) || [];
-            let totalRev = 0;
-            let ticketsDataForDemographics = [];
+            totalSold = paidTicketIds.size;
 
-            if (eventIds.length > 0) {
+            // 3. Link balances to events for the Active Operations list
+            const eventIds = eventsData?.map(e => e.id) || [];
+            if (eventIds.length > 0 && credits.length > 0) {
                 try {
-                    // Get all ticket type IDs for these events
-                    const allTTIds = [];
-                    eventsData.forEach(ev => {
-                        ev.ticket_types?.forEach(tt => allTTIds.push(tt.id));
+                    // Fetch ticket to event mapping
+                    const { data: ttData } = await supabase
+                        .from('ticket_types')
+                        .select('id, event_id')
+                        .in('event_id', eventIds);
+
+                    const ttToEvent = {};
+                    ttData?.forEach(tt => {
+                        ttToEvent[tt.id] = tt.event_id;
                     });
 
-                    if (allTTIds.length > 0) {
-                        const { data: ticketsWithOrders, error: tError } = await supabase
-                            .from('tickets')
-                            .select(`
-                                id,
-                                created_at,
-                                gender,
-                                order_id,
-                                ticket_type_id,
-                                orders!inner (id, total, status)
-                            `)
-                            .in('ticket_type_id', allTTIds)
-                            .eq('orders.status', 'paid');
+                    const { data: tData } = await supabase
+                        .from('tickets')
+                        .select('id, ticket_type_id, gender')
+                        .in('id', [...paidTicketIds]);
 
-                        if (!tError && ticketsWithOrders?.length > 0) {
-                            const orderIds = [...new Set(ticketsWithOrders.map(t => t.order_id))];
-                            const { data: allTicketsInOrders } = await supabase
-                                .from('tickets')
-                                .select('order_id')
-                                .in('order_id', orderIds);
+                    const ticketToEvent = {};
+                    const ticketToGender = {};
+                    tData?.forEach(t => {
+                        ticketToEvent[t.id] = ttToEvent[t.ticket_type_id];
+                        ticketToGender[t.id] = t.gender;
+                    });
 
-                            const orderTicketCounts = {};
-                            allTicketsInOrders?.forEach(t => {
-                                orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
-                            });
+                    // Calculate per-event revenue
+                    eventsData.forEach(ev => {
+                        const eventCredits = credits.filter(c => ticketToEvent[c.ticket_id] === ev.id);
+                        ev.calculatedRevenue = eventCredits.reduce((acc, curr) => acc + Number(curr.amount), 0);
+                    });
 
-                            const eventRevenueMap = {};
-                            let calculatedTotalRev = 0;
-
-                            ticketsWithOrders.forEach(t => {
-                                const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
-                                const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
-                                const netPerTicket = (shareOfGross - 8500);
-                                
-                                calculatedTotalRev += netPerTicket;
-                                
-                                // Find which event this ticket belongs to
-                                const event = eventsData.find(ev => 
-                                    ev.ticket_types?.some(tt => tt.id === t.ticket_type_id)
-                                );
-                                if (event) {
-                                    eventRevenueMap[event.id] = (eventRevenueMap[event.id] || 0) + netPerTicket;
-                                }
-                            });
-
-                            totalRev = calculatedTotalRev;
-                            ticketsDataForDemographics = ticketsWithOrders;
-                            setTicketsData(ticketsWithOrders);
-
-                            eventsData.forEach(ev => {
-                                ev.calculatedRevenue = eventRevenueMap[ev.id] || 0;
-                            });
-                        }
-                    }
-                } catch (revError) {
-                    console.error('Error calculating revenue:', revError);
-                    // Continue anyway to show at least the events
+                    // Store demographics for the next step
+                    ticketsDataForDemographics = tData || [];
+                } catch (mapError) {
+                    console.error('Error mapping tickets to events:', mapError);
                 }
             }
+
+            setTicketsData(credits); // Use credit records for the chart
 
             setEvents(eventsData || []);
 
@@ -217,17 +208,41 @@ const CreatorDashboard = () => {
         }
     };
 
-    // Prepare chart data for Sales Performance (Tickets Sold per Day)
+    // Prepare chart data for Sales Performance (Tickets Sold & Revenue per Day)
     const chartData = useMemo(() => {
-        if (!ticketsData.length) return [];
+        if (!ticketsData.length || !dateRange.startDate || !dateRange.endDate) return [];
+
+        const start = new Date(dateRange.startDate);
+        const end = new Date(dateRange.endDate);
         const days = {};
+
+        // Pre-fill all dates in range with 0
+        let current = new Date(start);
+        while (current <= end) {
+            const dateStr = current.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            days[dateStr] = { tickets: 0, revenue: 0 };
+            current.setDate(current.getDate() + 1);
+        }
+
+        // Fill in actual sales data
         ticketsData.forEach(t => {
-            const date = new Date(t.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-            // Each record in tickets represents a ticket sale
-            days[date] = (days[date] || 0) + 1;
+            const ticketDate = new Date(t.created_at);
+            // Robust date check using locale strings to avoid UTC/timezone pitfalls
+            if (ticketDate >= start && ticketDate <= new Date(new Date(end).setHours(23, 59, 59, 999))) {
+                const dateStr = ticketDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                if (days[dateStr] !== undefined) {
+                    days[dateStr].tickets += 1;
+                    days[dateStr].revenue += Number(t.amount || 0);
+                }
+            }
         });
-        return Object.entries(days).map(([name, value]) => ({ name, value })).slice(-7);
-    }, [ticketsData]);
+
+        return Object.entries(days).map(([name, data]) => ({ 
+            name, 
+            value: data.tickets,
+            revenue: Math.max(0, data.revenue) 
+        }));
+    }, [ticketsData, dateRange]);
 
     if (loading) return (
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -239,136 +254,102 @@ const CreatorDashboard = () => {
 
     return (
         <div className="space-y-6 pb-20">
-            {/* Dashboard Sections */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* Overview Table */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2">
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h3 className="text-2xl font-medium text-slate-900 tracking-tight">Overview</h3>
-                            <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Key Performance Indicators</p>
-                        </div>
+            {/* Quick Summary Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-2">
+                <div className="bg-white px-6 py-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
+                    <div>
+                        <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black mb-1.5">Tickets Sold</p>
+                        <h4 className="text-2xl font-black text-slate-900 tracking-tighter">{stats.totalTickets.toLocaleString()}</h4>
                     </div>
-
-                    <div className="overflow-x-auto no-scrollbar">
-                        <table className="w-full text-left bg-slate-50/50 rounded-2xl overflow-hidden border border-slate-100">
-                            <thead>
-                                <tr className="text-slate-400 text-[10px] uppercase tracking-[0.2em] border-b border-slate-100 bg-white">
-                                    <th className="py-5 pl-6 font-semibold">Active Campaigns</th>
-                                    <th className="py-5 font-semibold">Tickets Sold</th>
-                                    <th className="py-5 pr-6 font-semibold text-right">Net Revenue</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                <tr>
-                                    <td className="py-6 pl-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                                                <HiCalendar size={20} />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-slate-900 text-lg">{stats.totalEvents}</p>
-                                                <p className="text-[10px] text-slate-400 uppercase tracking-widest">Live Operations</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="py-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                                <HiTicket size={20} />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-slate-900 text-lg">{stats.totalTickets.toLocaleString()}</p>
-                                                <p className="text-[10px] text-slate-400 uppercase tracking-widest">Units Distributed</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="py-6 pr-6 text-right">
-                                        <div className="flex items-center justify-end gap-3">
-                                            <div className="text-right">
-                                                <p className="font-bold text-slate-900 text-lg">{rupiah(stats.totalRevenue)}</p>
-                                                <p className="text-[10px] text-slate-400 uppercase tracking-widest">Available Balance</p>
-                                            </div>
-                                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                                                <HiCash size={20} />
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <HiTicket size={24} />
                     </div>
                 </div>
-
-                {/* Demographics Area */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-1 flex flex-col">
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h3 className="text-xl font-medium text-slate-900 tracking-tight">Demografi</h3>
-                            <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Distribusi Gender</p>
-                        </div>
+                <div className="bg-white px-6 py-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-emerald-200 transition-colors">
+                    <div>
+                        <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black mb-1.5">Net Revenue</p>
+                        <h4 className="text-2xl font-black text-slate-900 tracking-tighter">{rupiah(stats.totalRevenue)}</h4>
                     </div>
-
-                    <div className="flex-1 w-full flex items-center justify-center min-h-[200px]">
-                        {stats.genderData && stats.genderData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={220}>
-                                <PieChart>
-                                    <Pie
-                                        data={stats.genderData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                        stroke="none"
-                                    >
-                                        {stats.genderData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <RechartsTooltip
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
-                                        formatter={(val) => [`${val} Orang`, 'Total']}
-                                    />
-                                    <Legend
-                                        verticalAlign="bottom"
-                                        height={36}
-                                        iconType="circle"
-                                        wrapperStyle={{ fontSize: '11px', fontWeight: '500', color: '#64748b' }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="text-center space-y-2 opacity-50">
-                                <HiArrowsExpand size={32} className="mx-auto text-slate-300" />
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Belum ada data<br />demografi pengunjung</p>
-                            </div>
-                        )}
+                    <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <HiCash size={24} />
                     </div>
                 </div>
-
+                <div className="bg-white px-6 py-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-indigo-200 transition-colors">
+                    <div>
+                        <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black mb-1.5">Active Operations</p>
+                        <h4 className="text-2xl font-black text-slate-900 tracking-tighter">{stats.totalEvents}</h4>
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <HiCalendar size={24} />
+                    </div>
+                </div>
             </div>
 
             {/* Sales Performance Chart */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-blue-500/10 transition-colors" />
 
-                <div className="flex items-center justify-between mb-10 relative z-10">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10 relative z-10">
                     <div>
-                        <h3 className="text-2xl font-medium text-slate-900 tracking-tight">Sales Performance</h3>
-                        <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Harian Penjualan Tiket</p>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Sales Performance</h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-blue-500" /> Tickets Sold
+                        </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="hidden sm:flex flex-col items-end mr-3">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Growth</p>
-                            <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
-                                <HiTrendingUp /> +14.2%
-                            </p>
+ 
+                    <div className="flex flex-wrap items-center gap-3">
+                        {/* Quick Presets */}
+                        <div className="flex items-center bg-slate-100/50 p-1 rounded-xl border border-slate-200/60">
+                            {[
+                                { label: '7D', days: 7 },
+                                { label: '30D', days: 30 },
+                                { label: 'This Month', type: 'month' },
+                                { label: 'All', type: 'all' }
+                            ].map((preset) => (
+                                <button
+                                    key={preset.label}
+                                    onClick={() => {
+                                        const end = new Date();
+                                        let start = new Date();
+                                        if (preset.days) {
+                                            start.setDate(end.getDate() - preset.days);
+                                        } else if (preset.type === 'month') {
+                                            start = new Date(end.getFullYear(), end.getDate() === 0 ? end.getMonth() -1 : end.getMonth(), 1);
+                                        } else if (preset.type === 'all') {
+                                            start = new Date('2024-01-01'); // Project start or very early
+                                        }
+                                        setDateRange({
+                                            startDate: start.toISOString().split('T')[0],
+                                            endDate: end.toISOString().split('T')[0]
+                                        });
+                                    }}
+                                    className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all hover:text-blue-600"
+                                >
+                                    {preset.label}
+                                </button>
+                            ))}
                         </div>
-                        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm">
-                            <HiTrendingUp size={24} />
+
+                        <div className="flex items-center gap-2 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm">
+                            <input
+                                type="date"
+                                value={dateRange.startDate}
+                                onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                                className="bg-transparent text-[10px] font-black text-slate-600 outline-none px-2 py-1 uppercase"
+                            />
+                            <span className="text-slate-300 text-xs">/</span>
+                            <input
+                                type="date"
+                                value={dateRange.endDate}
+                                onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                                className="bg-transparent text-[10px] font-black text-slate-600 outline-none px-2 py-1 uppercase"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-3 ml-2">
+                             <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200 translate-y-[-2px] active:translate-y-[0px] transition-all">
+                                <HiTrendingUp size={24} />
+                             </div>
                         </div>
                     </div>
                 </div>
@@ -376,53 +357,42 @@ const CreatorDashboard = () => {
                 <div className="h-[380px] w-full relative z-10">
                     {chartData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#2563EB" stopOpacity={0.15} />
-                                        <stop offset="95%" stopColor="#2563EB" stopOpacity={0.01} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="6 6" vertical={false} stroke="#F1F5F9" />
-                                <XAxis
-                                    dataKey="name"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fontSize: 11, fontWeight: 600, fill: '#94A3B8' }}
-                                    dy={15}
-                                />
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fontSize: 11, fontWeight: 600, fill: '#94A3B8' }}
-                                    tickCount={6}
-                                    domain={[0, 'auto']}
-                                    allowDecimals={false}
-                                />
-                                <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: '#CBD5E1', strokeWidth: 1 }} />
-                                <Area
-                                    type="monotone"
-                                    dataKey="value"
-                                    stroke="#2563EB"
-                                    strokeWidth={4}
-                                    fillOpacity={1}
-                                    fill="url(#chartGradient)"
-                                    animationDuration={2000}
-                                    dot={(props) => {
-                                        const { cx, cy, index } = props;
-                                        if (index === chartData.length - 1) {
-                                            return (
-                                                <g key="last-dot">
-                                                    <circle cx={cx} cy={cy} r={8} fill="#2563EB" fillOpacity={0.2} />
-                                                    <circle cx={cx} cy={cy} r={4} fill="#2563EB" stroke="#fff" strokeWidth={2} />
-                                                </g>
-                                            );
-                                        }
-                                        return null;
-                                    }}
-                                    activeDot={{ r: 6, fill: '#2563EB', strokeWidth: 4, stroke: '#fff' }}
-                                />
-                            </AreaChart>
+                            <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
+                        <defs>
+                            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#2563EB" stopOpacity={0.15} />
+                                <stop offset="95%" stopColor="#2563EB" stopOpacity={0.01} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="6 6" vertical={false} stroke="#F1F5F9" />
+                        <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 11, fontWeight: 600, fill: '#94A3B8' }}
+                            dy={15}
+                        />
+                        <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 11, fontWeight: 600, fill: '#94A3B8' }}
+                            tickCount={6}
+                            domain={[0, 'auto']}
+                            allowDecimals={false}
+                        />
+                        <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: '#CBD5E1', strokeWidth: 1 }} />
+                        <Area
+                            type="monotone"
+                            dataKey="value"
+                            name="tickets"
+                            stroke="#2563EB"
+                            strokeWidth={4}
+                            fillOpacity={1}
+                            fill="url(#chartGradient)"
+                            animationDuration={2000}
+                            activeDot={{ r: 6, fill: '#2563EB', strokeWidth: 4, stroke: '#fff' }}
+                        />
+                    </AreaChart>
                         </ResponsiveContainer>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-center space-y-4">

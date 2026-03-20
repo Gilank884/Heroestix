@@ -285,8 +285,8 @@ export default function EventWithdrawals() {
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                 {filteredRequests.length > 0 ? filteredRequests.map((req, index) => (
-                                    <tr 
-                                        key={req.id} 
+                                    <tr
+                                        key={req.id}
                                         onClick={() => navigate(`/manage/event/${eventId}/withdrawals/${req.id}`)}
                                         className="group hover:bg-slate-50/50 transition-all cursor-pointer text-sm"
                                     >

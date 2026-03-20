@@ -11,9 +11,11 @@ import {
     User,
     ShieldCheck,
     ArrowUpRight,
-    Info
+    Info,
+    Download
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { exportToPDF } from '../../utils/pdfExport';
 
 const rupiah = (value) => {
     return new Intl.NumberFormat("id-ID", {
@@ -157,6 +159,11 @@ export default function WithdrawalDetail() {
         }
     };
 
+    const handleExport = async () => {
+        const filename = `WD-${request.id.substring(0, 8).toUpperCase()}-Receipt.pdf`;
+        await exportToPDF('withdrawal-receipt', filename);
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -180,7 +187,7 @@ export default function WithdrawalDetail() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+        <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 pt-6">
             {/* Header */}
             <div className="flex items-center gap-4">
                 <button
@@ -190,8 +197,8 @@ export default function WithdrawalDetail() {
                     <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
                 </button>
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Withdrawal Detail</h1>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">ID: #{request.id.substring(0, 8)}</p>
+                    <h1 className="text-xl font-black text-slate-900 tracking-tight">Withdrawal Detail</h1>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">ID: #{request.id.substring(0, 8)}</p>
                 </div>
             </div>
 
@@ -214,15 +221,24 @@ export default function WithdrawalDetail() {
                             <span className="text-[10px] font-bold text-slate-400 capitalize">Requested on {new Date(request.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         </div>
 
-                        <div className="p-8 lg:p-12 space-y-10">
+                        <div className="p-5 lg:p-8 space-y-6">
                             {/* Redesigned Confirmation Section */}
                             <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-                                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Konfirmasi Transaksi</h2>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
+                                        <h2 className="text-lg font-black text-slate-900 tracking-tight">Konfirmasi Transaksi</h2>
+                                    </div>
+                                    <button 
+                                        onClick={handleExport}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors shadow-sm active:scale-95"
+                                    >
+                                        <Download size={14} />
+                                        Download PDF
+                                    </button>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                                <div id="withdrawal-receipt" className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
                                     {/* Sender (PT Peristiwa Kreatif Nusantara) */}
                                     <div className="md:col-span-5 bg-blue-600 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl shadow-blue-600/20">
                                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16" />
@@ -241,8 +257,8 @@ export default function WithdrawalDetail() {
                                                     <p className="font-mono font-black text-white text-base tracking-wider">1905373456</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[9px] font-bold text-blue-200 uppercase tracking-widest mb-1 leading-none">Atas Nama</p>
-                                                    <p className="font-bold text-white text-sm truncate">PT Peristiwa Kreatif Nusantara</p>
+                                                    <p className="text-[8px] font-bold text-blue-200 uppercase tracking-widest leading-none mb-1">Atas Nama</p>
+                                                    <p className="font-bold text-white text-xs truncate">PT Peristiwa Kreatif Nusantara</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -272,17 +288,17 @@ export default function WithdrawalDetail() {
                                                     <p className="font-mono font-black text-slate-900 text-base tracking-wider">{request.creators?.bank_account}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Atas Nama</p>
-                                                    <p className="font-bold text-slate-900 text-sm truncate">{request.creators?.account_bank_name || 'N/A'}</p>
+                                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Atas Nama</p>
+                                                    <p className="font-bold text-slate-900 text-xs truncate">{request.creators?.account_bank_name || 'N/A'}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-3">
-                                    <Info size={16} className="text-blue-600" />
-                                    <p className="text-xs font-bold text-blue-800 italic">"Apakah benar Konfirmasi Transaksi ini Sudah Di transfer?"</p>
+                                <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-2">
+                                    <Info size={14} className="text-blue-600" />
+                                    <p className="text-[11px] font-bold text-blue-800 italic">"Apakah benar Konfirmasi Transaksi ini Sudah Di transfer?"</p>
                                 </div>
                             </div>
 
@@ -294,19 +310,19 @@ export default function WithdrawalDetail() {
                                         <User size={12} />
                                         Creator Information
                                     </h3>
-                                    <div className="bg-slate-50 border border-slate-100 p-6 rounded-2xl space-y-4">
+                                    <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-3">
                                         <div>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Name / Organization</p>
-                                            <p className="font-bold text-slate-900 text-base">{request.creators?.profiles?.full_name || request.creators?.brand_name}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Name / Organization</p>
+                                            <p className="font-bold text-slate-900 text-sm">{request.creators?.profiles?.full_name || request.creators?.brand_name}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Email Address</p>
-                                            <p className="font-medium text-slate-600 text-sm">{request.creators?.profiles?.email}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Email Address</p>
+                                            <p className="font-medium text-slate-600 text-xs">{request.creators?.profiles?.email}</p>
                                         </div>
                                         {request.events?.title && (
                                             <div>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Event Associated</p>
-                                                <p className="font-bold text-blue-600 text-sm italic">{request.events.title}</p>
+                                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Event Associated</p>
+                                                <p className="font-bold text-blue-600 text-xs italic">{request.events.title}</p>
                                             </div>
                                         )}
                                     </div>
@@ -320,12 +336,12 @@ export default function WithdrawalDetail() {
                                     </h3>
                                     <div className="bg-slate-50 border border-slate-100 p-6 rounded-2xl space-y-4">
                                         <div>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Destination Bank</p>
-                                            <p className="font-bold text-slate-900 text-base">{request.creators?.bank_name}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Destination Bank</p>
+                                            <p className="font-bold text-slate-900 text-sm">{request.creators?.bank_name}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Account Number</p>
-                                            <p className="font-mono font-bold text-slate-900 text-base tracking-wider">{request.creators?.bank_account}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Account Number</p>
+                                            <p className="font-mono font-bold text-slate-900 text-sm tracking-wider">{request.creators?.bank_account}</p>
                                         </div>
                                         <div className="pt-2">
                                             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full text-[10px] font-black uppercase tracking-widest">
@@ -338,27 +354,27 @@ export default function WithdrawalDetail() {
                             </div>
 
                             {/* Balance Stats */}
-                            <div className="bg-slate-900 rounded-3xl p-8 text-white">
-                                <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-6">Financial Context</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div className="bg-slate-900 rounded-3xl p-6 text-white text-sm">
+                                <h3 className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] mb-3">Financial Context</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div>
-                                        <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Requested Amount</p>
-                                        <p className="text-2xl font-bold">{rupiah(request.amount)}</p>
+                                        <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-1">Requested Amount</p>
+                                        <p className="text-lg font-bold">{rupiah(request.amount)}</p>
                                     </div>
                                     {statsLoading ? (
-                                        <div className="col-span-2 flex items-center gap-2 text-white/40 italic text-sm py-2">
-                                            <div className="w-4 h-4 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
-                                            Recalculating creator balance...
+                                        <div className="col-span-2 flex items-center gap-2 text-white/40 italic text-[10px] py-2">
+                                            <div className="w-3 h-3 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
+                                            Recalculating...
                                         </div>
                                     ) : creatorStats ? (
                                         <>
                                             <div>
-                                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Net Sales (All Time)</p>
-                                                <p className="text-2xl font-bold">{rupiah(creatorStats.netSales)}</p>
+                                                <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-1">Net Sales (All Time)</p>
+                                                <p className="text-lg font-bold">{rupiah(creatorStats.netSales)}</p>
                                             </div>
                                             <div>
-                                                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Current Balance</p>
-                                                <p className="text-2xl font-bold text-blue-400">{rupiah(creatorStats.balance)}</p>
+                                                <p className="text-[8px] font-bold text-blue-400 uppercase tracking-widest mb-1">Current Balance</p>
+                                                <p className="text-lg font-bold text-blue-400">{rupiah(creatorStats.balance)}</p>
                                             </div>
                                         </>
                                     ) : null}
