@@ -61,7 +61,7 @@ const Daftar = ({ role = "user" }) => {
             const { data: existingProfile } = await supabase
                 .from('profiles')
                 .select('role')
-                .eq('email', form.email)
+                .eq('email', form.email.trim())
                 .single();
 
             if (existingProfile && existingProfile.role === 'user') {
@@ -98,7 +98,7 @@ const Daftar = ({ role = "user" }) => {
         }
 
         const { data: authData, error } = await supabase.auth.signUp({
-            email: form.email,
+            email: form.email.trim(),
             password: form.password,
             options: {
                 data: {
@@ -138,7 +138,7 @@ const Daftar = ({ role = "user" }) => {
         setErrorMsg("");
 
         const { data, error } = await supabase.auth.verifyOtp({
-            email: form.email,
+            email: form.email.trim(),
             token: otpCode,
             type: 'signup'
         });
@@ -150,7 +150,7 @@ const Daftar = ({ role = "user" }) => {
             // Create user data manually if needed (Supabase might handle this via triggers)
             await supabase.from('profiles').upsert({
                 id: data.user.id,
-                email: form.email,
+                email: form.email.trim(),
                 full_name: form.nama,
                 role: role,
             });
@@ -178,7 +178,7 @@ const Daftar = ({ role = "user" }) => {
         setErrorMsg("");
         const { error } = await supabase.auth.resend({
             type: 'signup',
-            email: form.email,
+            email: form.email.trim(),
         });
         if (error) {
             setErrorMsg(error.message);

@@ -61,17 +61,21 @@ export default function RequestWithdrawal() {
             let withdrawalData = [];
 
             if (eventIds.length > 0) {
-                const [ticketsRes, withdrawalRes] = await Promise.all([
+                const [ticketsRes, withdrawalRes, taxesRes] = await Promise.all([
                     supabase
                         .from('tickets')
-                        .select('id, orders!inner(id, total, status), ticket_types!inner(event_id)')
+                        .select('id, order_id, orders!inner(id, total, status, discount_amount), ticket_types!inner(id, price, event_id)')
                         .in('ticket_types.event_id', eventIds)
                         .eq('orders.status', 'paid'),
-                    supabase.from('withdrawals').select('*').eq('creator_id', user.id)
+                    supabase.from('withdrawals').select('*').eq('creator_id', user.id),
+                    supabase.from('event_taxes').select('*').in('event_id', eventIds)
                 ]);
 
                 const ticketsWithOrders = ticketsRes.data || [];
                 withdrawalData = withdrawalRes.data || [];
+                const taxes = taxesRes.data || [];
+                const taxMap = {};
+                taxes.forEach(t => { taxMap[t.event_id] = t; });
 
                 if (ticketsWithOrders.length > 0) {
                     // Logic to handle orders with multiple tickets fairly
@@ -89,8 +93,24 @@ export default function RequestWithdrawal() {
                     let calculatedNetSales = 0;
                     ticketsWithOrders.forEach(t => {
                         const countInOrder = orderTicketCounts[t.order_id] || 1;
-                        const share = Number(t.orders.total) / countInOrder;
-                        calculatedNetSales += (share - 8500);
+                        const ticketType = t.ticket_types;
+                        const eventTax = taxMap[ticketType.event_id];
+                        
+                        const basePrice = Number(ticketType.price || 0);
+                        const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                        const isTaxIncluded = eventTax ? eventTax.is_included : false;
+                        
+                        // Net income per ticket: Price + Tax (if not included)
+                        let ticketIncome = basePrice;
+                        if (!isTaxIncluded && taxRate > 0) {
+                            ticketIncome += (basePrice * taxRate / 100);
+                        }
+                        
+                        // Deduct share of order discount
+                        const discountShare = Number(t.orders.discount_amount || 0) / countInOrder;
+                        ticketIncome -= discountShare;
+                        
+                        calculatedNetSales += ticketIncome;
                     });
 
                     netSales = calculatedNetSales;
@@ -107,6 +127,7 @@ export default function RequestWithdrawal() {
 
             setBalance(netSales - totalWithdrawn);
             setPendingRequests(withdrawalData.filter(r => r.status === 'pending'));
+
 
         } catch (error) {
             console.error('Error fetching data:', error.message);

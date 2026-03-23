@@ -11,7 +11,8 @@ const AddVoucherModal = ({ isOpen, onClose, eventId, onRefresh }) => {
         code: '',
         name: '',
         description: '',
-        type: 'percentage',
+        type: 'fixed',
+
         value: '',
         max_discount: '',
         min_purchase: '',
@@ -33,9 +34,10 @@ const AddVoucherModal = ({ isOpen, onClose, eventId, onRefresh }) => {
     const handleNumericChange = (field, val) => {
         const parsed = parseNumber(val);
         if (/^\d*$/.test(parsed)) {
-            setVoucherData({ ...voucherData, [field]: parsed });
+            setVoucherData(prev => ({ ...prev, [field]: parsed }));
         }
     };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -140,9 +142,12 @@ const AddVoucherModal = ({ isOpen, onClose, eventId, onRefresh }) => {
                                     type="text"
                                     value={formatNumber(voucherData.value)}
                                     onChange={e => {
-                                        setVoucherData({ ...voucherData, type: 'fixed' });
-                                        handleNumericChange('value', e.target.value);
+                                        const val = parseNumber(e.target.value);
+                                        if (/^\d*$/.test(val)) {
+                                            setVoucherData(prev => ({ ...prev, type: 'fixed', value: val }));
+                                        }
                                     }}
+
                                     placeholder="50.000"
                                     className="w-full bg-white border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#1a36c7]/5 outline-none text-sm"
                                 />

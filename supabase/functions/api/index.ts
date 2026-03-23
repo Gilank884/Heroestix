@@ -216,6 +216,21 @@ async function handleLegacyFlag(rawBody: string, supabase: any): Promise<Respons
 
         // Update associated order and tickets
         await supabase.from("orders").update({ status: "paid" }).eq("id", transaction.order_id);
+        
+        // =============================
+        // VOUCHER USAGE UPDATE
+        // =============================
+        const { data: orderData, error: orderFetchError } = await supabase
+            .from('orders')
+            .select('voucher_id')
+            .eq('id', transaction.order_id)
+            .single();
+
+        if (!orderFetchError && orderData?.voucher_id) {
+            console.log(`[api/Legacy] 🎫 Incrementing usage for voucher ${orderData.voucher_id}...`);
+            await supabase.rpc('increment_voucher_usage', { v_id: orderData.voucher_id });
+        }
+
         const { data: activatedTickets } = await supabase.from("tickets")
             .update({ status: "unused" })
             .eq("order_id", transaction.order_id)
@@ -823,6 +838,30 @@ async function handleTransferVAPayment(req: Request): Promise<Response> {
 
         if (orderUpdateError) {
             console.error("[Bayarind] DB Error (orders):", orderUpdateError);
+        }
+
+        // =============================
+        // VOUCHER USAGE UPDATE
+        // =============================
+        const { data: orderData, error: orderFetchError } = await supabase
+            .from('orders')
+            .select('voucher_id')
+            .eq('id', transaction.order_id)
+            .single();
+
+        if (!orderFetchError && orderData?.voucher_id) {
+            console.log(`[Bayarind] 🎫 Incrementing usage for voucher ${orderData.voucher_id}...`);
+            const { error: vRpcError } = await supabase.rpc('increment_voucher_usage', { v_id: orderData.voucher_id });
+            if (vRpcError) {
+                console.error(`[Bayarind] ❌ Failed to increment voucher usage via RPC:`, vRpcError);
+                // Fallback to manual update
+                const { data: currentVoucher } = await supabase.from('vouchers').select('used_count').eq('id', orderData.voucher_id).single();
+                if (currentVoucher) {
+                    await supabase.from('vouchers').update({ used_count: (currentVoucher.used_count || 0) + 1 }).eq('id', orderData.voucher_id);
+                }
+            } else {
+                console.log(`[Bayarind] ✅ Voucher usage incremented.`);
+            }
         }
 
         // Activate tickets (unused = active, ready for check-in)

@@ -29,7 +29,7 @@ const CreatorLayout = ({ children }) => {
     const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [stats, setStats] = useState({ brand_name: 'PT. Peristiwa Kreatif...' });
+    const [stats, setStats] = useState({ brand_name: 'Data Sedang Dimuat' });
     const [currentTime, setCurrentTime] = useState(new Date());
 
     // Live Clock Update

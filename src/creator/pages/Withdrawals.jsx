@@ -84,11 +84,20 @@ export default function Withdrawals() {
 
             let netSales = 0;
             if (eventIds.length > 0) {
-                const { data: ticketsWithOrders } = await supabase
-                    .from('tickets')
-                    .select('id, order_id, orders!inner(id, total, status), ticket_types!inner(event_id)')
-                    .in('ticket_types.event_id', eventIds)
-                    .eq('orders.status', 'paid');
+                const [tRes, taxRes] = await Promise.all([
+                    supabase
+                        .from('tickets')
+                        .select('id, order_id, orders!inner(id, total, status, discount_amount), ticket_types!inner(id, price, event_id)')
+                        .in('ticket_types.event_id', eventIds)
+                        .eq('orders.status', 'paid'),
+                    supabase.from('event_taxes').select('*').in('event_id', eventIds)
+                ]);
+
+                if (tRes.error) throw tRes.error;
+                const ticketsWithOrders = tRes.data || [];
+                const taxes = taxRes.data || [];
+                const taxMap = {};
+                taxes.forEach(tax => { taxMap[tax.event_id] = tax; });
 
                 if (ticketsWithOrders && ticketsWithOrders.length > 0) {
                     // Logic to handle orders with multiple tickets fairly
@@ -106,13 +115,28 @@ export default function Withdrawals() {
                     let calculatedNetSales = 0;
                     ticketsWithOrders.forEach(t => {
                         const countInOrder = orderTicketCounts[t.order_id] || 1;
-                        const share = Number(t.orders.total) / countInOrder;
-                        calculatedNetSales += (share - 8500);
+                        const ticketType = t.ticket_types;
+                        const eventTax = taxMap[ticketType.event_id];
+                        
+                        const basePrice = Number(ticketType.price || 0);
+                        const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                        const isTaxIncluded = eventTax ? eventTax.is_included : false;
+                        
+                        let ticketIncome = basePrice;
+                        if (!isTaxIncluded && taxRate > 0) {
+                            ticketIncome += (basePrice * taxRate / 100);
+                        }
+                        
+                        const discountShare = Number(t.orders.discount_amount || 0) / countInOrder;
+                        ticketIncome -= discountShare;
+                        
+                        calculatedNetSales += ticketIncome;
                     });
 
                     netSales = calculatedNetSales;
                 }
             }
+
 
             // 2. Calculate Total Already Withdrawn (approved requests)
             const totalWithdrawn = (requestData || [])

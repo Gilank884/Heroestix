@@ -302,6 +302,30 @@ serve(async (req: Request) => {
             throw orderUpdateError;
         }
 
+        // =============================
+        // VOUCHER USAGE UPDATE
+        // =============================
+        const { data: order, error: orderFetchError } = await supabase
+            .from('orders')
+            .select('voucher_id')
+            .eq('id', transaction.order_id)
+            .single();
+
+        if (!orderFetchError && order?.voucher_id) {
+            console.log(`[Bayarind] 🎫 Incrementing usage for voucher ${order.voucher_id}...`);
+            const { error: vRpcError } = await supabase.rpc('increment_voucher_usage', { v_id: order.voucher_id });
+            if (vRpcError) {
+                console.error(`[Bayarind] ❌ Failed to increment voucher usage via RPC:`, vRpcError);
+                // Fallback to manual update
+                const { data: currentVoucher } = await supabase.from('vouchers').select('used_count').eq('id', order.voucher_id).single();
+                if (currentVoucher) {
+                    await supabase.from('vouchers').update({ used_count: (currentVoucher.used_count || 0) + 1 }).eq('id', order.voucher_id);
+                }
+            } else {
+                console.log(`[Bayarind] ✅ Voucher usage incremented.`);
+            }
+        }
+
         // Activate tickets
         const { data: activatedTickets, error: ticketUpdateError } = await supabase
             .from('tickets')

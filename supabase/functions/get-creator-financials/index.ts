@@ -48,16 +48,24 @@ serve(async (req) => {
 
         if (eventIds.length > 0) {
             // 2. Fetch all tickets and their associated orders for these events
-            const { data: ticketsWithOrders, error: tError } = await supabase
-                .from('tickets')
-                .select(`
-                    id,
-                    order_id,
-                    orders!inner (id, total, status),
-                    ticket_types!inner (event_id)
-                `)
-                .in('ticket_types.event_id', eventIds)
-                .eq('orders.status', 'paid');
+            const [ticketsWithOrdersRes, taxesRes] = await Promise.all([
+                supabase
+                    .from('tickets')
+                    .select(`
+                        id,
+                        order_id,
+                        orders!inner (id, total, status, discount_amount),
+                        ticket_types!inner (id, price, event_id)
+                    `)
+                    .in('ticket_types.event_id', eventIds)
+                    .eq('orders.status', 'paid'),
+                supabase.from('event_taxes').select('*').in('event_id', eventIds)
+            ]);
+
+            const { data: ticketsWithOrders, error: tError } = ticketsWithOrdersRes;
+            const codesTaxes = taxesRes.data || [];
+            const taxMap = codesTaxes.reduce((acc: any, t: any) => ({ ...acc, [t.event_id]: t }), {});
+
 
             if (tError) throw tError;
 
@@ -78,13 +86,28 @@ serve(async (req) => {
                     orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
                 });
 
-                // 3. Calculate revenue: (Order Total / Total Tickets) - 8500 per ticket
+                // 3. Calculate revenue: Price + Tax - DiscountShare
                 let calculatedCredits = 0;
                 ticketsWithOrders.forEach((t: any) => {
-                    const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
-                    const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
-                    calculatedCredits += (shareOfGross - 8500);
+                    const countInOrder = orderTicketCounts[t.order_id] || 1;
+                    const ticketType = t.ticket_types;
+                    const eventTax = taxMap[ticketType.event_id];
+                    
+                    const basePrice = Number(ticketType.price || 0);
+                    const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                    const isTaxIncluded = eventTax ? eventTax.is_included : false;
+                    
+                    let ticketIncome = basePrice;
+                    if (!isTaxIncluded && taxRate > 0) {
+                        ticketIncome += (basePrice * taxRate / 100);
+                    }
+                    
+                    const discountShare = Number(t.orders?.discount_amount || 0) / countInOrder;
+                    ticketIncome -= discountShare;
+                    
+                    calculatedCredits += ticketIncome;
                 });
+
 
                 totalCredits = calculatedCredits;
                 transactionCount = ticketsWithOrders.length;

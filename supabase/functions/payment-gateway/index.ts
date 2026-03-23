@@ -358,10 +358,77 @@ serve(async (req: any) => {
 
             await supabase.from('orders').update({ status: 'paid' }).eq('id', transaction.order_id);
 
-            // Activate tickets
-            await supabase.from('tickets').update({ status: 'unused' }).eq('order_id', transaction.order_id);
-
             console.log("[Bayarind] Payment success. Order:", transaction.order_id, "| Tickets activated.");
+
+            // =============================
+            // VOUCHER USAGE UPDATE
+            // =============================
+            const { data: order, error: orderFetchError } = await supabase
+                .from('orders')
+                .select('voucher_id')
+                .eq('id', transaction.order_id)
+                .single();
+
+            if (!orderFetchError && order?.voucher_id) {
+                console.log(`[Bayarind] 🎫 Incrementing usage for voucher ${order.voucher_id}...`);
+                const { error: vRpcError } = await supabase.rpc('increment_voucher_usage', { v_id: order.voucher_id });
+                if (vRpcError) {
+                    console.error(`[Bayarind] ❌ Failed to increment voucher usage via RPC:`, vRpcError);
+                    // Fallback to manual update
+                    const { data: currentVoucher } = await supabase.from('vouchers').select('used_count').eq('id', order.voucher_id).single();
+                    if (currentVoucher) {
+                        await supabase.from('vouchers').update({ used_count: (currentVoucher.used_count || 0) + 1 }).eq('id', order.voucher_id);
+                    }
+                } else {
+                    console.log(`[Bayarind] ✅ Voucher usage incremented.`);
+                }
+            }
+
+            // =============================
+            // DIRECT INVENTORY UPDATE (Quota)
+            // =============================
+            const { data: activatedTickets, error: ticketFetchError } = await supabase
+                .from('tickets')
+                .select('ticket_type_id')
+                .eq('order_id', transaction.order_id);
+
+            if (!ticketFetchError && activatedTickets && activatedTickets.length > 0) {
+                console.log(`[Bayarind] 📦 Updating inventory for ${activatedTickets.length} tickets...`);
+
+                // Count tickets per type
+                const typeCounts: Record<string, number> = {};
+                activatedTickets.forEach((t: any) => {
+                    typeCounts[t.ticket_type_id] = (typeCounts[t.ticket_type_id] || 0) + 1;
+                });
+
+                // Update sold count for each ticket type
+                for (const [typeId, count] of Object.entries(typeCounts)) {
+                    try {
+                        // Fetch current sold count
+                        const { data: currentType, error: fetchError } = await supabase
+                            .from('ticket_types')
+                            .select('sold, name')
+                            .eq('id', typeId)
+                            .single();
+
+                        if (!fetchError && currentType) {
+                            const newSold = (currentType.sold || 0) + count;
+                            const { error: updateError } = await supabase
+                                .from('ticket_types')
+                                .update({ sold: newSold })
+                                .eq('id', typeId);
+
+                            if (updateError) {
+                                console.error(`[Bayarind] ❌ Failed to update quota for ${currentType.name}:`, updateError);
+                            } else {
+                                console.log(`[Bayarind] ✅ Quota updated for ${currentType.name}: ${currentType.sold} -> ${newSold}`);
+                            }
+                        }
+                    } catch (e: any) {
+                        console.error(`[Bayarind] 💥 Exception during inventory update for ${typeId}:`, e.message);
+                    }
+                }
+            }
 
             // TRIGGER EMAIL
             await triggerEmail();

@@ -56,7 +56,7 @@ const UserRegister = () => {
         try {
             // Sign Up
             const { data: authData, error } = await supabase.auth.signUp({
-                email: form.email,
+                email: form.email.trim(),
                 password: form.password,
                 options: {
                     emailRedirectTo: window.location.origin + "/",
@@ -85,7 +85,7 @@ const UserRegister = () => {
                 // DIRECT REGISTER: No OTP. 
                 await supabase.from('profiles').upsert({
                     id: authData.user.id,
-                    email: form.email,
+                    email: form.email.trim(),
                     full_name: form.nama,
                     role: 'user',
                 });

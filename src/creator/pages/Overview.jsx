@@ -65,21 +65,29 @@ export default function Overview() {
             // 2. Fetch all tickets and their associated orders for these events
             const eventIds = eventsData.map(e => e.id);
             let ticketsWithOrders = [];
+            let taxMap = {};
 
             if (eventIds.length > 0) {
-                const { data: tData, error: tError } = await supabase
-                    .from('tickets')
-                    .select(`
-                        id,
-                        order_id,
-                        orders!inner (id, total, status),
-                        ticket_types!inner (event_id)
-                    `)
-                    .in('ticket_types.event_id', eventIds)
-                    .eq('orders.status', 'paid');
+                const [tRes, taxRes] = await Promise.all([
+                    supabase
+                        .from('tickets')
+                        .select(`
+                            id,
+                            order_id,
+                            orders!inner (id, total, status, discount_amount),
+                            ticket_types!inner (id, price, event_id)
+                        `)
+                        .in('ticket_types.event_id', eventIds)
+                        .eq('orders.status', 'paid'),
+                    supabase.from('event_taxes').select('*').in('event_id', eventIds)
+                ]);
 
-                if (tError) throw tError;
-                ticketsWithOrders = tData || [];
+                if (tRes.error) throw tRes.error;
+                ticketsWithOrders = tRes.data || [];
+                
+                taxRes.data?.forEach(t => {
+                    taxMap[t.event_id] = t;
+                });
             }
 
             // 3. Aggregate stats using Fair-Share Logic
@@ -106,8 +114,22 @@ export default function Overview() {
                 let totalRevenue = 0;
                 ticketsInEvent.forEach(t => {
                     const totalInOrder = orderTicketCounts[t.order_id] || 1;
-                    const share = Number(t.orders.total) / totalInOrder;
-                    totalRevenue += (share - 8500);
+                    const ticketType = t.ticket_types;
+                    const eventTax = taxMap[ticketType.event_id];
+                    
+                    const basePrice = Number(ticketType.price || 0);
+                    const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                    const isTaxIncluded = eventTax ? eventTax.is_included : false;
+                    
+                    let ticketIncome = basePrice;
+                    if (!isTaxIncluded && taxRate > 0) {
+                        ticketIncome += (basePrice * taxRate / 100);
+                    }
+                    
+                    const discountShare = Number(t.orders.discount_amount || 0) / totalInOrder;
+                    ticketIncome -= discountShare;
+                    
+                    totalRevenue += ticketIncome;
                 });
 
                 const today = new Date().toISOString().split('T')[0];
@@ -134,6 +156,7 @@ export default function Overview() {
                 totalEvents: eventsData.length
             });
             setHistory(eventStats || []);
+
 
         } catch (error) {
             console.error('Error fetching overview data:', error.message);

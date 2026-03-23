@@ -52,12 +52,14 @@ serve(async (req) => {
         const { startDate, endDate } = body as any;
 
         // 1. Fetch data in parallel
-        const [withdrawalsRaw, creators, profiles, ticketsWithOrdersRaw] = await Promise.all([
+        const [withdrawalsRaw, creators, profiles, ticketsWithOrdersRaw, taxesRaw] = await Promise.all([
             fetchAll('withdrawals'),
             fetchAll('creators'),
             fetchAll('profiles', 'id, full_name'),
-            fetchAll('tickets', 'id, order_id, orders!inner(id, total, status, created_at), ticket_types!inner(events!inner(creator_id))')
+            fetchAll('tickets', 'id, order_id, orders!inner(id, total, status, created_at, discount_amount), ticket_types!inner(id, price, events!inner(id, creator_id))'),
+            fetchAll('event_taxes')
         ]);
+
 
         // 2. Filter by date if provided
         let paidTickets = (ticketsWithOrdersRaw as any[]).filter((t: any) => t.orders?.status === 'paid');
@@ -87,6 +89,8 @@ serve(async (req) => {
             ...acc,
             [c.id]: { ...c, profiles: profileMap[c.id] || null }
         }), {});
+        const taxMap = (taxesRaw as any[]).reduce((acc: any, t: any) => ({ ...acc, [t.event_id]: t }), {});
+
 
         // 2. Pre-calculate metrics using Fair-Share Logic
         const orderIds = [...new Set(paidTickets.map((t: any) => t.order_id))];
@@ -106,17 +110,32 @@ serve(async (req) => {
         const grossByCreator: Record<string, number> = {};
 
         paidTickets.forEach((t: any) => {
-            const orderTotal = Number(t.orders?.total || 0);
+            const ticketType = t.ticket_types;
+            const eventTax = taxMap[ticketType.events?.id];
+            const basePrice = Number(ticketType.price || 0);
+            const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+            const isTaxIncluded = eventTax ? eventTax.is_included : false;
+            
+            let ticketIncome = basePrice;
+            if (!isTaxIncluded && taxRate > 0) {
+                ticketIncome += (basePrice * taxRate / 100);
+            }
+            
             const countInOrder = orderTicketCounts[t.order_id] || 1;
-            const shareOfGross = orderTotal / countInOrder;
-            const ticketNet = shareOfGross - 8500;
-            totalNet += ticketNet;
-            const creatorId = t.ticket_types?.events?.creator_id;
+            const discountShare = Number(t.orders?.discount_amount || 0) / countInOrder;
+            ticketIncome -= discountShare;
+
+            totalNet += ticketIncome;
+
+            const creatorId = ticketType?.events?.creator_id;
             if (creatorId) {
+                const orderTotal = Number(t.orders?.total || 0);
+                const shareOfGross = orderTotal / countInOrder;
                 grossByCreator[creatorId] = (grossByCreator[creatorId] || 0) + shareOfGross;
-                revenueByCreator[creatorId] = (revenueByCreator[creatorId] || 0) + ticketNet;
+                revenueByCreator[creatorId] = (revenueByCreator[creatorId] || 0) + ticketIncome;
             }
         });
+
 
         const uniqueOrderTotals = new Map();
         paidTickets.forEach((t: any) => {

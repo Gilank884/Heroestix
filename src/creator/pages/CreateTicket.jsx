@@ -65,9 +65,10 @@ const CreateTicket = () => {
     const calculateNet = (gross) => {
         const val = parseInt(gross) || 0;
         if (val === 0) return '';
-        const net = Math.round(val * (1 + taxValue / 100) + 8500);
+        const net = Math.round(val * (1 + taxValue / 100));
         return net.toString();
     };
+
 
     const handlePriceGrossChange = (val) => {
         handlePriceChange(val);

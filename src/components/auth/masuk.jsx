@@ -31,7 +31,7 @@ const Masuk = ({ role = "user" }) => {
         localStorage.setItem("auth_mode", role);
 
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-            email,
+            email: email.trim(),
             password,
         });
 
@@ -95,7 +95,7 @@ const Masuk = ({ role = "user" }) => {
         setErrorMsg("");
         setSuccessMsg("");
 
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
             redirectTo: "https://heroestix.com/reset-password",
         });
 

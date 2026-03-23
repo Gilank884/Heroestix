@@ -161,7 +161,8 @@ const CreateEvent = () => {
 
             // 3. Create First Ticket
             const grossValue = parseInt(ticketData.price) || 0;
-            const netValue = Math.round(grossValue * (1 + (parseFloat(taxData.value) || 0) / 100) + 8500);
+            const netValue = Math.round(grossValue * (1 + (parseFloat(taxData.value) || 0) / 100));
+
 
             const { error: ticketError } = await supabase
                 .from('ticket_types')

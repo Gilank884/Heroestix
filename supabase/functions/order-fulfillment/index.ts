@@ -170,16 +170,8 @@ async function processSuccessfulPayment(supabase: any, order_id: string) {
     // B. Sold Counts (Delegated to transfer-va-payment for immediate update)
     console.log(`[Process] Skipping inventory update in fulfillment, handled by payment gateway.`);
 
-    // C. Update Voucher Usage
-    if (order.voucher_id) {
-        const { error: vRpcError } = await supabase.rpc('increment_voucher_usage', { v_id: order.voucher_id });
-        if (vRpcError) {
-            const { data: currentVoucher } = await supabase.from('vouchers').select('used_count').eq('id', order.voucher_id).single();
-            if (currentVoucher) {
-                await supabase.from('vouchers').update({ used_count: (currentVoucher.used_count || 0) + 1 }).eq('id', order.voucher_id);
-            }
-        }
-    }
+    // C. Update Voucher Usage (Handled by payment gateways for consistency with inventory)
+    console.log(`[Process] Skipping voucher update in fulfillment, handled by payment gateway.`);
 
     // D. Trigger Email Notification (Invoke send-ticket-email)
     let emailResult = null;

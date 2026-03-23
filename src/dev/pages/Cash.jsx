@@ -49,12 +49,14 @@ export default function Cash() {
             }
 
             // 2. Fallback Logic (Client-side aggregation with Fair-Share Logic)
-            const [creatorsRes, profilesRes, ticketsRes, withdrawalsRes] = await Promise.all([
+            const [creatorsRes, profilesRes, ticketsRes, withdrawalsRes, taxesRes] = await Promise.all([
                 supabase.from('creators').select('*'),
                 supabase.from('profiles').select('id, full_name, email'),
-                supabase.from('tickets').select('id, order_id, orders!inner(id, total, status, created_at), ticket_types!inner(events!inner(creator_id))').eq('orders.status', 'paid'),
-                supabase.from('withdrawals').select('*')
+                supabase.from('tickets').select('id, order_id, orders!inner(id, total, status, created_at, discount_amount), ticket_types!inner(id, price, events!inner(id, creator_id))').eq('orders.status', 'paid'),
+                supabase.from('withdrawals').select('*'),
+                supabase.from('event_taxes').select('*')
             ]);
+
 
             if (creatorsRes.error) throw creatorsRes.error;
             if (profilesRes.error) throw profilesRes.error;
@@ -65,6 +67,9 @@ export default function Cash() {
             const profiles = profilesRes.data || [];
             const allTickets = ticketsRes.data || [];
             let allWithdrawals = withdrawalsRes.data || [];
+            const allTaxes = taxesRes.data || [];
+            const taxMap = allTaxes.reduce((acc, t) => ({ ...acc, [t.event_id]: t }), {});
+
 
             // Client-side date filtering
             let paidTickets = allTickets;
@@ -113,17 +118,31 @@ export default function Cash() {
             // Calculate revenue per ticket fairly
             paidTickets.forEach(t => {
                 const countInOrder = orderTicketCounts[t.order_id] || 1;
-                const shareOfGross = Number(t.orders.total) / countInOrder;
-                const net = shareOfGross - 8500;
+                const ticketType = t.ticket_types;
+                const eventTax = taxMap[ticketType.events?.id];
+                
+                const basePrice = Number(ticketType.price || 0);
+                const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                const isTaxIncluded = eventTax ? eventTax.is_included : false;
+                
+                let ticketIncome = basePrice;
+                if (!isTaxIncluded && taxRate > 0) {
+                    ticketIncome += (basePrice * taxRate / 100);
+                }
+                
+                const discountShare = Number(t.orders.discount_amount || 0) / countInOrder;
+                ticketIncome -= discountShare;
 
-                totalNet += net;
+                totalNet += ticketIncome;
 
-                const creatorId = t.ticket_types?.events?.creator_id;
+                const creatorId = ticketType?.events?.creator_id;
                 if (creatorId) {
+                    const shareOfGross = Number(t.orders.total) / countInOrder;
                     grossByCreator[creatorId] = (grossByCreator[creatorId] || 0) + shareOfGross;
-                    revenueByCreator[creatorId] = (revenueByCreator[creatorId] || 0) + net;
+                    revenueByCreator[creatorId] = (revenueByCreator[creatorId] || 0) + ticketIncome;
                 }
             });
+
 
             // Unique paid order totals for Gross
             const uniqueOrderTotals = new Map();

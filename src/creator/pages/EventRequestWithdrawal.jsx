@@ -71,24 +71,23 @@ export default function EventRequestWithdrawal() {
 
             const ttIds = (ticketTypes || []).map(tt => tt.id);
 
-            let tIds = [];
-            if (ttIds.length > 0) {
-                const { data: tickets } = await supabase
-                    .from('tickets')
-                    .select('id')
-                    .in('ticket_type_id', ttIds);
-                tIds = (tickets || []).map(t => t.id);
-            }
-
             let salesTotal = 0;
             if (ttIds.length > 0) {
+                // Fetch Event Tax
+                const { data: eventTax } = await supabase
+                    .from('event_taxes')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .maybeSingle();
+
                 // Fetch all tickets for this event that are PAID
                 const { data: eventTickets, error: etError } = await supabase
                     .from('tickets')
                     .select(`
                         id,
                         order_id,
-                        orders!inner (id, total, status)
+                        orders!inner (id, total, status, discount_amount),
+                        ticket_types!inner (id, price, event_id)
                     `)
                     .in('ticket_type_id', ttIds)
                     .eq('orders.status', 'paid');
@@ -108,15 +107,28 @@ export default function EventRequestWithdrawal() {
                         orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
                     });
 
+                    const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                    const isTaxIncluded = eventTax ? eventTax.is_included : false;
+
                     let calculatedSales = 0;
                     eventTickets.forEach(t => {
                         const countInOrder = orderTicketCounts[t.order_id] || 1;
-                        const share = Number(t.orders.total) / countInOrder;
-                        calculatedSales += (share - 8500);
+                        const basePrice = Number(t.ticket_types?.price || 0);
+                        
+                        let ticketIncome = basePrice;
+                        if (!isTaxIncluded && taxRate > 0) {
+                            ticketIncome += (basePrice * taxRate / 100);
+                        }
+                        
+                        const discountShare = Number(t.orders?.discount_amount || 0) / countInOrder;
+                        ticketIncome -= discountShare;
+                        
+                        calculatedSales += ticketIncome;
                     });
                     salesTotal = calculatedSales;
                 }
             }
+
 
             const { data: withdrawalData } = await supabase
                 .from('withdrawals')

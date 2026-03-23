@@ -83,7 +83,7 @@ const CreatorRegister = () => {
             const { data: existingProfile } = await supabase
                 .from('profiles')
                 .select('id, role')
-                .eq('email', form.email)
+                .eq('email', form.email.trim())
                 .maybeSingle();
 
             if (existingProfile) {
@@ -117,31 +117,35 @@ const CreatorRegister = () => {
         }
 
         try {
-            // 1. Upload Photo if exists
             let photoUrl = "";
             if (photoFile) {
-                const fileExt = photoFile.name.split('.').pop();
-                const fileName = `${Date.now()}.${fileExt}`;
-                const filePath = `avatars/${fileName}`;
+                try {
+                    const fileExt = photoFile.name.split('.').pop();
+                    const fileName = `${Date.now()}.${fileExt}`;
+                    const filePath = `avatars/${fileName}`;
 
-                const { error: uploadError } = await supabase.storage
-                    .from('creator-assets')
-                    .upload(filePath, photoFile);
+                    const { error: uploadError } = await supabase.storage
+                        .from('creator-assets')
+                        .upload(filePath, photoFile);
 
-                if (uploadError) throw uploadError;
-
-                const { data: { publicUrl } } = supabase.storage
-                    .from('creator-assets')
-                    .getPublicUrl(filePath);
-
-                photoUrl = publicUrl;
-                setForm(prev => ({ ...prev, photoUrl: publicUrl }));
+                    if (uploadError) {
+                        console.warn("Gagal upload foto (bucket mungkin belum ada).", uploadError);
+                    } else {
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('creator-assets')
+                            .getPublicUrl(filePath);
+                        photoUrl = publicUrl;
+                    }
+                } catch (imgErr) {
+                    console.warn("Error saat memproses foto:", imgErr);
+                }
             }
+            setForm(prev => ({ ...prev, photoUrl }));
 
             // 2. Daftar akun baru
             let authUser = null;
             const { data: authData, error: signUpError } = await supabase.auth.signUp({
-                email: form.email,
+                email: form.email.trim(),
                 password: form.password,
                 options: {
                     emailRedirectTo: window.location.origin + "/creator/dashboard",
@@ -177,7 +181,7 @@ const CreatorRegister = () => {
             const { error: profileUpsertError } = await supabase.from('profiles').upsert({
                 id: authUser.id,
                 full_name: form.brand_name,
-                email: form.email,
+                email: form.email.trim(),
                 role: 'creator'
             }, { onConflict: 'id' });
 

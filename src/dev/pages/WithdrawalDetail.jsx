@@ -81,17 +81,20 @@ export default function WithdrawalDetail() {
     const fetchCreatorStats = async (creatorId) => {
         setStatsLoading(true);
         try {
-            const [ticketsRes, withdrawalRes] = await Promise.all([
+            const [ticketsRes, withdrawalRes, taxesRes] = await Promise.all([
                 supabase
                     .from('tickets')
-                    .select('id, order_id, orders!inner(id, total, status), ticket_types!inner(events!inner(creator_id))')
+                    .select('id, order_id, orders!inner(id, total, status, discount_amount), ticket_types!inner(id, price, events!inner(id, creator_id))')
                     .eq('orders.status', 'paid')
                     .eq('ticket_types.events.creator_id', creatorId),
-                supabase.from('withdrawals').select('*').eq('creator_id', creatorId)
+                supabase.from('withdrawals').select('*').eq('creator_id', creatorId),
+                supabase.from('event_taxes').select('*')
             ]);
 
             const paidTickets = ticketsRes.data || [];
             const withdrawalData = withdrawalRes.data || [];
+            const taxes = taxesRes.data || [];
+            const taxMap = taxes.reduce((acc, t) => ({ ...acc, [t.event_id]: t }), {});
 
             let netSales = 0;
             if (paidTickets.length > 0) {
@@ -108,10 +111,25 @@ export default function WithdrawalDetail() {
 
                 paidTickets.forEach(t => {
                     const countInOrder = orderTicketCounts[t.order_id] || 1;
-                    const share = Number(t.orders.total) / countInOrder;
-                    netSales += (share - 8500);
+                    const ticketType = t.ticket_types;
+                    const eventTax = taxMap[ticketType.events?.id];
+                    
+                    const basePrice = Number(ticketType.price || 0);
+                    const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                    const isTaxIncluded = eventTax ? eventTax.is_included : false;
+                    
+                    let ticketIncome = basePrice;
+                    if (!isTaxIncluded && taxRate > 0) {
+                        ticketIncome += (basePrice * taxRate / 100);
+                    }
+                    
+                    const discountShare = Number(t.orders.discount_amount || 0) / countInOrder;
+                    ticketIncome -= discountShare;
+                    
+                    netSales += ticketIncome;
                 });
             }
+
 
             const totalWithdrawn = withdrawalData
                 .filter(curr => curr.status === 'approved')

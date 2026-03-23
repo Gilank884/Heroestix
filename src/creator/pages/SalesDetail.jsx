@@ -28,6 +28,7 @@ export default function SalesDetail() {
     const [loading, setLoading] = useState(true);
     const [ticket, setTicket] = useState(null);
     const [orderTicketCount, setOrderTicketCount] = useState(1);
+    const [eventTax, setEventTax] = useState(null);
 
     useEffect(() => {
         if (ticketId) {
@@ -44,13 +45,23 @@ export default function SalesDetail() {
                 .select(`
                     *,
                     orders!inner (*),
-                    ticket_types!inner (name)
+                    ticket_types!inner (id, name, price, event_id)
                 `)
                 .eq('id', ticketId)
                 .single();
 
             if (error) throw error;
             setTicket(data);
+
+            // Fetch Event Tax
+            if (data?.ticket_types?.event_id) {
+                const { data: taxData } = await supabase
+                    .from('event_taxes')
+                    .select('*')
+                    .eq('event_id', data.ticket_types.event_id)
+                    .maybeSingle();
+                setEventTax(taxData);
+            }
 
             // 2. Fetch how many tickets are in this order to calculate revenue share
             if (data?.order_id) {
@@ -96,7 +107,18 @@ export default function SalesDetail() {
         ? JSON.parse(ticket.custom_responses || '{}')
         : (ticket.custom_responses || {});
 
-    const netRevenue = (Number(ticket.orders?.total || 0) / orderTicketCount) - 8500;
+    const basePrice = Number(ticket.ticket_types?.price || 0);
+    const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+    const isTaxIncluded = eventTax ? eventTax.is_included : false;
+    
+    let ticketIncome = basePrice;
+    if (!isTaxIncluded && taxRate > 0) {
+        ticketIncome += (basePrice * taxRate / 100);
+    }
+    
+    const discountShare = Number(ticket.orders?.discount_amount || 0) / orderTicketCount;
+    const netRevenue = ticketIncome - discountShare;
+
 
     return (
         <div className="min-h-screen bg-slate-50 pb-20">

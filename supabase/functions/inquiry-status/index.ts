@@ -448,13 +448,46 @@ serve(async (req: Request) => {
         console.error("DB Update Error (orders):", orderUpdateError);
       }
 
-      const { error: ticketUpdateError } = await supabase
+      // =============================
+      // VOUCHER USAGE UPDATE
+      // =============================
+      const { data: orderData, error: orderFetchError } = await supabase
+        .from('orders')
+        .select('voucher_id')
+        .eq('id', singleTx.order_id)
+        .single();
+
+      if (!orderFetchError && orderData?.voucher_id) {
+        console.log(`[Inquiry] 🎫 Incrementing usage for voucher ${orderData.voucher_id}...`);
+        await supabase.rpc('increment_voucher_usage', { v_id: orderData.voucher_id });
+      }
+
+      const { data: activatedTickets, error: ticketUpdateError } = await supabase
         .from('tickets')
         .update({ status: 'unused' }) // Active/Ready status
-        .eq('order_id', singleTx.order_id);
+        .eq('order_id', singleTx.order_id)
+        .select('ticket_type_id');
 
       if (ticketUpdateError) {
         console.error("DB Update Error (tickets):", ticketUpdateError);
+      }
+
+      // =============================
+      // DIRECT INVENTORY UPDATE (Quota)
+      // =============================
+      if (activatedTickets && activatedTickets.length > 0) {
+        console.log(`[Inquiry] 📦 Updating inventory for ${activatedTickets.length} tickets...`);
+        const typeCounts: Record<string, number> = {};
+        activatedTickets.forEach((t: any) => {
+          typeCounts[t.ticket_type_id] = (typeCounts[t.ticket_type_id] || 0) + 1;
+        });
+
+        for (const [typeId, count] of Object.entries(typeCounts)) {
+          const { data: currentType } = await supabase.from('ticket_types').select('sold').eq('id', typeId).single();
+          if (currentType) {
+            await supabase.from('ticket_types').update({ sold: (currentType.sold || 0) + count }).eq('id', typeId);
+          }
+        }
       }
 
       // Trigger Email

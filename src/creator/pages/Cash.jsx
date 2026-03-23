@@ -88,14 +88,22 @@ export default function CreatorCash() {
 
                 let calculatedIncome = 0;
                 if (eventIds.length > 0) {
-                    const { data: ticketsWithOrders } = await supabase
-                        .from('tickets')
-                        .select('id, orders!inner(id, total, status), ticket_types!inner(event_id)')
-                        .in('ticket_types.event_id', eventIds)
-                        .eq('orders.status', 'paid');
+                    const [tRes, taxRes] = await Promise.all([
+                        supabase
+                            .from('tickets')
+                            .select('id, order_id, orders!inner(id, total, status, discount_amount), ticket_types!inner(id, price, event_id)')
+                            .in('ticket_type_id', (await supabase.from('ticket_types').select('id').in('event_id', eventIds)).data?.map(tt => tt.id) || [])
+                            .eq('orders.status', 'paid'),
+                        supabase.from('event_taxes').select('*').in('event_id', eventIds)
+                    ]);
+
+                    const ticketsWithOrders = tRes.data || [];
+                    const taxes = taxRes.data || [];
+                    const taxMap = {};
+                    taxes.forEach(tax => { taxMap[tax.event_id] = tax; });
 
                     if (ticketsWithOrders && ticketsWithOrders.length > 0) {
-                        const orderIds = [...new Set(ticketsWithOrders.map(t => t.orders.id))];
+                        const orderIds = [...new Set(ticketsWithOrders.map(t => t.order_id))];
                         const { data: allTicketsInOrders } = await supabase
                             .from('tickets')
                             .select('order_id')
@@ -108,13 +116,28 @@ export default function CreatorCash() {
 
                         let fallbackIncome = 0;
                         ticketsWithOrders.forEach(t => {
-                            const countInOrder = orderTicketCounts[t.orders.id] || 1;
-                            const share = Number(t.orders.total) / countInOrder;
-                            fallbackIncome += (share - 8500);
+                            const countInOrder = orderTicketCounts[t.order_id] || 1;
+                            const ticketType = t.ticket_types;
+                            const eventTax = taxMap[ticketType.event_id];
+                            
+                            const basePrice = Number(ticketType.price || 0);
+                            const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                            const isTaxIncluded = eventTax ? eventTax.is_included : false;
+                            
+                            let ticketIncome = basePrice;
+                            if (!isTaxIncluded && taxRate > 0) {
+                                ticketIncome += (basePrice * taxRate / 100);
+                            }
+                            
+                            const discountShare = Number(t.orders.discount_amount || 0) / countInOrder;
+                            ticketIncome -= discountShare;
+                            
+                            fallbackIncome += ticketIncome;
                         });
                         calculatedIncome = fallbackIncome;
                     }
                 }
+
 
                 // Fetch total debits for fallback
                 const { data: debitsData } = await supabase

@@ -107,14 +107,21 @@ export default function EventCash() {
             let sales = 0;
             let ticketsForLedger = [];
             if (ttIds.length > 0) {
+                // Fetch Event Tax
+                const { data: eventTax } = await supabase
+                    .from('event_taxes')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .maybeSingle();
+
                 const { data: ticketsWithOrders, error: tError } = await supabase
                     .from('tickets')
                     .select(`
                         id,
                         created_at,
                         order_id,
-                        orders!inner (id, total, status),
-                        ticket_types!inner (event_id)
+                        orders!inner (id, total, status, discount_amount),
+                        ticket_types!inner (id, price, event_id)
                     `)
                     .in('ticket_type_id', ttIds)
                     .eq('orders.status', 'paid');
@@ -137,18 +144,33 @@ export default function EventCash() {
                         orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
                     });
 
-                    // 3. Calculate revenue: (Order Total / Total Tickets) - 8500 per ticket
+                    const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                    const isTaxIncluded = eventTax ? eventTax.is_included : false;
+
+                    // 3. Calculate revenue: (Price + Tax - DiscountShare)
                     let calculatedSales = 0;
                     ticketsWithOrders.forEach(t => {
                         const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
-                        const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
-                        calculatedSales += (shareOfGross - 8500);
+                        const basePrice = Number(t.ticket_types?.price || 0);
+                        
+                        let ticketIncome = basePrice;
+                        if (!isTaxIncluded && taxRate > 0) {
+                            ticketIncome += (basePrice * taxRate / 100);
+                        }
+                        
+                        const discountShare = Number(t.orders?.discount_amount || 0) / totalTicketsInOrder;
+                        ticketIncome -= discountShare;
+                        
+                        calculatedSales += ticketIncome;
+                        // Attach to ticket for ledger display
+                        t.calculated_revenue = ticketIncome;
                     });
 
                     sales = calculatedSales;
                     ticketsForLedger = ticketsWithOrders;
                 }
             }
+
 
             // 4. Fetch withdrawals linked to this event
             const { data: withdrawalData, error: withdrawalError } = await supabase
@@ -436,9 +458,9 @@ export default function EventCash() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                {/* Note: Showing (Total - fee) as net revenue for this ticket */}
-                                                <p className="font-black text-green-600 tabular-nums">+{rupiah(Number(h.orders.total) - 8500)}</p>
+                                                <p className="font-black text-green-600 tabular-nums">+{rupiah(h.calculated_revenue || 0)}</p>
                                             </td>
+
                                         </tr>
                                     )) : (
                                         <tr>

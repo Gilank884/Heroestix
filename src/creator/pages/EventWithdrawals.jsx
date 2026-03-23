@@ -85,13 +85,21 @@ export default function EventWithdrawals() {
             // 3. Calculate Balance using Fair-Share Orders Logic
             let salesTotal = 0;
             if (ttIds.length > 0) {
+                // Fetch Event Tax
+                const { data: eventTax } = await supabase
+                    .from('event_taxes')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .maybeSingle();
+
                 // Fetch all tickets for this event that are PAID
                 const { data: eventTickets, error: etError } = await supabase
                     .from('tickets')
                     .select(`
                         id,
                         order_id,
-                        orders!inner (id, total, status)
+                        orders!inner (id, total, status, discount_amount),
+                        ticket_types!inner (id, price, event_id)
                     `)
                     .in('ticket_type_id', ttIds)
                     .eq('orders.status', 'paid');
@@ -114,14 +122,27 @@ export default function EventWithdrawals() {
                         orderTicketCounts[t.order_id] = (orderTicketCounts[t.order_id] || 0) + 1;
                     });
 
-                    // 3. Calculate revenue: (Order Total / Total Tickets) - 8500 per ticket
+                    const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                    const isTaxIncluded = eventTax ? eventTax.is_included : false;
+
+                    // 3. Calculate revenue: (Price + Tax - DiscountShare)
                     eventTickets.forEach(t => {
                         const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
-                        const shareOfGross = Number(t.orders.total) / totalTicketsInOrder;
-                        salesTotal += (shareOfGross - 8500);
+                        const basePrice = Number(t.ticket_types?.price || 0);
+                        
+                        let ticketIncome = basePrice;
+                        if (!isTaxIncluded && taxRate > 0) {
+                            ticketIncome += (basePrice * taxRate / 100);
+                        }
+                        
+                        const discountShare = Number(t.orders?.discount_amount || 0) / totalTicketsInOrder;
+                        ticketIncome -= discountShare;
+                        
+                        salesTotal += ticketIncome;
                     });
                 }
             }
+
 
             // 4. Fetch Withdrawals for this event
             const { data: withdrawalData } = await supabase

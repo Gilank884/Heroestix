@@ -80,6 +80,13 @@ export default function EventSalesReport() {
                 .single();
             setEventData(event);
 
+            // Fetch Event Tax
+            const { data: eventTax } = await supabase
+                .from('event_taxes')
+                .select('*')
+                .eq('event_id', eventId)
+                .maybeSingle();
+
             // 2. Fetch related ticket types for this event
             const { data: ticketTypes } = await supabase
                 .from('ticket_types')
@@ -102,8 +109,8 @@ export default function EventSalesReport() {
                         birth_date,
                         phone,
                         custom_responses,
-                        orders!inner (id, total, status, created_at),
-                        ticket_types!inner (event_id)
+                        orders!inner (id, total, status, created_at, discount_amount),
+                        ticket_types!inner (id, price, event_id)
                     `)
                     .in('ticket_type_id', ttIds)
                     .eq('orders.status', 'paid');
@@ -127,12 +134,26 @@ export default function EventSalesReport() {
                     });
                     setOrderTicketCounts(counts);
 
-                    // 3. Calculate revenue: (Order Total / Total Tickets) - 8500 per ticket
+                    const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                    const isTaxIncluded = eventTax ? eventTax.is_included : false;
+
+                    // 3. Calculate revenue: (Price + Tax - DiscountShare)
                     let calculatedNetRevenue = 0;
                     ticketsWithOrders.forEach(t => {
                         const totalTicketsInOrder = counts[t.order_id] || 1;
-                        const shareOfGross = Number(t.orders?.total || 0) / totalTicketsInOrder;
-                        calculatedNetRevenue += (shareOfGross - 8500);
+                        const basePrice = Number(t.ticket_types?.price || 0);
+
+                        let ticketIncome = basePrice;
+                        if (!isTaxIncluded && taxRate > 0) {
+                            ticketIncome += (basePrice * taxRate / 100);
+                        }
+
+                        const discountShare = Number(t.orders?.discount_amount || 0) / totalTicketsInOrder;
+                        ticketIncome -= discountShare;
+
+                        calculatedNetRevenue += ticketIncome;
+                        // Attach calculated revenue to ticket object for easier filtering/exporting
+                        t.calculated_revenue = ticketIncome;
                     });
 
                     // 4. Identify unique custom field keys
@@ -180,15 +201,13 @@ export default function EventSalesReport() {
     const filteredStats = React.useMemo(() => {
         let revenue = 0;
         filteredHistory.forEach(t => {
-            const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
-            const shareOfGross = Number(t.orders?.total || 0) / totalTicketsInOrder;
-            revenue += (shareOfGross - 8500);
+            revenue += (t.calculated_revenue || 0);
         });
         return {
             totalRevenue: revenue,
             ticketsSold: filteredHistory.length
         };
-    }, [filteredHistory, orderTicketCounts]);
+    }, [filteredHistory]);
 
     const exportToExcel = () => {
         const headers = ["Order ID", "QR Code", "Nama Pembeli", "Email", "Kelamin", "Tgl Lahir", "Potensi Pendapatan"];
@@ -209,13 +228,14 @@ export default function EventSalesReport() {
                 item.email || '-',
                 item.gender || '-',
                 item.birth_date || '-',
-                (Number(item.orders?.total || 0) / (orderTicketCounts[item.order_id] || 1) - 8500)
+                item.calculated_revenue || 0
             ];
             customFieldKeys.forEach(key => row.push(customData[key] || '-'));
             return row;
         });
 
         const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -441,9 +461,10 @@ export default function EventSalesReport() {
                                             </td>
                                             <td className="px-6 py-6 text-right">
                                                 <p className="font-black text-[#1a36c7] tabular-nums text-base">
-                                                    +{rupiah(Number(item.orders?.total || 0) / (orderTicketCounts[item.order_id] || 1) - 8500)}
+                                                    +{rupiah(item.calculated_revenue)}
                                                 </p>
                                             </td>
+
                                         </tr>
                                     );
                                 }) : (

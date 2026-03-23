@@ -103,7 +103,7 @@ const CreatorDashboard = () => {
             setIsVerified(verified);
             if (!verified) { setLoading(false); return; }
 
-            // 1. Fetch Events
+            // 1. Fetch Events & Taxes
             const { data: eventsData, error: eventsError } = await supabase
                 .from('events')
                 .select('*, ticket_types(id, price, quota, sold)')
@@ -111,89 +111,115 @@ const CreatorDashboard = () => {
 
             if (eventsError) throw eventsError;
 
-            // 2. Fetch Financial Data from creator_balances (Source of Truth)
-            const { data: balancesData, error: bError } = await supabase
-                .from('creator_balances')
-                .select('*')
-                .eq('creator_id', user.id);
+            const eventIds = eventsData?.map(e => e.id) || [];
+            if (eventIds.length === 0) {
+                setLoading(false);
+                return;
+            }
 
-            if (bError) throw bError;
+            const { data: taxesData } = await supabase
+                .from('event_taxes')
+                .select('*')
+                .in('event_id', eventIds);
+
+            const taxMap = {};
+            taxesData?.forEach(tax => {
+                taxMap[tax.event_id] = tax;
+            });
+
+            // 2. Fetch all Paid Tickets for these events
+            const ttIds = [];
+            eventsData.forEach(ev => {
+                ev.ticket_types?.forEach(tt => ttIds.push(tt.id));
+            });
 
             let totalRev = 0;
             let totalSold = 0;
-            let ticketsDataForDemographics = [];
-            const paidTicketIds = new Set();
-            const credits = balancesData?.filter(b => b.type === 'credit') || [];
-
-            credits.forEach(c => {
-                totalRev += Number(c.amount);
-                if (c.ticket_id) paidTicketIds.add(c.ticket_id);
-            });
-
-            totalSold = paidTicketIds.size;
-
-            // 3. Link balances to events for the Active Operations list
-            const eventIds = eventsData?.map(e => e.id) || [];
-            if (eventIds.length > 0 && credits.length > 0) {
-                try {
-                    // Fetch ticket to event mapping
-                    const { data: ttData } = await supabase
-                        .from('ticket_types')
-                        .select('id, event_id')
-                        .in('event_id', eventIds);
-
-                    const ttToEvent = {};
-                    ttData?.forEach(tt => {
-                        ttToEvent[tt.id] = tt.event_id;
-                    });
-
-                    const { data: tData } = await supabase
-                        .from('tickets')
-                        .select('id, ticket_type_id, gender')
-                        .in('id', [...paidTicketIds]);
-
-                    const ticketToEvent = {};
-                    const ticketToGender = {};
-                    tData?.forEach(t => {
-                        ticketToEvent[t.id] = ttToEvent[t.ticket_type_id];
-                        ticketToGender[t.id] = t.gender;
-                    });
-
-                    // Calculate per-event revenue
-                    eventsData.forEach(ev => {
-                        const eventCredits = credits.filter(c => ticketToEvent[c.ticket_id] === ev.id);
-                        ev.calculatedRevenue = eventCredits.reduce((acc, curr) => acc + Number(curr.amount), 0);
-                    });
-
-                    // Store demographics for the next step
-                    ticketsDataForDemographics = tData || [];
-                } catch (mapError) {
-                    console.error('Error mapping tickets to events:', mapError);
-                }
-            }
-
-            setTicketsData(credits); // Use credit records for the chart
-
-            setEvents(eventsData || []);
-
-            // 3. Demographics calculation
+            let ticketsForChart = [];
             let genderResult = [];
-            if (ticketsDataForDemographics.length > 0) {
-                let maleCount = 0;
-                let femaleCount = 0;
-                ticketsDataForDemographics.forEach(ticket => {
-                    const g = ticket.gender?.toLowerCase();
-                    if (g === 'laki - laki' || g === 'laki-laki' || g === 'male') maleCount++;
-                    else if (g === 'perempuan' || g === 'female') femaleCount++;
-                });
-                if (maleCount > 0 || femaleCount > 0) {
-                    genderResult = [
-                        { name: 'Laki - Laki', value: maleCount, color: '#3B82F6' },
-                        { name: 'Perempuan', value: femaleCount, color: '#EC4899' }
-                    ];
+
+            if (ttIds.length > 0) {
+                const { data: ticketsWithOrders, error: tError } = await supabase
+                    .from('tickets')
+                    .select(`
+                        id,
+                        order_id,
+                        gender,
+                        ticket_types!inner (id, price, event_id),
+                        orders!inner (id, total, status, created_at, discount_amount)
+                    `)
+                    .in('ticket_type_id', ttIds)
+                    .eq('orders.status', 'paid');
+
+                if (tError) throw tError;
+
+                if (ticketsWithOrders && ticketsWithOrders.length > 0) {
+                    // Fetch order ticket counts to split discounts
+                    const orderIds = [...new Set(ticketsWithOrders.map(t => t.order_id))];
+                    const { data: allTicketsInOrders } = await supabase
+                        .from('tickets')
+                        .select('order_id')
+                        .in('order_id', orderIds);
+
+                    const orderCounts = {};
+                    allTicketsInOrders?.forEach(t => {
+                        orderCounts[t.order_id] = (orderCounts[t.order_id] || 0) + 1;
+                    });
+
+                    // Calculate revenue per ticket
+                    const eventRevenue = {};
+                    let maleCount = 0;
+                    let femaleCount = 0;
+
+                    ticketsWithOrders.forEach(t => {
+                        const eventId = t.ticket_types?.event_id;
+                        const eventTax = taxMap[eventId];
+                        const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                        const isTaxIncluded = eventTax ? eventTax.is_included : false;
+                        const basePrice = Number(t.ticket_types?.price || 0);
+
+                        let ticketIncome = basePrice;
+                        if (!isTaxIncluded && taxRate > 0) {
+                            ticketIncome += (basePrice * taxRate / 100);
+                        }
+
+                        const totalTicketsInOrder = orderCounts[t.order_id] || 1;
+                        const discountShare = Number(t.orders?.discount_amount || 0) / totalTicketsInOrder;
+                        ticketIncome -= discountShare;
+
+                        totalRev += ticketIncome;
+                        eventRevenue[eventId] = (eventRevenue[eventId] || 0) + ticketIncome;
+
+                        // Chart data preparation
+                        ticketsForChart.push({
+                            created_at: t.orders.created_at,
+                            amount: ticketIncome
+                        });
+
+                        // Gender stats
+                        const g = t.gender?.toLowerCase();
+                        if (g === 'laki - laki' || g === 'laki-laki' || g === 'male') maleCount++;
+                        else if (g === 'perempuan' || g === 'female') femaleCount++;
+                    });
+
+                    totalSold = ticketsWithOrders.length;
+
+                    // Update event calculated revenue
+                    eventsData.forEach(ev => {
+                        ev.calculatedRevenue = eventRevenue[ev.id] || 0;
+                    });
+
+                    if (maleCount > 0 || femaleCount > 0) {
+                        genderResult = [
+                            { name: 'Laki - Laki', value: maleCount, color: '#3B82F6' },
+                            { name: 'Perempuan', value: femaleCount, color: '#EC4899' }
+                        ];
+                    }
                 }
             }
 
+            setTicketsData(ticketsForChart);
+            setEvents(eventsData || []);
             setStats({
                 totalEvents: eventsData?.length || 0,
                 totalTickets: totalSold,

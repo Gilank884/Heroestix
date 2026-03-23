@@ -34,7 +34,7 @@ const DevDashboard = () => {
                 supabase.from('creators').select('*'),
                 supabase.from('events').select('*'),
                 supabase.from('profiles').select('id, full_name'),
-                supabase.from('tickets').select('id, order_id, orders!inner(id, total, status), ticket_types!inner(events!inner(creator_id))').eq('orders.status', 'paid')
+                supabase.from('tickets').select('id, order_id, orders!inner(id, total, status, discount_amount), ticket_types!inner(id, price, events!inner(id, creator_id))').eq('orders.status', 'paid')
             ]);
 
             if (creatorsRes.error) throw creatorsRes.error;
@@ -44,8 +44,9 @@ const DevDashboard = () => {
             const profiles = profilesRes.data || [];
             const paidTickets = ticketsRes.data || [];
 
-            // 2. Prepare Maps and Fair-Share Revenue
-            const profileMap = profiles.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+
+            const { data: allTaxes } = await supabase.from('event_taxes').select('*');
+            const taxMap = (allTaxes || []).reduce((acc, t) => ({ ...acc, [t.event_id]: t }), {});
 
             const orderIds = [...new Set(paidTickets.map(t => t.order_id))];
             let orderTicketCounts = {};
@@ -64,15 +65,28 @@ const DevDashboard = () => {
 
             paidTickets.forEach(t => {
                 const countInOrder = orderTicketCounts[t.order_id] || 1;
-                const share = Number(t.orders.total) / countInOrder;
-                const net = share - 8500;
+                const ticketType = t.ticket_types;
+                const eventTax = taxMap[ticketType.events?.id];
+                
+                const basePrice = Number(ticketType.price || 0);
+                const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
+                const isTaxIncluded = eventTax ? eventTax.is_included : false;
+                
+                let ticketIncome = basePrice;
+                if (!isTaxIncluded && taxRate > 0) {
+                    ticketIncome += (basePrice * taxRate / 100);
+                }
+                
+                const discountShare = Number(t.orders.discount_amount || 0) / countInOrder;
+                ticketIncome -= discountShare;
 
-                const cId = t.ticket_types?.events?.creator_id;
+                const cId = ticketType?.events?.creator_id;
                 if (cId) {
-                    revenueByCreator[cId] = (revenueByCreator[cId] || 0) + net;
+                    revenueByCreator[cId] = (revenueByCreator[cId] || 0) + ticketIncome;
                     ticketsSoldByCreator[cId] = (ticketsSoldByCreator[cId] || 0) + 1;
                 }
             });
+
 
             // 3. Aggregate Performance per Creator
             const creatorPerformance = creators.map(creator => {

@@ -32,9 +32,10 @@ const VoucherDetail = () => {
     const handleNumberChange = (field, val) => {
         const parsed = parseNumber(val);
         if (/^\d*$/.test(parsed)) {
-            setVoucherData({ ...voucherData, [field]: parsed });
+            setVoucherData(prev => ({ ...prev, [field]: parsed }));
         }
     };
+
 
     useEffect(() => {
         const fetchInitialData = async () => {
