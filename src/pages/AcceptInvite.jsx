@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Layers, CheckCircle2, XCircle, ArrowRight, Loader2 } from 'lucide-react';
@@ -12,6 +12,8 @@ const AcceptInvite = () => {
     const [message, setMessage] = useState('Memverifikasi undangan...');
     const [eventId, setEventId] = useState(null);
 
+    const hasAttempted = useRef(false);
+
     useEffect(() => {
         if (!token) {
             setStatus('error');
@@ -19,7 +21,10 @@ const AcceptInvite = () => {
             return;
         }
 
-        handleAcceptInvite();
+        if (!hasAttempted.current) {
+            hasAttempted.current = true;
+            handleAcceptInvite();
+        }
     }, [token]);
 
     const handleAcceptInvite = async () => {

@@ -74,3 +74,14 @@ entrypoint = "./functions/payment-flag/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/insert-transaction/index.ts"
+
+[functions.invite-event-staff]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/invite-event-staff/index.ts"
+
+[functions.accept-event-staff-invite]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/accept-event-staff-invite/index.ts"
+

@@ -19,10 +19,12 @@ import {
     Search,
     Bell,
     ChevronDown,
-    Settings
+    Settings,
+    ArrowRight
 } from 'lucide-react';
 import useAuthStore from '../../auth/useAuthStore';
 import { supabase } from '../../lib/supabaseClient';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const CreatorLayout = ({ children }) => {
     const { user, logout } = useAuthStore();
@@ -98,7 +100,7 @@ const CreatorLayout = ({ children }) => {
 
 
     return (
-        <div className="flex h-screen bg-[#F8FAFC] text-slate-800 selection:bg-blue-100 selection:text-blue-700">
+        <div className="flex h-screen bg-white text-slate-800 selection:bg-blue-100 selection:text-blue-700">
             {/* Sidebar */}
             <aside
                 className={`
@@ -110,18 +112,23 @@ const CreatorLayout = ({ children }) => {
 
                 <div className="flex flex-col h-full relative z-10 bg-white">
                     {/* User Identity Header - High End Design */}
-                    <div className="h-20 flex items-center px-6 border-b border-slate-100">
-                        <div className="flex items-center gap-4 group">
-                            <div className="w-11 h-11 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-3 transition-transform duration-500">
-                                <Sparkles className="text-white" size={20} />
+                    <div className="h-28 flex items-center px-8 border-b border-slate-50 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-blue-500/10 transition-colors" />
+                        <div className="flex items-center gap-5 relative z-10 w-full font-sans">
+                            <div className="w-14 h-14 bg-slate-900 rounded-[1.25rem] flex items-center justify-center shadow-2xl shadow-slate-200 group-hover:scale-110 transition-all duration-500 overflow-hidden border border-slate-800">
+                                {stats.image_url ? (
+                                    <img src={stats.image_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    <Sparkles size={24} className="text-white animate-pulse" />
+                                )}
                             </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-[10px] text-blue-600 font-bold uppercase tracking-[0.2em] mb-1">Creator Panel</span>
-                                <h3 className="text-sm font-black text-slate-900 line-clamp-2 leading-tight uppercase group-hover:text-blue-600 transition-colors">
+                            <div className="flex flex-col min-w-0 flex-1">
+                                <span className="text-[10px] text-blue-600 font-black uppercase tracking-[0.3em] mb-1.5 opacity-80">Creator Center</span>
+                                <h3 className="text-sm font-black text-slate-900 line-clamp-1 leading-tight uppercase tracking-tight group-hover:text-blue-600 transition-colors">
                                     {stats.brand_name || 'Creator'}
                                 </h3>
                             </div>
-                            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden ml-auto p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 hover:bg-slate-50 rounded-xl transition-colors">
                                 <X size={20} className="text-slate-400" />
                             </button>
                         </div>
@@ -195,104 +202,128 @@ const CreatorLayout = ({ children }) => {
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
-                <header className="lg:hidden flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200">
+                {/* Mobile Header */}
+                <header className="lg:hidden flex items-center justify-between px-6 py-4 bg-white border-b border-slate-50">
                     <div className="flex items-center gap-3">
-                        <Layers size={24} className="text-blue-600" />
-                        <span className="text-xl tracking-tighter text-slate-900 uppercase">HeroesTix</span>
+                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                            <Sparkles size={20} />
+                        </div>
+                        <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">HeroesTix</span>
                     </div>
-                    <button onClick={() => setIsSidebarOpen(true)} className="text-slate-900">
+                    <button onClick={() => setIsSidebarOpen(true)} className="text-slate-900 bg-slate-50 p-2 rounded-xl border border-slate-100">
                         <Menu size={24} />
                     </button>
                 </header>
 
-                {/* Top Header - Desktop Only (Hidden on mobile as it has its own) */}
-                <header className="hidden lg:flex items-center justify-between px-8 py-5 bg-white border-b border-slate-200">
-                    <div className="flex-1 max-w-xl">
+                {/* Top Header - Desktop Only */}
+                <header className="hidden lg:flex items-center justify-between px-10 py-6 bg-white border-b border-slate-50 relative z-20">
+                    <div className="flex-1 max-w-2xl relative">
                         <div className="relative group">
-                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                            <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                                <Search size={20} />
+                            </div>
                             <input
                                 type="text"
-                                placeholder="Cari menu navigasi..."
+                                placeholder="Cari menu navigasi, event, atau laporan..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Escape' && setSearchQuery('')}
-                                className="w-full bg-slate-100/50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none text-slate-600 font-medium"
+                                className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-[1.5rem] py-4 pl-16 pr-6 text-sm outline-none text-slate-700 font-bold placeholder:text-slate-300 transition-all shadow-sm group-hover:shadow-md"
                             />
 
                             {/* Search Results Dropdown */}
-                            {searchQuery && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="p-2 border-b border-slate-50 bg-slate-50/50">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3">Hasil Navigasi</p>
-                                    </div>
-                                    <div className="max-h-80 overflow-y-auto p-1">
-                                        {navSections.flatMap(s => s.items)
-                                            .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                            .length > 0 ? (
-                                            navSections.flatMap(s => s.items)
+                            <AnimatePresence>
+                                {searchQuery && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className="absolute top-full left-0 right-0 mt-3 bg-white/95 backdrop-blur-xl rounded-[2rem] border border-white shadow-2xl overflow-hidden z-50 p-1"
+                                    >
+                                        <div className="p-4 border-b border-slate-50">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">Hasil Navigasi</p>
+                                        </div>
+                                        <div className="max-h-80 overflow-y-auto no-scrollbar p-1">
+                                            {navSections.flatMap(s => s.items)
                                                 .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                                .map((item) => {
-                                                    const Icon = item.icon;
-                                                    return (
-                                                        <Link
-                                                            key={item.path}
-                                                            to={item.path}
-                                                            onClick={() => setSearchQuery('')}
-                                                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group"
-                                                        >
-                                                            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                                                <Icon size={16} />
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <span className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{item.name}</span>
-                                                                <span className="text-[10px] text-slate-400 uppercase tracking-widest">{item.path}</span>
-                                                            </div>
-                                                        </Link>
-                                                    );
-                                                })
-                                        ) : (
-                                            <div className="p-8 text-center">
-                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest italic opacity-60">Menu tidak ditemukan</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
+                                                .length > 0 ? (
+                                                navSections.flatMap(s => s.items)
+                                                    .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                                    .map((item) => {
+                                                        const Icon = item.icon;
+                                                        return (
+                                                            <Link
+                                                                key={item.path}
+                                                                to={item.path}
+                                                                onClick={() => setSearchQuery('')}
+                                                                className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group/item"
+                                                            >
+                                                                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover/item:bg-blue-600 group-hover/item:text-white transition-all shadow-sm">
+                                                                    <Icon size={18} />
+                                                                </div>
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-sm font-black text-slate-900 group-hover/item:text-blue-600 transition-colors uppercase tracking-tight">{item.name}</span>
+                                                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.path}</span>
+                                                                </div>
+                                                                <ArrowRight size={14} className="ml-auto text-slate-200 group-hover/item:text-blue-600 group-hover/item:translate-x-1 transition-all" />
+                                                            </Link>
+                                                        );
+                                                    })
+                                            ) : (
+                                                <div className="p-10 text-center">
+                                                    <p className="text-xs font-black text-slate-300 uppercase tracking-widest italic animate-pulse">Menu tidak ditemukan</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
-                        <div className="hidden md:flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100 shadow-sm">
-                            <span className="text-[11px] font-black text-slate-800 uppercase tracking-widest tabular-nums">
+                    <div className="flex items-center gap-10">
+                        {/* Live Clock / Meta Status */}
+                        <div className="hidden xl:flex items-center gap-4 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm group/time overflow-hidden relative">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-blue-600 group-hover/time:w-full transition-all duration-700 opacity-5" />
+                            <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] tabular-nums relative z-10">
                                 {formatDateTime(currentTime)}
                             </span>
                         </div>
 
-                        <div className="h-8 w-px bg-slate-200" />
+                        <div className="h-10 w-px bg-slate-100" />
 
-                        <div className="flex items-center gap-3 pl-2">
+                        <div className="flex items-center gap-4 group/profile cursor-pointer">
                             <div className="flex flex-col items-end">
-                                <span className="text-sm font-semibold text-slate-900 leading-none">
+                                <span className="text-sm font-black text-slate-900 leading-none group-hover/profile:text-blue-600 transition-colors uppercase tracking-tight">
                                     {stats.brand_name || 'Creator'}
                                 </span>
-                                <span className="text-[10px] text-slate-400 mt-1">
-                                    {user?.email}
-                                </span>
+                                <div className="flex items-center gap-1.5 mt-1.5">
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Authorized Creator</span>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                                </div>
                             </div>
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-400 p-[2px] shadow-sm">
-                                <div className="w-full h-full bg-white rounded-[9px] flex items-center justify-center overflow-hidden">
-                                    {stats.image_url ? (
-                                        <img src={stats.image_url} alt="Profile" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <User size={18} className="text-blue-600" />
-                                    )}
+                            <div className="relative">
+                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-400 p-[3px] shadow-xl shadow-blue-100 group-hover/profile:scale-105 transition-all duration-500">
+                                    <div className="w-full h-full bg-white rounded-[13px] flex items-center justify-center overflow-hidden">
+                                        {stats.image_url ? (
+                                            <img src={stats.image_url} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-slate-50 flex items-center justify-center text-blue-600 font-black text-xl">
+                                                {stats.brand_name?.charAt(0) || 'C'}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-lg shadow-lg flex items-center justify-center text-blue-600 border border-slate-100">
+                                    <ChevronDown size={14} className="group-hover/profile:rotate-180 transition-transform duration-500" />
                                 </div>
                             </div>
                         </div>
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+                <main className="flex-1 overflow-y-auto bg-white">
                     <div className="p-6 md:p-12 lg:p-14 max-w-[1600px] mx-auto">
                         {children}
                     </div>

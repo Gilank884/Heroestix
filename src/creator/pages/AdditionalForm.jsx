@@ -10,8 +10,13 @@ import {
     Layout,
     Plus,
     Trash2,
-    GripVertical
+    GripVertical,
+    Activity,
+    Settings,
+    Edit3,
+    ArrowRight
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const AdditionalForm = () => {
     const { id: eventId } = useParams();
@@ -33,16 +38,12 @@ const AdditionalForm = () => {
 
                 if (error) throw error;
 
-                // Backward compatibility: handle string, array, or object formats
                 if (data?.custom_form) {
                     let rawData = data.custom_form;
-
-                    // If it's a string, try to parse it
                     if (typeof rawData === 'string') {
                         try {
                             rawData = JSON.parse(rawData);
                         } catch (e) {
-                            console.error('Error parsing custom_form string:', e);
                             rawData = [];
                         }
                     }
@@ -50,7 +51,6 @@ const AdditionalForm = () => {
                     if (Array.isArray(rawData)) {
                         setFormFields(rawData);
                     } else if (typeof rawData === 'object' && rawData !== null) {
-                        // Convert old object format { row_one: ... } to array
                         const fields = Object.entries(rawData)
                             .filter(([_, val]) => val && (val.active || val.label))
                             .map(([key, val], index) => ({
@@ -99,7 +99,6 @@ const AdditionalForm = () => {
     };
 
     const handleSave = async () => {
-        // Validate
         const hasEmptyLabels = formFields.some(f => f.active && !f.label.trim());
         if (hasEmptyLabels) {
             setStatus({ type: 'error', message: 'Semua label kolom aktif wajib diisi.' });
@@ -127,163 +126,194 @@ const AdditionalForm = () => {
         }
     };
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 15 } }
+    };
+
     if (loading) {
         return (
-            <div className="p-6 flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
+                <div className="relative">
+                    <div className="w-16 h-16 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <Edit3 size={20} className="text-blue-600 animate-pulse" />
+                    </div>
+                </div>
+                <div className="space-y-1 text-center">
+                    <span className="text-sm font-black text-slate-800 uppercase tracking-[0.3em] block">FORM BUILDER</span>
+                    <span className="text-[10px] text-slate-400 font-bold">Harap tunggu, kami sedang memuat konfigurasi formulir...</span>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-8 pb-20">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Main Content Area */}
-                <div className="lg:col-span-9 order-2 lg:order-1 space-y-6">
+        <div className="relative min-h-screen pb-20">
 
-                    {/* Notification */}
-                    {status.message && (
-                        <div className={`p-4 rounded-2xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300 ${status.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'
-                            }`}>
-                            {status.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-                            <p className="text-sm font-bold">{status.message}</p>
+            <motion.div 
+                className="relative z-10 space-y-10"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                {/* Unified Header Card */}
+                <motion.div 
+                    variants={itemVariants}
+                    className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 space-y-8"
+                >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                                    Event Setup
+                                </span>
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Custom Form Builder</span>
+                            </div>
+                            <div>
+                                <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                                    Formulir Tambahan <ClipboardList className="text-blue-600" size={32} />
+                                </h1>
+                                <p className="text-slate-500 font-medium text-sm mt-3 max-w-2xl leading-relaxed">
+                                    Sesuaikan data yang ingin Anda ambil dari pengunjung saat melakukan registrasi. Tambah kolom seperti Ukuran Kaos, ID Member, dan lainnya.
+                                </p>
+                            </div>
                         </div>
-                    )}
 
-                    {/* Info Box */}
-                    <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-6 flex gap-4">
-                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm shrink-0">
-                            <Info className="text-blue-600" size={24} />
-                        </div>
-                        <div className="space-y-1">
-                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Evolusi Formulir Unlimited</h3>
-                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                Anda sekarang bisa menambah kolom tambahan sebanyak mungkin.
-                                Pastikan Anda telah menjalankan perintah SQL untuk menambah kolom <b>custom_responses</b> di tabel tickets agar data pengunjung tersimpan sempurna.
-                            </p>
+                        <div className="flex items-center gap-4">
+                            <motion.button 
+                                onClick={handleAddField}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-6 py-4 bg-white border border-slate-200 text-slate-900 font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-sm hover:border-blue-600 hover:text-blue-600 transition-all group"
+                            >
+                                <Plus size={14} className="group-hover:rotate-90 transition-transform" />
+                                Tambah Kolom
+                            </motion.button>
+                            <motion.button 
+                                onClick={handleSave}
+                                disabled={saving}
+                                whileHover={!saving ? { scale: 1.05 } : {}}
+                                whileTap={!saving ? { scale: 0.95 } : {}}
+                                className="flex items-center gap-2 px-8 py-4 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all disabled:opacity-50 group shrink-0"
+                            >
+                                {saving ? <Activity size={14} className="animate-spin" /> : <Save size={14} />}
+                                {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                            </motion.button>
                         </div>
                     </div>
 
-                    {/* Form Settings List */}
-                    <div className="space-y-4">
-                        {formFields.length === 0 ? (
-                            <div className="py-20 text-center bg-white rounded-2xl border border-dashed border-slate-200">
-                                <div className="w-16 h-16 bg-slate-50 text-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Layout size={32} />
+                    {/* Notification Toast (Integrated) */}
+                    <AnimatePresence>
+                        {status.message && (
+                            <motion.div 
+                                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                animate={{ opacity: 1, height: 'auto', marginTop: 32 }}
+                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                className={`p-5 rounded-2xl border flex items-center gap-4 transition-all ${
+                                    status.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'
+                                }`}
+                            >
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${status.type === 'success' ? 'bg-emerald-100' : 'bg-rose-100'}`}>
+                                    {status.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900">Belum ada kolom tambahan</h3>
-                                <p className="text-slate-400 text-sm mt-1 max-w-xs mx-auto">Klik tombol <b>Tambah Kolom</b> di atas untuk mulai mengumpulkan data tambahan dari pengunjung.</p>
-                            </div>
+                                <p className="text-xs font-black uppercase tracking-widest">{status.message}</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
+
+                {/* Main Builder Area (Full Width) */}
+                <div className="space-y-6">
+                    <AnimatePresence mode="popLayout">
+                        {formFields.length === 0 ? (
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="py-24 text-center bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-dashed border-slate-200 shadow-inner"
+                            >
+                                <div className="w-20 h-20 bg-slate-50 text-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                                    <Layout size={40} />
+                                </div>
+                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Katalog Formulir Kosong</h3>
+                                <p className="text-slate-400 text-xs font-bold mt-2 max-w-xs mx-auto uppercase tracking-widest">Klik "Tambah Kolom" di atas untuk kustomisasi registrasi Anda.</p>
+                            </motion.div>
                         ) : (
                             formFields.map((field, index) => (
-                                <div
+                                <motion.div
                                     key={field.id}
+                                    layout
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
                                     className={`
-                                bg-white rounded-[1.5rem] border transition-all duration-300 overflow-hidden flex flex-col md:flex-row items-stretch
-                                ${field.active ? 'border-blue-200 shadow-lg shadow-blue-500/5' : 'border-slate-100 shadow-sm opacity-80'}
-                            `}
+                                        group bg-white/80 backdrop-blur-xl rounded-[1.5rem] border transition-all duration-500 overflow-hidden flex flex-col md:flex-row items-stretch
+                                        ${field.active ? 'border-white shadow-xl shadow-slate-200/40' : 'border-slate-100 opacity-60 grayscale'}
+                                    `}
                                 >
-                                    <div className={`p-6 border-r border-slate-50 flex items-center gap-4 ${field.active ? 'bg-blue-50/20' : 'bg-slate-50/50'}`}>
-                                        <GripVertical size={20} className="text-slate-300 cursor-grab active:cursor-grabbing" />
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${field.active ? 'bg-blue-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-400'}`}>
-                                            <span className="font-bold text-sm">{index + 1}</span>
+                                    <div className={`p-4 border-r border-slate-50 flex items-center gap-4 ${field.active ? 'bg-blue-50/10' : 'bg-slate-50/50'}`}>
+                                        <div className="block">
+                                            <GripVertical size={16} className="text-slate-200 cursor-grab active:cursor-grabbing" />
+                                        </div>
+                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-[10px] shadow-sm ${field.active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                            {index + 1}
                                         </div>
                                     </div>
 
-                                    <div className="p-6 flex-1 flex flex-col md:flex-row items-center gap-6">
-                                        <div className="w-full flex-1 space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Label Kolom</label>
+                                    <div className="p-4 flex-1 flex flex-col md:flex-row items-center gap-4">
+                                        <div className="w-full flex-1 space-y-1.5">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Label Kolom</label>
                                             <input
                                                 type="text"
                                                 value={field.label}
                                                 onChange={(e) => handleLabelChange(field.id, e.target.value)}
-                                                placeholder="Contoh: Ukuran Kaos, ID Member, No Polisi..."
-                                                className={`
-                                            w-full px-5 py-3 rounded-xl font-bold text-slate-700 transition-all border
-                                            ${field.active
-                                                        ? 'bg-white border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500'
-                                                        : 'bg-slate-50 border-slate-100 text-slate-300'
-                                                    }
-                                        `}
+                                                placeholder="Misal: Ukuran Baju..."
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:bg-white focus:border-blue-500 placeholder:text-slate-300 text-sm"
                                             />
                                         </div>
 
-                                        <div className="flex items-center gap-6 pt-2 md:pt-0">
-                                            <div className="flex flex-col items-end gap-1">
-                                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</p>
+                                        <div className="flex items-center gap-4 pt-4 md:pt-0">
+                                            <div className="flex flex-col items-end gap-1.5">
+                                                <p className="text-[8px] font-black uppercase text-slate-400 tracking-[0.2em]">Enable</p>
                                                 <button
                                                     onClick={() => handleToggleField(field.id)}
                                                     className={`
-                                                relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300
-                                                ${field.active ? 'bg-blue-600' : 'bg-slate-200'}
-                                            `}
+                                                        relative inline-flex h-6 w-10 items-center rounded-full transition-all duration-500 shadow-inner
+                                                        ${field.active ? 'bg-blue-600' : 'bg-slate-200'}
+                                                    `}
                                                 >
-                                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all duration-300 ${field.active ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                    <motion.span 
+                                                        layout
+                                                        className="inline-block h-4 w-4 rounded-full bg-white shadow-sm"
+                                                        animate={{ x: field.active ? '1.25rem' : '0.25rem' }}
+                                                    />
                                                 </button>
                                             </div>
 
-                                            <div className="h-10 w-px bg-slate-100 hidden md:block"></div>
+                                            <div className="h-10 w-px bg-slate-100 hidden md:block" />
 
-                                            <button
+                                            <motion.button
+                                                whileHover={{ scale: 1.1, rotate: 5 }}
+                                                whileTap={{ scale: 0.9 }}
                                                 onClick={() => handleRemoveField(field.id)}
-                                                className="p-3 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all"
-                                                title="Hapus Kolom"
+                                                className="p-3 rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition-all"
                                             >
-                                                <Trash2 size={18} />
-                                            </button>
+                                                <Trash2 size={16} />
+                                            </motion.button>
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))
                         )}
-                    </div>
-
+                    </AnimatePresence>
                 </div>
-
-                {/* Right Column: Sidebar */}
-                <aside className="lg:col-span-3 order-1 lg:order-2 space-y-6 lg:sticky lg:top-6">
-                    {/* Action Card */}
-                    <div className="space-y-4">
-                        <button
-                            onClick={handleAddField}
-                            className="w-full flex items-center justify-center gap-2.5 text-[#1a36c7] py-3.5 rounded-xl font-bold text-xs hover:bg-slate-50 transition-all active:scale-95 group border border-slate-200 bg-white"
-                        >
-                            <span className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                                <Plus size={16} />
-                            </span>
-                            Tambah Kolom
-                        </button>
-
-                        <button
-                            onClick={handleSave}
-                            disabled={saving}
-                            className={`
-                                w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl bg-[#1a36c7] text-white font-bold text-xs uppercase hover:bg-[#152ba3] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
-                            `}
-                        >
-                            {saving ? (
-                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Menyimpan...</>
-                            ) : (
-                                <><Save size={16} /> Simpan Pengaturan</>
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Tutorial Card */}
-                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
-                        <div className="relative z-10 space-y-5">
-                            <h5 className="text-base font-black text-slate-900 tracking-tight border-b border-slate-100 pb-3">Tips Formulir</h5>
-
-                            <div className="space-y-4">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#1a36c7] flex items-center justify-center font-black text-xs shrink-0 pt-0.5"><CheckCircle2 size={14} /></div>
-                                    <p className="text-xs text-slate-500 font-medium leading-relaxed pt-1">Klik simpan setelah melakukan perubahan desain formulir.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
-            </div>
+            </motion.div>
         </div>
     );
 };

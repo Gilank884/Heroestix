@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { Html5Qrcode } from 'html5-qrcode';
+import useAuthStore from '../../auth/useAuthStore';
+import { StaffSession } from '../../utils/staffSession';
 import {
     QrCode,
     Keyboard,
@@ -19,6 +21,7 @@ import {
 
 export default function EventCheckIn() {
     const { id: eventId } = useParams();
+    const { user } = useAuthStore();
     const [mode, setMode] = useState('qr'); // 'qr' or 'manual'
     const [isCameraActive, setIsCameraActive] = useState(false);
     const [inputValue, setInputValue] = useState('');
@@ -87,6 +90,13 @@ export default function EventCheckIn() {
         setLoading(true);
         setResult(null);
 
+        // Resolve staff email (from logged-in user or passwordless token)
+        let staffEmail = user?.email;
+        if (!staffEmail) {
+            const session = StaffSession.get();
+            if (session) staffEmail = session.email;
+        }
+
         try {
             // 1. Fetch ticket and check if it belongs to this event
             const { data: ticket, error: fetchError } = await supabase
@@ -130,7 +140,7 @@ export default function EventCheckIn() {
                 setResult({
                     status: 'error',
                     ticket,
-                    message: 'Tiket sudah digunakan sebelumnya.'
+                    message: "Tiket sudah digunakan sebelumnya" + (ticket.scanned_by ? " oleh " + ticket.scanned_by : ".")
                 });
                 return;
             }
@@ -138,7 +148,10 @@ export default function EventCheckIn() {
             // 3. Update ticket status to 'used'
             const { error: updateError } = await supabase
                 .from('tickets')
-                .update({ status: 'used' })
+                .update({ 
+                    status: 'used',
+                    scanned_by: staffEmail || 'Kreator / Staf'
+                })
                 .eq('id', ticket.id);
 
             if (updateError) throw updateError;

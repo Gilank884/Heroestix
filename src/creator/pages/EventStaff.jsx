@@ -1,8 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
-
 import {
     Users,
     Plus,
@@ -14,18 +12,23 @@ import {
     Copy,
     Send,
     Link as LinkIcon,
-    RefreshCw
+    RefreshCw,
+    Shield,
+    UserCheck,
+    UserPlus,
+    Layout,
+    ArrowRight,
+    Activity
 } from 'lucide-react';
-import PageHeader from '../components/PageHeader';
+import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../../auth/useAuthStore';
-import { getBaseDomain, getSubdomainUrl } from '../../lib/navigation';
+import { getSubdomainUrl } from '../../lib/navigation';
 
 // Helper for invocation if not standard
 const invokeFunction = async (name, body) => {
     const { data: session } = await supabase.auth.getSession();
     const token = session?.session?.access_token;
 
-    // Using standard Supabase invoke
     const { data, error } = await supabase.functions.invoke(name, {
         body: body
     });
@@ -45,6 +48,22 @@ const EventStaff = () => {
     const [assistantToken, setAssistantToken] = useState(null);
     const [isGeneratingToken, setIsGeneratingToken] = useState(false);
 
+    const AVAILABLE_MODULES = [
+        "Detail Event", "Kategori Tiket", "Voucher", "Staff", 
+        "Formulir Tambahan", "Laporan Penjualan", "Penarikan Saldo", 
+        "Daftar Pengunjung", "Statistik Check-in", "Proses Check-in"
+    ];
+
+    const [selectedModules, setSelectedModules] = useState(AVAILABLE_MODULES);
+
+    const toggleModule = (moduleName) => {
+        setSelectedModules(prev => 
+            prev.includes(moduleName) 
+                ? prev.filter(m => m !== moduleName)
+                : [...prev, moduleName]
+        );
+    };
+
     useEffect(() => {
         if (eventId) {
             fetchStaffData();
@@ -54,7 +73,6 @@ const EventStaff = () => {
     const fetchStaffData = async () => {
         setLoading(true);
         try {
-            // Fetch Active Staff
             const { data: staffData, error: staffError } = await supabase
                 .from('event_staffs')
                 .select(`
@@ -72,7 +90,6 @@ const EventStaff = () => {
             if (staffError) throw staffError;
             setStaffList(staffData || []);
 
-            // Fetch Pending Invitations
             const { data: inviteData, error: inviteError } = await supabase
                 .from('event_staff_invitations')
                 .select('*')
@@ -80,10 +97,10 @@ const EventStaff = () => {
                 .eq('status', 'pending')
                 .order('created_at', { ascending: false });
 
-            if (inviteError) throw inviteError;
-            setInvitations(inviteData || []);
+            const activeEmails = (staffData || []).map(s => s.profiles?.email).filter(Boolean);
+            const pendingInvites = (inviteData || []).filter(inv => !activeEmails.includes(inv.email));
+            setInvitations(pendingInvites);
 
-            // Fetch Event Assistant Token
             const { data: eventData, error: eventError } = await supabase
                 .from('events')
                 .select('assistant_token')
@@ -93,7 +110,6 @@ const EventStaff = () => {
             if (!eventError && eventData) {
                 setAssistantToken(eventData.assistant_token);
             }
-
         } catch (error) {
             console.error("Error fetching staff data:", error);
         } finally {
@@ -108,12 +124,11 @@ const EventStaff = () => {
         setIsInviting(true);
         setInviteStatus(null);
 
-        console.log("Inviting staff:", { email: inviteEmail, eventId }); // DEBUG log
-
         try {
             const data = await invokeFunction('invite-event-staff', {
                 email: inviteEmail,
-                eventId: eventId
+                eventId: eventId,
+                accessModules: selectedModules
             });
 
             if (data && data.success === false) {
@@ -122,27 +137,19 @@ const EventStaff = () => {
 
             setInviteStatus({ type: 'success', message: 'Undangan berhasil dikirim!' });
             setInviteEmail('');
-            fetchStaffData(); // Refresh list to show pending invite
+            setSelectedModules(AVAILABLE_MODULES);
+            fetchStaffData();
+            setTimeout(() => setInviteStatus(null), 5000);
         } catch (error) {
-            console.error("Invite error object:", error);
-            if (error instanceof Error) {
-                console.error("Error name:", error.name);
-                console.error("Error message:", error.message);
-                console.error("Error stack:", error.stack);
-            }
-            // Try to extract dynamic error message if available from Supabase function error
             let errorMessage = 'Gagal mengirim undangan.';
             if (error && error.message) {
-                // Sometimes the message is a stringified JSON
                 try {
                     const parsed = JSON.parse(error.message);
-                    if (parsed.error) errorMessage = parsed.error;
-                    else errorMessage = error.message;
+                    errorMessage = parsed.error || error.message;
                 } catch (e) {
                     errorMessage = error.message;
                 }
             }
-
             setInviteStatus({ type: 'error', message: errorMessage });
         } finally {
             setIsInviting(false);
@@ -162,7 +169,6 @@ const EventStaff = () => {
             fetchStaffData();
         } catch (error) {
             console.error("Error removing staff:", error);
-            alert("Gagal menghapus staff.");
         }
     };
 
@@ -195,198 +201,363 @@ const EventStaff = () => {
             setAssistantToken(newToken);
         } catch (error) {
             console.error("Error generating token:", error);
-            alert("Gagal membuat link check-in.");
         } finally {
             setIsGeneratingToken(false);
         }
     };
 
-    return (
-        <div className="space-y-8 pb-20">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Main Content Area */}
-                <div className="lg:col-span-9 order-2 lg:order-1 space-y-8">
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                        <div>
-                            <h3 className="text-lg font-bold text-slate-900 mb-1">Undang Staff Baru</h3>
-                            <p className="text-xs text-slate-400">Kirim undangan via email untuk memberikan akses manajemen event ini.</p>
-                        </div>
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+    };
 
-                        <form onSubmit={handleInvite} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Staff</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                    <input
-                                        type="email"
-                                        required
-                                        value={inviteEmail}
-                                        onChange={(e) => setInviteEmail(e.target.value)}
-                                        placeholder="contoh@email.com"
-                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                    />
-                                </div>
-                            </div>
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 15 } }
+    };
 
-                            <button
-                                type="submit"
-                                disabled={isInviting || !inviteEmail}
-                                className="w-full py-3 bg-[#1a36c7] text-white rounded-xl font-bold text-sm uppercase tracking-wide hover:bg-[#152ba3] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                {isInviting ? 'Mengirim...' : <><Send size={16} /> Kirim Undangan</>}
-                            </button>
-                        </form>
-
-                        {inviteStatus && (
-                            <div className={`p-4 rounded-xl border flex items-start gap-3 ${inviteStatus.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}`}>
-                                {inviteStatus.type === 'success' ? <CheckCircle2 size={18} className="shrink-0 mt-0.5" /> : <XCircle size={18} className="shrink-0 mt-0.5" />}
-                                <p className="text-xs font-medium">{inviteStatus.message}</p>
-                            </div>
-                        )}
-                    </div>
-                    {/* Pending Invitations moved down within main content */}
-                    {invitations.length > 0 && (
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-1 h-5 bg-orange-500 rounded-full" />
-                                <h3 className="text-lg font-bold text-slate-900">Undangan Pending</h3>
-                                <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold">{invitations.length}</span>
-                            </div>
-
-                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="divide-y divide-slate-50">
-                                    {invitations.map((invite) => (
-                                        <div key={invite.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">
-                                                    <Mail size={18} />
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-slate-900 text-sm">{invite.email}</p>
-                                                    <p className="text-xs text-slate-500 flex items-center gap-1">
-                                                        <Clock size={12} /> Pending • {new Date(invite.created_at).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(`https://heroestix.com/accept-invite?token=${invite.token}`);
-                                                        alert("Link tersalin!");
-                                                    }}
-                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                                    title="Salin Link Undangan"
-                                                >
-                                                    <Copy size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleCancelInvite(invite.id)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                    title="Batalkan Undangan"
-                                                >
-                                                    <XCircle size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-1 h-5 bg-green-500 rounded-full" />
-                            <h3 className="text-lg font-bold text-slate-900">Staff Aktif</h3>
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold">{staffList.length}</span>
-                        </div>
-
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                            {staffList.length > 0 ? (
-                                <div className="divide-y divide-slate-50">
-                                    {staffList.map((staff) => (
-                                        <div key={staff.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold overflow-hidden">
-                                                    {staff.profiles?.avatar_url ? (
-                                                        <img src={staff.profiles.avatar_url} alt={staff.profiles.full_name} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        staff.profiles?.full_name?.charAt(0) || 'S'
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-slate-900 text-sm">{staff.profiles?.full_name || 'Tanpa Nama'}</p>
-                                                    <p className="text-xs text-slate-500">{staff.profiles?.email}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                                                    {staff.role}
-                                                </span>
-                                                <button
-                                                    onClick={() => handleRemoveStaff(staff.id)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="p-6 text-center text-slate-400 text-sm">Belum ada staff aktif.</div>
-                            )}
-                        </div>
+    if (loading) {
+        return (
+            <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
+                <div className="relative">
+                    <div className="w-16 h-16 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <Users size={20} className="text-blue-600 animate-pulse" />
                     </div>
                 </div>
+                <div className="space-y-1 text-center">
+                    <span className="text-sm font-black text-slate-800 uppercase tracking-[0.3em] block">TEAM MANAGEMENT</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Memuat daftar kolaborator...</span>
+                </div>
+            </div>
+        );
+    }
 
-                {/* Right Column: Sidebar */}
-                <aside className="lg:col-span-3 order-1 lg:order-2 space-y-6 lg:sticky lg:top-6">
-                    {/* Quick Access Card */}
-                    <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 space-y-5">
-                        <div>
-                            <h3 className="text-base font-black text-slate-900 tracking-tight border-b border-slate-100 pb-3">Link Check-In Cepat</h3>
-                            <p className="text-xs text-slate-500 font-medium leading-relaxed pt-3">Gunakan link ini untuk staff lapangan/volunteer agar bisa langsung melakukan check-in tanpa login.</p>
+    return (
+        <div className="relative min-h-screen pb-20">
+
+            <motion.div 
+                className="relative z-10 space-y-12"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                {/* Unified Header Card with Stats */}
+                <motion.div 
+                    variants={itemVariants}
+                    className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40"
+                >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                                    Collaborations
+                                </span>
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Management Team</span>
+                            </div>
+                            <div>
+                                <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3 leading-none">
+                                    Manajemen Staff <Shield className="text-blue-600" size={32} />
+                                </h1>
+                                <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                                    Kelola otorisasi tim Anda. Undang kolaborator, atur modul aksesibilitas, dan pantau aktivitas staff operasional secara terpusat.
+                                </p>
+                            </div>
                         </div>
 
-                        {!assistantToken ? (
-                            <button
-                                onClick={handleGenerateToken}
-                                disabled={isGeneratingToken}
-                                className="w-full py-3 bg-slate-100 text-slate-900 rounded-xl font-bold text-xs hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
-                            >
-                                {isGeneratingToken ? 'Memproses...' : <><LinkIcon size={16} /> Buat Link Check-In</>}
-                            </button>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 overflow-hidden">
-                                    <p className="text-[10px] font-mono text-slate-400 break-all leading-relaxed">
-                                        {`${getSubdomainUrl(null)}scan-tiket/${eventId}/${assistantToken}`}
-                                    </p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(`${getSubdomainUrl(null)}scan-tiket/${eventId}/${assistantToken}`);
-                                            alert("Link tersalin!");
-                                        }}
-                                        className="flex-1 py-2.5 bg-[#1a36c7] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
-                                    >
-                                        <Copy size={14} /> Salin
-                                    </button>
-                                    <button
-                                        onClick={handleGenerateToken}
-                                        disabled={isGeneratingToken}
-                                        className="p-2.5 bg-slate-100 text-slate-400 rounded-xl hover:text-slate-600 transition-all active:rotate-180 duration-500"
-                                        title="Reset Link"
-                                    >
-                                        <RefreshCw size={14} className={isGeneratingToken ? 'animate-spin' : ''} />
-                                    </button>
+                        <div className="flex items-center gap-4">
+                            <div className="flex flex-col items-end">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Team Statistics</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex -space-x-3">
+                                        {[...Array(Math.min(3, staffList.length))].map((_, i) => (
+                                            <div key={i} className="w-9 h-9 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 shadow-sm overflow-hidden">
+                                                {staffList[i]?.profiles?.avatar_url ? (
+                                                    <img src={staffList[i].profiles.avatar_url} className="w-full h-full object-cover" alt="" />
+                                                ) : (
+                                                    staffList[i]?.profiles?.full_name?.charAt(0) || 'S'
+                                                )}
+                                            </div>
+                                        ))}
+                                        {staffList.length > 3 && (
+                                            <div className="w-9 h-9 rounded-full border-2 border-white bg-blue-600 flex items-center justify-center text-[10px] font-black text-white shadow-lg relative z-10">
+                                                +{staffList.length - 3}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="h-10 w-px bg-slate-100 mx-2" />
+                                    <div className="space-y-0.5">
+                                        <p className="text-lg font-black text-slate-900 leading-none">{staffList.length + invitations.length}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Squad</p>
+                                    </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
                     </div>
-                </aside>
-            </div>
+                </motion.div>
+
+                {/* Main Management Section (Full Width) */}
+                <div className="space-y-12 max-w-6xl">
+                    {/* Invite Form Card */}
+                    <motion.div variants={itemVariants} className="bg-white/60 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white shadow-xl shadow-slate-200/40 space-y-8">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner">
+                                <UserPlus size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-slate-900 tracking-tight leading-none">Undang Staff Baru</h3>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 px-1">Integrasikan email kolaborator ke sistem</p>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleInvite} className="space-y-6">
+                            <div className="grid grid-cols-1 gap-6">
+                                <div className="space-y-2.5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Kolaborator</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                                        <input
+                                            type="email"
+                                            required
+                                            value={inviteEmail}
+                                            onChange={(e) => setInviteEmail(e.target.value)}
+                                            placeholder="contoh@email.com"
+                                            className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:bg-white focus:border-blue-500 transition-all placeholder:text-slate-300 shadow-inner"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between px-1">
+                                    <div className="flex items-center gap-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Delegasi Akses Modul</label>
+                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full text-[8px] font-black uppercase tracking-tighter">
+                                            {selectedModules.length} Terpilih
+                                        </span>
+                                    </div>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setSelectedModules(selectedModules.length === AVAILABLE_MODULES.length ? [] : AVAILABLE_MODULES)}
+                                        className="text-[10px] font-black text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-widest flex items-center gap-1.5"
+                                    >
+                                        {selectedModules.length === AVAILABLE_MODULES.length ? 'Bersihkan Semua' : 'Otorisasi Semua'}
+                                    </button>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                                    {AVAILABLE_MODULES.map((module) => (
+                                        <motion.button
+                                            key={module}
+                                            type="button"
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => toggleModule(module)}
+                                            className={`
+                                                flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 text-left
+                                                ${selectedModules.includes(module) 
+                                                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200' 
+                                                    : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'}
+                                            `}
+                                        >
+                                            <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${selectedModules.includes(module) ? 'bg-white' : 'bg-slate-100 shadow-inner'}`}>
+                                                <CheckCircle2 size={12} className={selectedModules.includes(module) ? 'text-blue-600' : 'text-slate-300'} />
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase tracking-tight truncate">{module}</span>
+                                        </motion.button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <motion.button
+                                type="submit"
+                                disabled={isInviting || !inviteEmail}
+                                whileHover={!isInviting ? { scale: 1.02 } : {}}
+                                whileTap={!isInviting ? { scale: 0.98 } : {}}
+                                className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all disabled:opacity-50 flex items-center justify-center gap-3 group"
+                            >
+                                {isInviting ? (
+                                    <><Activity size={18} className="animate-spin" /> Mengirim Otorisasi...</>
+                                ) : (
+                                    <>Kirim Undangan Akses <Send size={16} className="group-hover:translate-x-1 transition-transform" /></>
+                                )}
+                            </motion.button>
+                        </form>
+
+                        <AnimatePresence>
+                            {inviteStatus && (
+                                <motion.div 
+                                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                    animate={{ opacity: 1, height: 'auto', marginTop: 24 }}
+                                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                    className={`p-5 rounded-2xl border flex items-center gap-4 transition-all ${
+                                        inviteStatus.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'
+                                    }`}
+                                >
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${inviteStatus.type === 'success' ? 'bg-emerald-100' : 'bg-rose-100'}`}>
+                                        {inviteStatus.type === 'success' ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
+                                    </div>
+                                    <p className="text-xs font-black uppercase tracking-widest">{inviteStatus.message}</p>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
+
+                    {/* Pending Invitations Table */}
+                    <AnimatePresence>
+                        {invitations.length > 0 && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="space-y-6"
+                            >
+                                <div className="flex items-center gap-3 px-2">
+                                    <div className="w-1.5 h-6 bg-amber-500 rounded-full shadow-lg shadow-amber-200" />
+                                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Menunggu Konfirmasi</h3>
+                                    <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-black">{invitations.length}</span>
+                                </div>
+
+                                <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl shadow-slate-200/40 overflow-hidden text-left">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-slate-100 bg-slate-50/30">
+                                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Undangan (Email)</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hidden md:table-cell text-center">Tanggal Kirim</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            {invitations.map((invite) => (
+                                                <motion.tr 
+                                                    key={invite.id} 
+                                                    layout
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    className="group hover:bg-slate-50/50 transition-colors"
+                                                >
+                                                    <td className="px-6 py-5">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center shadow-inner shrink-0 leading-none">
+                                                                <Mail size={16} />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="font-bold text-slate-900 text-sm truncate">{invite.email}</p>
+                                                                <span className="md:hidden text-[9px] font-bold text-amber-500/80 uppercase tracking-widest block mt-0.5">{new Date(invite.created_at).toLocaleDateString()}</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-5 hidden md:table-cell text-center">
+                                                        <p className="text-xs font-bold text-slate-500 tabular-nums uppercase">{new Date(invite.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(`https://heroestix.com/accept-invite?token=${invite.token}`);
+                                                                    alert("Link tersalin!");
+                                                                }}
+                                                                className="p-2.5 bg-white shadow-sm border border-slate-100 text-slate-400 hover:text-blue-600 rounded-xl hover:shadow-md transition-all active:scale-95"
+                                                                title="Salin Link"
+                                                            >
+                                                                <Copy size={16} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleCancelInvite(invite.id)}
+                                                                className="p-2.5 bg-white shadow-sm border border-slate-100 text-slate-400 hover:text-rose-600 rounded-xl hover:shadow-md transition-all active:scale-95"
+                                                                title="Batalkan"
+                                                            >
+                                                                <XCircle size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </motion.tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Active Staff List Table */}
+                    <motion.div variants={itemVariants} className="space-y-6">
+                        <div className="flex items-center gap-3 px-2">
+                            <div className="w-1.5 h-6 bg-emerald-500 rounded-full shadow-lg shadow-emerald-200" />
+                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Staff Operasional</h3>
+                            <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black">{staffList.length}</span>
+                        </div>
+
+                        <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl shadow-slate-200/40 overflow-hidden text-left">
+                            {staffList.length > 0 ? (
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-slate-100 bg-slate-50/30">
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Profil Staff</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hidden md:table-cell text-center">Hak Akses (Role)</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Status & Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {staffList.map((staff) => (
+                                            <motion.tr 
+                                                key={staff.id}
+                                                layout
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                className="group hover:bg-slate-50/50 transition-colors"
+                                            >
+                                                <td className="px-6 py-5">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-black text-sm overflow-hidden shadow-inner border border-white relative shrink-0">
+                                                            {staff.profiles?.avatar_url ? (
+                                                                <img src={staff.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                staff.profiles?.full_name?.charAt(0) || 'S'
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="font-bold text-slate-900 text-sm truncate leading-tight uppercase tracking-tight">{staff.profiles?.full_name || 'Staff'}</p>
+                                                            <p className="text-[10px] text-slate-400 font-bold truncate mt-0.5">{staff.profiles?.email}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 hidden md:table-cell text-center">
+                                                    <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[8px] font-black uppercase tracking-[0.15em] shadow-sm">
+                                                        {staff.role}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-5 text-right">
+                                                    <div className="flex items-center justify-end gap-3">
+                                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-md">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm" />
+                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Active</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleRemoveStaff(staff.id)}
+                                                            className="p-2.5 bg-white shadow-sm border border-slate-100 text-slate-400 hover:text-rose-500 rounded-xl opacity-0 group-hover:opacity-100 hover:shadow-md transition-all active:scale-95"
+                                                            title="Lepas Jabatan"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </motion.tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div className="py-20 text-center">
+                                    <div className="w-16 h-16 bg-slate-50 text-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-inner">
+                                        <UserCheck size={32} />
+                                    </div>
+                                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">Katalog Staff Kosong</h4>
+                                    <p className="text-slate-400 text-[10px] font-bold mt-2 max-w-[180px] mx-auto uppercase tracking-widest text-center leading-relaxed">Undang kolaborator pertama untuk memberikan kewenangan operasional.</p>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                </div>
+            </motion.div>
         </div>
     );
 };

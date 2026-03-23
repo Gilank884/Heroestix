@@ -16,7 +16,7 @@ serve(async (req) => {
     }
 
     try {
-        const { email, eventId } = await req.json();
+        const { email, eventId, accessModules } = await req.json();
 
         if (!email || !eventId) {
             return new Response(JSON.stringify({ success: false, error: "Email and Event ID are required" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -69,7 +69,8 @@ serve(async (req) => {
                 event_id: eventId,
                 email: email,
                 token: token,
-                status: "pending"
+                status: "pending",
+                access_modules: accessModules || []
             });
 
         if (inviteError) {
@@ -87,7 +88,7 @@ serve(async (req) => {
             .eq("id", eventId)
             .single();
 
-        const inviteLink = `https://creator.heroestix.com/accept-invite?token=${token}`;
+        const inviteLink = `http://creator.localhost:3000/accept-invite?token=${token}`;
 
         // Call dedicated send-invite-email function
         const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-invite-email', {

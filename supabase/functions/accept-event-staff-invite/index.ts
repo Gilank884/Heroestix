@@ -84,12 +84,25 @@ serve(async (req) => {
             .insert({
                 event_id: invitation.event_id,
                 staff_id: user.id,
-                role: "staff"
+                role: "staff",
+                access_modules: invitation.access_modules || []
             });
 
-        if (staffError) throw staffError;
+        if (staffError) {
+            // Error code 23505 is unique violation. This handles concurrent double-clicks or React 18 double useEffects.
+            if (staffError.code === "23505") {
+                console.log("User already exists in event_staffs, treating as success.");
+            } else {
+                throw staffError;
+            }
+        }
 
-        // Don't update invitation status - keep it reusable
+        // Update invitation status to accepted so it doesn't show in pending list anymore
+        await supabase
+            .from("event_staff_invitations")
+            .update({ status: "accepted" })
+            .eq("id", invitation.id);
+
         return new Response(
             JSON.stringify({
                 message: "Invitation accepted successfully",
@@ -100,9 +113,10 @@ serve(async (req) => {
         );
 
     } catch (error) {
+        console.error("Accept invite error:", error);
         return new Response(
-            JSON.stringify({ error: error.message }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+            JSON.stringify({ error: error.message || "Unknown error occurred", fullError: error }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
         );
     }
 });

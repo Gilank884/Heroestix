@@ -20,8 +20,13 @@ import {
     ClipboardList,
     FileText,
     Download,
-    Layers
+    Layers,
+    Activity,
+    RefreshCw,
+    ExternalLink,
+    ArrowUpDown
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import VerificationPending from '../components/VerificationPending';
 
 const rupiah = (value) => {
@@ -41,8 +46,7 @@ export default function EventSalesReport() {
     const [history, setHistory] = useState([]);
     const [stats, setStats] = useState({
         totalRevenue: 0,
-        ticketsSold: 0,
-        netRevenue: 0
+        ticketsSold: 0
     });
     const [orderTicketCounts, setOrderTicketCounts] = useState({});
     const [customFieldKeys, setCustomFieldKeys] = useState([]);
@@ -61,7 +65,6 @@ export default function EventSalesReport() {
     const fetchEventSalesData = async () => {
         setLoading(true);
         try {
-            // Check Verification
             const { data: creatorData } = await supabase
                 .from('creators')
                 .select('verified')
@@ -72,7 +75,6 @@ export default function EventSalesReport() {
             setIsVerified(verified);
             if (!verified) { setLoading(false); return; }
 
-            // 1. Fetch Event Details
             const { data: event } = await supabase
                 .from('events')
                 .select('title')
@@ -80,14 +82,12 @@ export default function EventSalesReport() {
                 .single();
             setEventData(event);
 
-            // Fetch Event Tax
             const { data: eventTax } = await supabase
                 .from('event_taxes')
                 .select('*')
                 .eq('event_id', eventId)
                 .maybeSingle();
 
-            // 2. Fetch related ticket types for this event
             const { data: ticketTypes } = await supabase
                 .from('ticket_types')
                 .select('id')
@@ -96,7 +96,6 @@ export default function EventSalesReport() {
             const ttIds = ticketTypes?.map(t => t.id) || [];
 
             if (ttIds.length > 0) {
-                // 3. Fetch Tickets with joined Orders for this event
                 const { data: ticketsWithOrders, error: tError } = await supabase
                     .from('tickets')
                     .select(`
@@ -118,11 +117,7 @@ export default function EventSalesReport() {
                 if (tError) throw tError;
 
                 if (ticketsWithOrders && ticketsWithOrders.length > 0) {
-                    // To handle orders with multiple tickets fairly:
-                    // 1. Get all unique order IDs
                     const orderIds = [...new Set(ticketsWithOrders.map(t => t.order_id))];
-
-                    // 2. Fetch total ticket count for EACH of these orders (to split revenue)
                     const { data: allTicketsInOrders } = await supabase
                         .from('tickets')
                         .select('order_id')
@@ -137,42 +132,31 @@ export default function EventSalesReport() {
                     const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
                     const isTaxIncluded = eventTax ? eventTax.is_included : false;
 
-                    // 3. Calculate revenue: (Price + Tax - DiscountShare)
                     let calculatedNetRevenue = 0;
                     ticketsWithOrders.forEach(t => {
                         const totalTicketsInOrder = counts[t.order_id] || 1;
                         const basePrice = Number(t.ticket_types?.price || 0);
-
                         let ticketIncome = basePrice;
                         if (!isTaxIncluded && taxRate > 0) {
                             ticketIncome += (basePrice * taxRate / 100);
                         }
-
                         const discountShare = Number(t.orders?.discount_amount || 0) / totalTicketsInOrder;
                         ticketIncome -= discountShare;
-
                         calculatedNetRevenue += ticketIncome;
-                        // Attach calculated revenue to ticket object for easier filtering/exporting
                         t.calculated_revenue = ticketIncome;
                     });
 
-                    // 4. Identify unique custom field keys
                     const keys = new Set();
                     ticketsWithOrders.forEach(t => {
                         let customData = {};
                         try {
-                            customData = typeof t.custom_responses === 'string'
-                                ? JSON.parse(t.custom_responses)
-                                : (t.custom_responses || {});
+                            customData = typeof t.custom_responses === 'string' ? JSON.parse(t.custom_responses) : (t.custom_responses || {});
                         } catch (e) { }
                         Object.keys(customData).forEach(k => keys.add(k));
                     });
                     setCustomFieldKeys(Array.from(keys));
 
-                    setStats({
-                        totalRevenue: calculatedNetRevenue,
-                        ticketsSold: ticketsWithOrders.length
-                    });
+                    setStats({ totalRevenue: calculatedNetRevenue, ticketsSold: ticketsWithOrders.length });
                     setHistory(ticketsWithOrders || []);
                 }
             }
@@ -200,62 +184,52 @@ export default function EventSalesReport() {
 
     const filteredStats = React.useMemo(() => {
         let revenue = 0;
-        filteredHistory.forEach(t => {
-            revenue += (t.calculated_revenue || 0);
-        });
-        return {
-            totalRevenue: revenue,
-            ticketsSold: filteredHistory.length
-        };
+        filteredHistory.forEach(t => { revenue += (t.calculated_revenue || 0); });
+        return { totalRevenue: revenue, ticketsSold: filteredHistory.length };
     }, [filteredHistory]);
 
     const exportToExcel = () => {
         const headers = ["Order ID", "QR Code", "Nama Pembeli", "Email", "Kelamin", "Tgl Lahir", "Potensi Pendapatan"];
         customFieldKeys.forEach(key => headers.push(key));
-
         const rows = filteredHistory.map(item => {
             let customData = {};
-            try {
-                customData = typeof item.custom_responses === 'string'
-                    ? JSON.parse(item.custom_responses)
-                    : (item.custom_responses || {});
-            } catch (e) { }
-
-            const row = [
-                item.orders?.id || '-',
-                item.qr_code || '-',
-                item.full_name || '-',
-                item.email || '-',
-                item.gender || '-',
-                item.birth_date || '-',
-                item.calculated_revenue || 0
-            ];
+            try { customData = typeof item.custom_responses === 'string' ? JSON.parse(item.custom_responses) : (item.custom_responses || {}); } catch (e) { }
+            const row = [item.orders?.id || '-', item.qr_code || '-', item.full_name || '-', item.email || '-', item.gender || '-', item.birth_date || '-', item.calculated_revenue || 0];
             customFieldKeys.forEach(key => row.push(customData[key] || '-'));
             return row;
         });
-
         const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
         link.setAttribute("download", `Sales_Report_${eventData?.title || 'Event'}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
     };
 
-    const exportToPDF = () => {
-        window.print();
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 15 } }
     };
 
     if (loading && !eventData) {
         return (
-            <div className="p-20 flex flex-col items-center justify-center gap-4">
-                <div className="w-10 h-10 border-[3px] border-slate-100 border-t-blue-600 rounded-full animate-spin" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Memproses Laporan...</span>
+            <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
+                <div className="relative">
+                    <div className="w-16 h-16 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <BarChart3 size={20} className="text-blue-600 animate-pulse" />
+                    </div>
+                </div>
+                <div className="space-y-1 text-center">
+                    <span className="text-sm font-black text-slate-800 uppercase tracking-[0.3em] block">GENERATING REPORT</span>
+                    <span className="text-[10px] text-slate-400 font-bold">Harap tunggu, kami sedang menyusun laporan penjualan Anda...</span>
+                </div>
             </div>
         );
     }
@@ -263,227 +237,257 @@ export default function EventSalesReport() {
     if (!isVerified) return <VerificationPending />;
 
     return (
-        <div className="space-y-10 pb-20">
-            {/* Top Row: Metrics & Info Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Metric: Tickets Sold */}
-                <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
-                    <div className="space-y-2">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Tiket Terjual</p>
-                        <div className="flex items-baseline gap-2">
-                            <h4 className="text-4xl font-black text-slate-900 tracking-tight">{filteredStats.ticketsSold}</h4>
-                            <span className="text-sm font-semibold text-slate-400">Inventory</span>
+        <div className="relative min-h-screen pb-20">
+
+            <motion.div 
+                className="relative z-10 space-y-10"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                {/* Unified Header & Analytics Card */}
+                <motion.div 
+                    variants={itemVariants}
+                    className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 space-y-10"
+                >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                                    Sales Hub
+                                </span>
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Laporan Penjualan</span>
+                            </div>
+                            <div>
+                                <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                                    Sales Analytics <BarChart3 className="text-blue-600" size={32} />
+                                </h1>
+                                <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed text-balance">
+                                    Laporan mendalam mengenai performa penjualan tiket untuk event <span className="text-slate-900 font-bold italic">"{eventData?.title}"</span>.
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                        <Ticket size={24} strokeWidth={2} />
-                    </div>
-                </div>
 
-                {/* Metric: Total Revenue */}
-                <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
-                    <div className="space-y-2">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Total Pendapatan</p>
-                        <h4 className="text-4xl font-black text-slate-900 tracking-tight">{rupiah(filteredStats.totalRevenue)}</h4>
-                    </div>
-                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                        <TrendingUp size={24} strokeWidth={2} />
-                    </div>
-                </div>
-
-                {/* Info Card: Sales Report Details */}
-                <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
-                    <div className="space-y-2">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Event Info</p>
-                        <h4 className="text-lg font-black text-slate-900 line-clamp-1">{eventData?.title}</h4>
-                        <div className="flex items-center gap-2 text-slate-400">
-                            <Calendar size={12} />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">Sales Report</span>
-                        </div>
-                    </div>
-                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                        <BarChart3 size={24} strokeWidth={2} />
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content Area: Sales History Table */}
-            <div className="space-y-8">
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-5 rounded-[32px] border border-slate-200 shadow-sm">
-                    <div className="flex flex-wrap md:flex-nowrap items-center gap-2">
-                        <div className="flex items-center gap-2 mr-2">
-                            <button
-                                onClick={exportToPDF}
-                                className="group flex items-center gap-2 bg-slate-900 px-4 py-2.5 rounded-xl text-white hover:bg-slate-800 transition-all active:scale-95 shadow-md"
+                        <div className="flex items-center gap-3">
+                            <motion.button 
+                                onClick={() => window.print()}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-6 py-4 bg-white border border-slate-200 text-slate-900 font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-sm hover:border-blue-600 hover:text-blue-600 transition-all group"
                             >
-                                <FileText size={14} className="text-slate-400 group-hover:text-blue-400 transition-colors" />
-                                <span className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap">PDF</span>
-                            </button>
-                            <button
+                                <FileText size={14} className="group-hover:text-blue-500 transition-colors" />
+                                PDF Report
+                            </motion.button>
+                            <motion.button 
                                 onClick={exportToExcel}
-                                className="group flex items-center gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-slate-600 hover:border-blue-200 hover:text-blue-600 transition-all active:scale-95 shadow-sm"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-6 py-4 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all group shrink-0"
                             >
-                                <Download size={14} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
-                                <span className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap">Excel</span>
-                            </button>
+                                <Download size={14} className="group-hover:translate-y-0.5 transition-transform" />
+                                Export CSV
+                            </motion.button>
+                        </div>
+                    </div>
+
+                    {/* Integrated Summary Metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-10 border-t border-slate-100">
+                        {[
+                            { label: 'Tiket Terjual', value: filteredStats.ticketsSold, icon: Ticket, color: 'blue', desc: 'Total Inventory' },
+                            { label: 'Estimasi Pendapatan', value: rupiah(filteredStats.totalRevenue), icon: TrendingUp, color: 'emerald', desc: 'Sudah Terhitung Pajak' },
+                            { label: 'Status Laporan', value: 'Terverifikasi', icon: ClipboardList, color: 'indigo', desc: 'Update Real-time' }
+                        ].map((stat, idx) => (
+                            <div key={idx} className="flex items-start gap-5">
+                                <div className={`w-12 h-12 bg-${stat.color}-500/10 rounded-2xl flex items-center justify-center text-${stat.color}-600 shrink-0`}>
+                                    <stat.icon size={22} />
+                                </div>
+                                <div>
+                                    <h4 className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter">{stat.value}</h4>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">{stat.label}</p>
+                                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{stat.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </motion.div>
+
+                {/* Filters Area (Glassmorphism) */}
+                <motion.div 
+                    variants={itemVariants}
+                    className="bg-white/60 backdrop-blur-xl p-5 rounded-[2.25rem] border border-white shadow-xl shadow-slate-200/30 space-y-5"
+                >
+                    <div className="flex flex-col xl:flex-row gap-5">
+                        {/* Search Input */}
+                        <div className="relative flex-1">
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Cari nama, email, atau ID pesanan..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-14 pr-6 py-4 bg-slate-50/50 border border-slate-100/50 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:bg-white focus:border-blue-600 transition-all placeholder:text-slate-300 text-sm"
+                            />
                         </div>
 
-                        <div className="h-8 w-px bg-slate-100 mx-1 hidden md:block" />
+                        {/* Date Range & Page Size */}
+                        <div className="flex flex-col md:flex-row items-center gap-4">
+                            <div className="flex items-center gap-3 bg-white/50 border border-slate-100 rounded-2xl px-5 py-3 shadow-sm grow md:grow-0">
+                                <Calendar size={16} className="text-slate-400" />
+                                <div className="flex items-center gap-2">
+                                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-transparent border-none text-[10px] font-black text-slate-700 p-0 w-24 outline-none focus:ring-0" />
+                                    <span className="text-slate-200">-</span>
+                                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-transparent border-none text-[10px] font-black text-slate-700 p-0 w-24 outline-none focus:ring-0" />
+                                </div>
+                                {(startDate || endDate) && (
+                                    <button onClick={() => { setStartDate(''); setEndDate(''); }} className="p-1.5 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                                        <X size={12} />
+                                    </button>
+                                )}
+                            </div>
 
-                        {/* Date Filter */}
-                        <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-100">
-                            <div className="flex items-center gap-2 px-2">
-                                <Calendar size={13} className="text-slate-400" />
-                                <input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    className="bg-transparent border-none text-[10px] font-bold text-slate-600 focus:ring-0 p-0 w-24"
-                                />
-                            </div>
-                            <span className="text-slate-300 font-bold">-</span>
-                            <div className="flex items-center gap-2 px-2">
-                                <input
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    className="bg-transparent border-none text-[10px] font-bold text-slate-600 focus:ring-0 p-0 w-24"
-                                />
-                            </div>
-                            {(startDate || endDate) && (
-                                <button
-                                    onClick={() => { setStartDate(''); setEndDate(''); }}
-                                    className="p-1 hover:bg-white rounded-md text-slate-400 hover:text-red-500 transition-all"
+                            <div className="flex items-center gap-3 px-6 bg-white/50 border border-slate-100 rounded-2xl py-3 shadow-sm h-full grow md:grow-0">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Grid</span>
+                                <select 
+                                    value={pageSize}
+                                    onChange={(e) => setPageSize(Number(e.target.value))}
+                                    className="bg-transparent font-black text-slate-900 text-sm outline-none cursor-pointer hover:text-blue-600 transition-colors"
                                 >
-                                    <X size={12} />
-                                </button>
-                            )}
-                        </div>
-
-                        <div className="h-8 w-px bg-slate-100 mx-1 hidden md:block" />
-
-                        <div className="flex items-center gap-2.5 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-100">
-                            <Layers size={13} className="text-slate-400" />
-                            <select
-                                value={pageSize}
-                                onChange={(e) => setPageSize(Number(e.target.value))}
-                                className="bg-transparent text-[10px] font-black text-slate-900 border-none outline-none cursor-pointer focus:ring-0 p-0"
-                            >
-                                <option value={20}>20</option>
-                                <option value={50}>50</option>
-                                <option value={100}>100</option>
-                            </select>
+                                    <option value={20}>20 Rows</option>
+                                    <option value={50}>50 Rows</option>
+                                    <option value={100}>100 Rows</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
+                </motion.div>
 
-                    <div className="relative group w-full xl:w-56">
-                        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Cari..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-100 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-700 outline-none focus:border-blue-200 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
-                        />
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-[32px] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+                {/* Sales Table Overhaul */}
+                <motion.div 
+                    variants={itemVariants}
+                    className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 overflow-hidden"
+                >
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50/80 border-b border-slate-100 backdrop-blur-sm">
-                                <tr>
-                                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pembeli</th>
-                                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kontak & Kelamin</th>
-                                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Lahir</th>
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50/50 border-b border-slate-100">
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pembeli</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Email & Phone</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender & B-Day</th>
                                     {customFieldKeys.map(key => (
-                                        <th key={key} className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">{key}</th>
+                                        <th key={key} className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">{key}</th>
                                     ))}
-                                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal Order</th>
-                                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Nominal</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        <div className="flex items-center gap-2">Waktu Order <ArrowUpDown size={12} /></div>
+                                    </th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Potensi Pendapatan</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {filteredHistory.length > 0 ? filteredHistory.slice(0, pageSize).map((item, index) => {
-                                    let customData = {};
-                                    try {
-                                        customData = typeof item.custom_responses === 'string'
-                                            ? JSON.parse(item.custom_responses)
-                                            : (item.custom_responses || {});
-                                    } catch (e) {
-                                        customData = {};
-                                    }
-
-                                    return (
-                                        <tr
-                                            key={item.id}
-                                            onClick={() => navigate(`/manage/event/${eventId}/sales-report/${item.id}`)}
-                                            className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
-                                        >
-                                            <td className="px-6 py-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-50 text-slate-500 border border-slate-100 font-black text-[10px] group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-300">
-                                                        {index + 1}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-slate-900 tracking-tight text-sm">{item.full_name || 'Tanpa Nama'}</p>
-                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">#{item.orders?.id?.substring(0, 8) || 'N/A'}</p>
-                                                            <span className="w-1 h-1 rounded-full bg-slate-200" />
-                                                            <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest">{item.qr_code}</p>
+                            <tbody>
+                                <AnimatePresence mode="popLayout">
+                                    {filteredHistory.length === 0 ? (
+                                        <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                            <td colSpan="100%" className="px-8 py-24 text-center text-slate-400 italic font-medium">
+                                                <div className="flex flex-col items-center gap-4 opacity-40">
+                                                    <Search size={40} />
+                                                    <p className="text-xs uppercase tracking-[0.2em] font-black">Laporan tidak ditemukan</p>
+                                                </div>
+                                            </td>
+                                        </motion.tr>
+                                    ) : (
+                                        filteredHistory.slice(0, pageSize).map((item, idx) => {
+                                            let customData = {};
+                                            try { customData = typeof item.custom_responses === 'string' ? JSON.parse(item.custom_responses) : (item.custom_responses || {}); } catch (e) { }
+                                            
+                                            return (
+                                                <motion.tr 
+                                                    key={item.id}
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: idx * 0.01 }}
+                                                    onClick={() => navigate(`/manage/event/${eventId}/sales-report/${item.id}`)}
+                                                    className="group hover:bg-blue-50/30 transition-all duration-300 border-b border-slate-50 last:border-none cursor-pointer"
+                                                >
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 font-black text-[10px] border border-slate-200 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                                {(idx + 1).toString().padStart(2, '0')}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                                                    {item.full_name || 'N/A'}
+                                                                    <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                                </p>
+                                                                <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest">{item.qr_code}</p>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-6">
-                                                <div className="space-y-1">
-                                                    <p className="text-xs font-semibold text-slate-600 italic">{item.email}</p>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[9px] font-black uppercase text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">{item.gender || '-'}</span>
-                                                        <span className="text-[10px] font-bold text-slate-400">{item.phone}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-6">
-                                                <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{item.birth_date || '-'}</span>
-                                            </td>
-                                            {customFieldKeys.map(key => (
-                                                <td key={key} className="px-6 py-6">
-                                                    <span className="text-slate-600 text-[11px] font-bold uppercase tracking-tight">{customData[key] || '-'}</span>
-                                                </td>
-                                            ))}
-                                            <td className="px-6 py-6">
-                                                <span className="text-slate-500 text-[11px] font-semibold">
-                                                    {item.orders?.created_at
-                                                        ? new Date(item.orders.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                                                        : '-'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-6 text-right">
-                                                <p className="font-black text-[#1a36c7] tabular-nums text-base">
-                                                    +{rupiah(item.calculated_revenue)}
-                                                </p>
-                                            </td>
-
-                                        </tr>
-                                    );
-                                }) : (
-                                    <tr>
-                                        <td colSpan={6 + customFieldKeys.length} className="px-8 py-32 text-center">
-                                            <div className="flex flex-col items-center gap-4 opacity-30">
-                                                <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center">
-                                                    <Search size={40} className="text-slate-200" />
-                                                </div>
-                                                <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-xs">Belum ada data penjualan</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
+                                                    </td>
+                                                    <td className="px-8 py-6 space-y-1">
+                                                        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                                                            <Mail size={10} className="text-slate-300" />
+                                                            {item.email}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                                                            <Phone size={10} className="text-slate-300" />
+                                                            {item.phone}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <div className="space-y-1">
+                                                            <span className="text-[10px] font-black uppercase text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md inline-block">{item.gender || '-'}</span>
+                                                            <p className="text-[10px] font-black text-slate-700">{item.birth_date || '-'}</p>
+                                                        </div>
+                                                    </td>
+                                                    {customFieldKeys.map(key => (
+                                                        <td key={key} className="px-8 py-6">
+                                                            <span className="text-xs font-black text-slate-700">{customData[key] || '-'}</span>
+                                                        </td>
+                                                    ))}
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-black text-slate-700 tracking-tight">
+                                                                {item.orders?.created_at ? new Date(item.orders.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                                                            </span>
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Paid Order</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6 text-right">
+                                                        <p 
+                                                            className="text-base font-black text-blue-600 tabular-nums group-hover:scale-110 transition-transform"
+                                                            style={shadowTextStyle}
+                                                        >
+                                                            +{rupiah(item.calculated_revenue)}
+                                                        </p>
+                                                    </td>
+                                                </motion.tr>
+                                            );
+                                        })
+                                    )}
+                                </AnimatePresence>
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
+
+                    {/* Report Footer */}
+                    <div className="px-8 py-6 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-200 animate-pulse" />
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calculated Real-time</span>
+                            </div>
+                            <div className="text-[10px] font-black text-slate-300">|</div>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Total Result: {filteredHistory.length} Transactions</span>
+                        </div>
+                        <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                             HEROESTIX <Activity size={10} /> SALES REPORT ENGINE
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
         </div>
     );
 }
+
+const shadowTextStyle = {
+    textShadow: '0 10px 20px rgba(37, 99, 235, 0.1)'
+};

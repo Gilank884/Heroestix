@@ -10,8 +10,14 @@ import {
     Filter,
     ArrowUpRight,
     Calendar,
-    Sparkles
+    Sparkles,
+    Activity,
+    RefreshCw,
+    Wallet,
+    LayoutGrid,
+    Users
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import VerificationPending from '../components/VerificationPending';
 
 const rupiah = (value) => {
@@ -28,7 +34,9 @@ export default function Overview() {
     const [history, setHistory] = useState([]);
     const [stats, setStats] = useState({
         totalTickets: 0,
-        totalEvents: 0
+        totalEvents: 0,
+        totalRevenue: 0,
+        ticketsSold: 0
     });
     const [isVerified, setIsVerified] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -84,7 +92,7 @@ export default function Overview() {
 
                 if (tRes.error) throw tRes.error;
                 ticketsWithOrders = tRes.data || [];
-                
+
                 taxRes.data?.forEach(t => {
                     taxMap[t.event_id] = t;
                 });
@@ -116,24 +124,25 @@ export default function Overview() {
                     const totalInOrder = orderTicketCounts[t.order_id] || 1;
                     const ticketType = t.ticket_types;
                     const eventTax = taxMap[ticketType.event_id];
-                    
+
                     const basePrice = Number(ticketType.price || 0);
                     const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
                     const isTaxIncluded = eventTax ? eventTax.is_included : false;
-                    
+
                     let ticketIncome = basePrice;
                     if (!isTaxIncluded && taxRate > 0) {
                         ticketIncome += (basePrice * taxRate / 100);
                     }
-                    
+
                     const discountShare = Number(t.orders.discount_amount || 0) / totalInOrder;
                     ticketIncome -= discountShare;
-                    
+
                     totalRevenue += ticketIncome;
                 });
 
                 const today = new Date().toISOString().split('T')[0];
-                const isActive = event.status === 'active' && event.event_date >= today;
+                const eventDate = event.event_date ? event.event_date.split('T')[0] : '';
+                const isActive = event.status === 'active' && eventDate >= today;
 
                 return {
                     id: event.id,
@@ -156,8 +165,6 @@ export default function Overview() {
                 totalEvents: eventsData.length
             });
             setHistory(eventStats || []);
-
-
         } catch (error) {
             console.error('Error fetching overview data:', error.message);
         } finally {
@@ -169,141 +176,211 @@ export default function Overview() {
         item.title?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const containerVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: { staggerChildren: 0.1 }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
+    };
+
     if (loading) {
         return (
-            <div className="p-20 flex flex-col items-center justify-center gap-4">
-                <div className="w-10 h-10 border-[3px] border-slate-100 border-t-blue-600 rounded-full animate-spin" />
-                <span className="text-[10px] text-slate-400 uppercase tracking-widest">Memuat Overview...</span>
+            <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
+                <div className="relative">
+                    <div className="w-12 h-12 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+                </div>
+                <div className="space-y-1 text-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Synchronizing Reports</span>
+                </div>
             </div>
         );
     }
 
-    if (!isVerified) {
-        return <VerificationPending />;
-    }
+    if (!isVerified) return <VerificationPending />;
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6 pb-20">
-            <div className="flex items-center gap-3 py-2">
-                <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-                <h2 className="text-2xl text-slate-900 tracking-tight">Statistik Data</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Total Event */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
-                    <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mb-1">Total Event</p>
-                    <div className="flex items-baseline gap-2">
-                        <h4 className="text-3xl text-slate-900 tracking-tighter">{stats.totalEvents}</h4>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-widest">Events</span>
+        <div className="relative min-h-screen pb-20">
+            <motion.div
+                className="relative z-10 space-y-10"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                {/* Header Overhaul - Unified Glassmorphism Card */}
+                <motion.div
+                    variants={itemVariants}
+                    className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col md:flex-row md:items-center justify-between gap-8"
+                >
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                                Financial Reports
+                            </span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Laporan Penjualan</span>
+                        </div>
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3 uppercase">
+                                Sales Overview <TrendingUp className="text-blue-600" size={32} />
+                            </h1>
+                            <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                                Analisis performa penjualan tiket kamu secara mendalam, pantau pertumbuhan pendapatan bersih, dan distribusi per event.
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                {/* Tiket Terjual */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
-                    <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mb-1">Tiket Terjual</p>
-                    <div className="flex items-baseline gap-2">
-                        <h4 className="text-3xl text-slate-900 tracking-tighter">{stats.ticketsSold}</h4>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-widest">Tickets</span>
-                    </div>
-                </div>
+                    <motion.button
+                        onClick={fetchSalesData}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex items-center gap-2 px-6 py-4 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all group shrink-0"
+                    >
+                        <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-700" />
+                        Refresh Laporan
+                    </motion.button>
+                </motion.div>
 
-                {/* Total Pendapatan */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
-                    <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mb-1">Pendapatan Bersih</p>
-                    <div className="flex items-baseline gap-2">
-                        <h4 className="text-2xl text-slate-900 tracking-tight">{rupiah(stats.totalRevenue)}</h4>
+                {/* Metrics Overview - Unified Divided Card */}
+                <motion.div
+                    variants={itemVariants}
+                    className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40"
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                        {[
+                            { label: 'Total Kampanye', value: stats.totalEvents, icon: LayoutGrid, color: 'blue', suffix: 'Semua Event' },
+                            { label: 'Tiket Terjual', value: stats.ticketsSold.toLocaleString(), icon: Ticket, color: 'purple', suffix: 'Total Paid' },
+                            { label: 'Pendapatan Bersih', value: rupiah(stats.totalRevenue), icon: Wallet, color: 'emerald', suffix: 'Net Revenue' }
+                        ].map((stat, idx) => (
+                            <div key={idx} className={`flex items-start gap-6 ${idx > 0 ? 'md:pl-12' : ''} ${idx < 2 ? 'pb-8 md:pb-0' : 'pt-8 md:pt-0'}`}>
+                                <div className={`w-14 h-14 bg-${stat.color}-500/10 rounded-2xl flex items-center justify-center text-${stat.color}-600 shrink-0`}>
+                                    <stat.icon size={28} />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em]">{stat.label}</p>
+                                    <h4 className={`text-2xl md:text-3xl font-black text-slate-900 tabular-nums tracking-tighter`}>
+                                        {stat.value}
+                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-1 h-1 rounded-full bg-${stat.color}-500`} />
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{stat.suffix}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                </div>
-            </div>
+                </motion.div>
 
-            {/* List Section */}
-            <div className="space-y-8">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-1 h-6 bg-blue-600 rounded-full" />
-                        <h3 className="text-xl text-slate-900">Performa Per Event</h3>
+                {/* Operations Section */}
+                <div className="space-y-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
+                        <div className="flex items-center gap-3">
+                            <span className="text-xl font-black text-slate-900 tracking-tight uppercase">Performa Per Event</span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Detail Penjualan</span>
+                        </div>
+                        <div className="relative group w-full md:w-80">
+                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-300 group-focus-within:text-blue-600 transition-colors">
+                                <Search size={18} />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Cari laporan event..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-white/60 backdrop-blur-xl border border-white focus:border-blue-500 rounded-[1.25rem] py-3.5 pl-14 pr-4 text-[11px] font-black uppercase outline-none text-slate-700 placeholder:text-slate-300 transition-all shadow-xl shadow-slate-200/40"
+                            />
+                        </div>
                     </div>
-                    <div className="relative group w-full md:w-80">
-                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Cari event..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
-                        />
-                    </div>
-                </div>
 
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th className="px-8 py-5 text-[10px] text-slate-500 uppercase tracking-widest">Nama Event</th>
-                                    <th className="px-8 py-5 text-[10px] text-slate-500 uppercase tracking-widest">Jumlah Tiket Terjual</th>
-                                    <th className="px-8 py-5 text-[10px] text-slate-500 uppercase tracking-widest text center">Status Event</th>
-                                    <th className="px-8 py-5 text-[10px] text-slate-500 uppercase tracking-widest text-right">Total Pendapatan</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {filteredHistory.length > 0 ? filteredHistory.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
-                                                    {item.banner ? (
-                                                        <img
-                                                            src={item.banner}
-                                                            alt={item.title}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-slate-400">
-                                                            <Calendar size={20} />
+                    <motion.div
+                        variants={itemVariants}
+                        className="bg-white rounded-[2rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden"
+                    >
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-50">
+                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Nama Event & Metadata</th>
+                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Tickets Sold</th>
+                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Market Status</th>
+                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Revenue Share</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {filteredHistory.length > 0 ? filteredHistory.map((item) => (
+                                        <tr key={item.id} className="hover:bg-slate-50 group transition-all duration-300">
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-5">
+                                                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 relative group-hover:scale-105 transition-transform duration-500">
+                                                        {item.banner ? (
+                                                            <img
+                                                                src={item.banner}
+                                                                alt={item.title}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                                <Calendar size={20} strokeWidth={1.5} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-0.5">
+                                                        <p className="text-sm font-black text-slate-900 tracking-tight uppercase group-hover:text-blue-600 transition-colors">{item.title}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded">ID: {item.id.substring(0, 8)}</span>
                                                         </div>
-                                                    )}
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-slate-800 tracking-tight">{item.title}</p>
-                                                    <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">ID: {item.id.substring(0, 8)}</p>
+                                            </td>
+                                            <td className="px-8 py-5 text-center">
+                                                <div className="inline-flex flex-col items-center">
+                                                    <span className="text-lg font-black text-slate-900 tabular-nums tracking-tighter">{item.ticketsSold.toLocaleString()}</span>
+                                                    <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">Paid Tickets</span>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-baseline gap-1.5">
-                                                <span className="text-slate-900 text-lg">{item.ticketsSold}</span>
-                                                <span className="text-[10px] text-slate-400 uppercase tracking-widest">Tiket</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] uppercase tracking-widest border ${item.status === 'Aktif'
-                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                                : 'bg-slate-50 text-slate-400 border-slate-100'
-                                                }`}>
-                                                {item.status}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5 text-right">
-                                            <p className="text-slate-900 tabular-nums">{rupiah(item.totalRevenue)}</p>
-                                        </td>
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan="4" className="px-8 py-20 text-center">
-                                            <div className="flex flex-col items-center gap-3 opacity-40">
-                                                <Search size={32} className="text-slate-300" />
-                                                <p className="text-slate-400 uppercase tracking-widest text-[10px]">Data event tidak ditemukan</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </td>
+                                            <td className="px-8 py-5 text-center">
+                                                <div className={`mx-auto inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-colors ${item.status === 'Aktif'
+                                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                                    : 'bg-slate-50 text-slate-400 border-slate-100'
+                                                    }`}>
+                                                    {item.status}
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <div className="flex flex-col items-end">
+                                                    <p className="text-sm font-black text-slate-900 tracking-tighter uppercase">{rupiah(item.totalRevenue)}</p>
+                                                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Available for payout</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan="4" className="px-8 py-24 text-center">
+                                                <div className="flex flex-col items-center gap-4 py-10">
+                                                    <div className="w-16 h-16 bg-slate-50 text-slate-200 rounded-full flex items-center justify-center border border-slate-100 mb-2">
+                                                        <Search size={32} strokeWidth={1} />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Records Missing</h3>
+                                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Adjust search filters to view specific data.</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </motion.div>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }

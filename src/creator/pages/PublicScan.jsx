@@ -102,11 +102,11 @@ export default function PublicScan() {
         setIsCameraActive(true);
         setResult(null);
         setHasUserClosedCamera(false);
-        
+
         try {
             const html5QrCode = new Html5Qrcode(scannerContainerId);
             scannerRef.current = html5QrCode;
-            
+
             // Dynamic qrbox size based on container width
             const qrboxFunction = (viewfinderWidth, viewfinderHeight) => {
                 let minEdgePercentage = 0.7; // 70%
@@ -118,8 +118,8 @@ export default function PublicScan() {
                 };
             };
 
-            const config = { 
-                fps: 20, 
+            const config = {
+                fps: 20,
                 qrbox: qrboxFunction,
                 aspectRatio: 1.0
             };
@@ -181,14 +181,18 @@ export default function PublicScan() {
                 setResult({
                     status: 'error',
                     ticket,
-                    message: 'Tiket sudah digunakan sebelumnya.'
+                    message: "Tiket sudah digunakan sebelumnya" + (ticket.scanned_by ? " oleh " + ticket.scanned_by : ".")
                 });
                 return;
             }
 
             const { error: updateError } = await supabase
                 .from('tickets')
-                .update({ status: 'used', used_at: new Date().toISOString() })
+                .update({ 
+                    status: 'used', 
+                    used_at: new Date().toISOString(),
+                    scanned_by: 'Asisten Publik (Link Perbantuan)'
+                })
                 .eq('id', ticket.id);
 
             if (updateError) throw updateError;
@@ -244,7 +248,7 @@ export default function PublicScan() {
                         <Layers size={18} className="text-white" />
                     </div>
                     <div className="min-w-0">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-[#1a36c7] leading-none mb-1">Backstage Assistant</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#1a36c7] leading-none mb-1">Creator Portal Assistant</p>
                         <h2 className="text-[13px] font-bold text-slate-900 truncate max-w-[180px] leading-tight">
                             {event?.title}
                         </h2>
@@ -277,7 +281,7 @@ export default function PublicScan() {
                         <div className="w-full flex flex-col items-center gap-6">
                             <div className={`relative w-full max-w-[300px] aspect-square bg-slate-900 rounded-2xl overflow-hidden border-4 border-white shadow-2xl transition-all duration-500 ${isCameraActive ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute pointer-events-none'}`}>
                                 <div id={scannerContainerId} className="w-full h-full" />
-                                
+
                                 {/* Scanning Overlay Interface */}
                                 <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none">
                                     <div className="w-full h-full border-2 border-white/50 relative">
@@ -286,7 +290,7 @@ export default function PublicScan() {
                                         <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-[#1a36c7]" />
                                         <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-[#1a36c7]" />
                                         <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-[#1a36c7]" />
-                                        
+
                                         {/* Moving Laser Line */}
                                         <div className="absolute left-0 w-full h-0.5 bg-[#1a36c7] shadow-[0_0_15px_rgba(26,54,199,0.8)] animate-[scan_2s_ease-in-out_infinite]" />
                                     </div>

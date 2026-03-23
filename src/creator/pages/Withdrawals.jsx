@@ -117,19 +117,19 @@ export default function Withdrawals() {
                         const countInOrder = orderTicketCounts[t.order_id] || 1;
                         const ticketType = t.ticket_types;
                         const eventTax = taxMap[ticketType.event_id];
-                        
+
                         const basePrice = Number(ticketType.price || 0);
                         const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
                         const isTaxIncluded = eventTax ? eventTax.is_included : false;
-                        
+
                         let ticketIncome = basePrice;
                         if (!isTaxIncluded && taxRate > 0) {
                             ticketIncome += (basePrice * taxRate / 100);
                         }
-                        
+
                         const discountShare = Number(t.orders.discount_amount || 0) / countInOrder;
                         ticketIncome -= discountShare;
-                        
+
                         calculatedNetSales += ticketIncome;
                     });
 
@@ -268,8 +268,8 @@ export default function Withdrawals() {
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                 {requests.length > 0 ? requests.map((req) => (
-                                    <tr 
-                                        key={req.id} 
+                                    <tr
+                                        key={req.id}
                                         onClick={() => navigate(`/withdrawals/${req.id}`)}
                                         className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
                                     >
