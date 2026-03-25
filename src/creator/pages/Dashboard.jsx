@@ -60,9 +60,9 @@ const CustomTooltip = ({ active, payload, label }) => {
                             <Ticket size={18} />
                         </div>
                         <div>
-                            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest leading-none mb-1.5">Penjualan Tiket</p>
+                            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest leading-none mb-1.5">Ticket Sales</p>
                             <p className="text-xl font-black text-slate-900 dark:text-white leading-none tabular-nums">
-                                {payload.find(p => p.name === 'tickets')?.value || 0} <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">Tiket</span>
+                                {payload.find(p => p.name === 'tickets')?.value || 0} <span className="text-[10px] text-slate-400 font-bold ml-1">Tickets</span>
                             </p>
                         </div>
                     </div>
@@ -223,8 +223,8 @@ const CreatorDashboard = () => {
 
                     if (maleCount > 0 || femaleCount > 0) {
                         genderResult = [
-                            { name: 'Laki - Laki', value: maleCount, color: '#3B82F6' },
-                            { name: 'Perempuan', value: femaleCount, color: '#EC4899' }
+                            { name: 'Male', value: maleCount, color: '#3B82F6' },
+                            { name: 'Female', value: femaleCount, color: '#EC4899' }
                         ];
                     }
                 }
@@ -258,7 +258,7 @@ const CreatorDashboard = () => {
         // Pre-fill all dates in range with 0
         let current = new Date(start);
         while (current <= end) {
-            const dateStr = current.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            const dateStr = current.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
             days[dateStr] = { tickets: 0, revenue: 0 };
             current.setDate(current.getDate() + 1);
         }
@@ -268,7 +268,7 @@ const CreatorDashboard = () => {
             const ticketDate = new Date(t.created_at);
             // Robust date check using locale strings to avoid UTC/timezone pitfalls
             if (ticketDate >= start && ticketDate <= new Date(new Date(end).setHours(23, 59, 59, 999))) {
-                const dateStr = ticketDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                const dateStr = ticketDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
                 if (days[dateStr] !== undefined) {
                     days[dateStr].tickets += 1;
                     days[dateStr].revenue += Number(t.amount || 0);
@@ -351,7 +351,7 @@ const CreatorDashboard = () => {
                                     <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-none mb-3">
                                         Welcome back, <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{stats.brand_name || user?.full_name?.split(' ')[0] || 'Creator'}</span>
                                     </h1>
-                                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] flex items-center justify-center md:justify-start gap-2">
+                                    <p className="text-slate-400 font-bold text-[10px] flex items-center justify-center md:justify-start gap-2">
                                         Currently managing <span className="text-slate-900 font-black">{stats.totalEvents} active</span> operational campaigns
                                     </p>
                                 </div>
@@ -367,7 +367,7 @@ const CreatorDashboard = () => {
                                     </div>
                                     <div className="text-left">
                                         <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover/btn:text-blue-500 transition-colors">Security Check</span>
-                                        <span className="block text-sm font-black uppercase tracking-widest text-slate-900">Entry Scan</span>
+                                        <span className="block text-sm font-black tracking-widest text-slate-900">Entry Scan</span>
                                     </div>
                                     <ArrowRight size={18} className="text-slate-300 group-hover/btn:text-blue-600 group-hover/btn:translate-x-1.5 transition-all duration-300" />
                                 </button>
@@ -379,7 +379,7 @@ const CreatorDashboard = () => {
                                     <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center group-hover/primary:bg-white/20 transition-colors">
                                         <Plus size={24} />
                                     </div>
-                                    <span className="text-sm font-black uppercase tracking-[0.25em]">Create Event</span>
+                                    <span className="text-sm font-black tracking-[0.25em]">Create Event</span>
                                 </button>
                             </div>
                         </div>
@@ -389,9 +389,9 @@ const CreatorDashboard = () => {
                 {/* Statistics Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {[
-                        { label: 'Tiket Terjual', value: stats.totalTickets, icon: Ticket, color: 'blue', suffix: 'Tiket' },
-                        { label: 'Pendapatan Bersih', value: stats.totalRevenue, isCurrency: true, icon: Banknote, color: 'emerald' },
-                        { label: 'Operasi Aktif', value: stats.totalEvents, icon: Calendar, color: 'indigo', suffix: 'Live' }
+                        { label: 'Tickets Sold', value: stats.totalTickets, icon: Ticket, color: 'blue', suffix: 'Tickets' },
+                        { label: 'Net Revenue', value: stats.totalRevenue, isCurrency: true, icon: Banknote, color: 'emerald' },
+                        { label: 'Active Operations', value: stats.totalEvents, icon: Calendar, color: 'indigo', suffix: 'Live' }
                     ].map((s, idx) => (
                         <motion.div
                             key={idx}
@@ -406,12 +406,12 @@ const CreatorDashboard = () => {
                                     <s.icon size={32} strokeWidth={1.5} />
                                 </div>
                                 <div className="space-y-4">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">{s.label}</p>
+                                    <p className="text-[10px] font-black text-slate-400 tracking-[0.3em] ml-1">{s.label}</p>
                                     <div className="flex items-baseline gap-3">
                                         <h4 className="text-4xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
                                             {s.isCurrency ? rupiah(s.value) : s.value.toLocaleString()}
                                         </h4>
-                                        {s.suffix && <span className={`text-[9px] font-black ${s.color === 'blue' ? 'text-blue-600 bg-blue-50/50' : s.color === 'emerald' ? 'text-emerald-600 bg-emerald-50/50' : 'text-indigo-600 bg-indigo-50/50'} uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-current/10`}>{s.suffix}</span>}
+                                        {s.suffix && <span className={`text-[9px] font-black ${s.color === 'blue' ? 'text-blue-600 bg-blue-50/50' : s.color === 'emerald' ? 'text-emerald-600 bg-emerald-50/50' : 'text-indigo-600 bg-indigo-50/50'} tracking-[0.2em] px-3 py-1 rounded-full border border-current/10`}>{s.suffix}</span>}
                                     </div>
                                 </div>
                             </div>
@@ -431,7 +431,7 @@ const CreatorDashboard = () => {
                                 </div>
                                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">Sales Performance</h3>
                             </div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1.5 flex items-center gap-2">
+                            <p className="text-[10px] text-slate-400 font-bold tracking-[0.2em] mt-1.5 flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" /> Live analytics and breakdown
                             </p>
                         </div>
@@ -462,7 +462,7 @@ const CreatorDashboard = () => {
                                                 endDate: end.toISOString().split('T')[0]
                                             });
                                         }}
-                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all hover:bg-white hover:text-blue-600 hover:shadow-sm"
+                                        className="px-4 py-2 text-[10px] font-black tracking-widest rounded-xl transition-all hover:bg-white hover:text-blue-600 hover:shadow-sm"
                                     >
                                         {preset.label}
                                     </button>
@@ -476,7 +476,7 @@ const CreatorDashboard = () => {
                                         type="date"
                                         value={dateRange.startDate}
                                         onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                                        className="bg-transparent text-[10px] font-black text-slate-900 outline-none uppercase tracking-widest"
+                                        className="bg-transparent text-[10px] font-black text-slate-900 outline-none tracking-widest"
                                     />
                                 </div>
                                 <span className="text-slate-200 text-xs font-light">to</span>
@@ -485,7 +485,7 @@ const CreatorDashboard = () => {
                                         type="date"
                                         value={dateRange.endDate}
                                         onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                                        className="bg-transparent text-[10px] font-black text-slate-900 outline-none uppercase tracking-widest"
+                                        className="bg-transparent text-[10px] font-black text-slate-900 outline-none tracking-widest"
                                     />
                                 </div>
                             </div>
@@ -538,8 +538,8 @@ const CreatorDashboard = () => {
                                     <TrendingUp size={40} strokeWidth={1.5} />
                                 </div>
                                 <div className="space-y-2">
-                                    <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] italic">No Sales Data</p>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest max-w-[200px]">Data will populate automatically as tickets are sold.</p>
+                                    <p className="text-sm font-black text-slate-400 tracking-[0.2em] italic">No Sales Data</p>
+                                    <p className="text-[10px] text-slate-400 font-bold tracking-widest max-w-[200px]">Data will populate automatically as tickets are sold.</p>
                                 </div>
                             </div>
                         )}
@@ -563,7 +563,7 @@ const CreatorDashboard = () => {
                     <div className="overflow-x-auto no-scrollbar -mx-4 px-4 pr-12">
                         <table className="w-full text-left border-separate border-spacing-y-4">
                             <thead>
-                                <tr className="text-slate-400 text-[10px] uppercase tracking-[0.2em]">
+                                <tr className="text-slate-400 text-[10px] tracking-[0.2em]">
                                     <th className="pb-4 pl-8 font-black">Operation Identity</th>
                                     <th className="pb-4 text-center font-black">Operational Status</th>
                                     <th className="pb-4 font-black">Event Schedule</th>
@@ -601,14 +601,14 @@ const CreatorDashboard = () => {
                                             </td>
                                             <td className="py-8 bg-slate-50/50 group-hover/row:bg-white border-y border-transparent group-hover/row:border-slate-100 transition-all duration-500">
                                                 <div className="space-y-1.5">
-                                                    <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{new Date(ev.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2 bg-white/50 w-fit px-2 py-1 rounded-lg border border-slate-100"><Clock size={12} className="text-blue-500" /> {ev.event_time}</p>
+                                                    <p className="text-xs font-black text-slate-900 tracking-tight">{new Date(ev.event_date).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold tracking-widest flex items-center gap-2 bg-white/50 w-fit px-2 py-1 rounded-lg border border-slate-100"><Clock size={12} className="text-blue-500" /> {ev.event_time}</p>
                                                 </div>
                                             </td>
                                             <td className="py-8 text-right bg-slate-50/50 group-hover/row:bg-white border-y border-transparent group-hover/row:border-slate-100 transition-all duration-500">
                                                 <div className="flex flex-col items-end gap-3 pr-4">
                                                     <p className="text-sm font-black text-slate-900 tabular-nums tracking-tighter">
-                                                        {ev.ticket_types?.reduce((acc, curr) => acc + (curr.sold || 0), 0)} <span className="text-slate-400 font-bold text-[10px] ml-1 uppercase tracking-widest leading-none">/ {ev.ticket_types?.reduce((acc, curr) => acc + (curr.quota || 0), 0)} Units Sold</span>
+                                                        {ev.ticket_types?.reduce((acc, curr) => acc + (curr.sold || 0), 0)} <span className="text-slate-400 font-bold text-[10px] ml-1 tracking-widest leading-none">/ {ev.ticket_types?.reduce((acc, curr) => acc + (curr.quota || 0), 0)} Units Sold</span>
                                                     </p>
                                                     <div className="w-32 bg-slate-200/50 h-2 rounded-full overflow-hidden p-0.5 shadow-inner">
                                                         <motion.div
@@ -625,7 +625,7 @@ const CreatorDashboard = () => {
                                             <td className="py-8 text-right pr-10 bg-slate-50/50 group-hover/row:bg-white rounded-r-[2.5rem] border-y border-r border-transparent group-hover/row:border-slate-100 transition-all duration-500">
                                                 <button
                                                     onClick={() => navigate(`/manage/event/${ev.id}`)}
-                                                    className="inline-flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-[1.25rem] text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 shadow-lg shadow-slate-200/20 group/action"
+                                                    className="inline-flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-[1.25rem] text-[10px] font-black tracking-[0.2em] text-slate-900 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 shadow-lg shadow-slate-200/20 group/action"
                                                 >
                                                     Deploy <ArrowUpRight size={14} className="group-hover/action:translate-x-0.5 group-hover/action:-translate-y-0.5 transition-transform" />
                                                 </button>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     ClipboardList, 
@@ -14,10 +15,13 @@ import {
     AlertCircle,
     XCircle,
     MoreVertical,
-    ArrowUpDown
+    ArrowUpDown,
+    X,
+    FileText
 } from 'lucide-react';
 
 const CustomOrders = () => {
+    const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -64,7 +68,7 @@ const CustomOrders = () => {
             ));
         } catch (error) {
             console.error('Error updating status:', error.message);
-            alert('Gagal update status: ' + error.message);
+            alert('Failed to update status: ' + error.message);
         } finally {
             setUpdatingId(null);
         }
@@ -101,21 +105,34 @@ const CustomOrders = () => {
     }
 
     return (
-        <div className="space-y-8 pb-20">
+        <div className="space-y-10 pb-20">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 uppercase">
-                        Custom Orders <ClipboardList className="text-blue-600" size={32} />
-                    </h1>
-                    <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">
-                        Manage custom orders for tools and manpower from creators
-                    </p>
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col md:flex-row md:items-center justify-between gap-8"
+            >
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                             Global System
+                        </span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Logistics Management</span>
+                    </div>
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Custom Orders <ClipboardList className="text-blue-600" size={32} />
+                        </h1>
+                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                            Monitor and manage all logistics, equipment, and manpower requests from creators for every event globally.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </motion.div>
 
             {/* Filters Bar */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
+            <div className="bg-white/80 backdrop-blur-md p-5 rounded-[2rem] border border-slate-200/60 shadow-xl shadow-slate-200/40 flex flex-col md:flex-row items-center gap-5">
                 <div className="relative flex-1 group w-full">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
                         <Search size={18} />
@@ -145,19 +162,19 @@ const CustomOrders = () => {
             </div>
 
             {/* Orders List */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-200/30 overflow-hidden">
                 <div className="overflow-x-auto no-scrollbar">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200">
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Creator & Event</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ordered Items</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                            <tr className="bg-slate-50/50 border-b border-slate-100">
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Creator & Event</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ordered Items</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-50">
                             <AnimatePresence>
                                 {filteredOrders.length > 0 ? (
                                     filteredOrders.map((req) => {
@@ -169,7 +186,11 @@ const CustomOrders = () => {
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 exit={{ opacity: 0 }}
-                                                className="hover:bg-slate-50/50 transition-colors group"
+                                                onClick={() => {
+                                                    console.log("Dev: Navigating to", req.id);
+                                                    navigate(`/custom-orders/${req.id}`);
+                                                }}
+                                                className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
                                             >
                                                 <td className="px-6 py-6">
                                                     <div className="flex items-center gap-4">
@@ -206,9 +227,9 @@ const CustomOrders = () => {
                                                         </p>
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-6">
+                                                <td className="px-8 py-6">
                                                     <div className="flex justify-center">
-                                                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${styles.bg} ${styles.text}`}>
+                                                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full shadow-sm ${styles.bg} ${styles.text} border border-white/50 backdrop-blur-sm`}>
                                                             <StatusIcon size={12} />
                                                             <span className="text-[9px] font-black uppercase tracking-wider">{styles.label}</span>
                                                         </div>
@@ -217,29 +238,46 @@ const CustomOrders = () => {
                                                 <td className="px-6 py-6">
                                                     <div className="flex flex-col">
                                                         <span className="text-[11px] font-black text-slate-900">
-                                                            {new Date(req.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                                                            {new Date(req.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}
                                                         </span>
                                                         <span className="text-[10px] text-slate-400 font-bold">
-                                                            {new Date(req.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                            {new Date(req.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-6">
+                                                <td 
+                                                    className="px-6 py-6"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
                                                     <div className="flex justify-end gap-2">
                                                         {updatingId === req.id ? (
                                                             <div className="w-8 h-8 border-2 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
                                                         ) : (
-                                                            <div className="flex items-center gap-1">
-                                                                {['pending', 'processed', 'completed', 'cancelled'].filter(s => s !== req.status).map(s => (
-                                                                    <button
-                                                                        key={s}
-                                                                        onClick={() => updateStatus(req.id, s)}
-                                                                        title={`Mark as ${s}`}
-                                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${getStatusStyles(s).bg} ${getStatusStyles(s).text}`}
-                                                                    >
-                                                                        {React.createElement(getStatusStyles(s).icon, { size: 14 })}
-                                                                    </button>
-                                                                ))}
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        navigate(`/custom-orders/${req.id}`);
+                                                                    }}
+                                                                    className="px-4 py-2 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-xl border border-blue-100 hover:bg-blue-600 hover:text-white transition-all active:scale-95 flex items-center gap-2"
+                                                                >
+                                                                    Detail <ChevronRight size={14} />
+                                                                </button>
+                                                                <div className="flex items-center gap-1">
+                                                                    {['pending', 'processed', 'completed', 'cancelled'].filter(s => s !== req.status).map(s => (
+                                                                        <button
+                                                                            key={s}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                updateStatus(req.id, s);
+                                                                            }}
+                                                                            title={`Mark as ${s}`}
+                                                                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${getStatusStyles(s).bg} ${getStatusStyles(s).text}`}
+                                                                        >
+                                                                            {React.createElement(getStatusStyles(s).icon, { size: 14 })}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </div>

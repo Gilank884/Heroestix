@@ -34,13 +34,16 @@ export default function ProfitBreakdown() {
     const fetchData = async () => {
         setLoading(true);
         try {
+            // Global Data Setup (Bank Configs)
+            const { data: bankConfigs } = await supabase.from('bank_configs').select('bank_code, bayarind_fee');
+            const feeMap = (bankConfigs || []).reduce((acc, c) => ({ ...acc, [c.bank_code.toUpperCase()]: Number(c.bayarind_fee || 0) }), {});
+
             if (eventId) {
-                // 2. Fetch Event Details, Ticket Types and Event Tax
-                const [eventRes, ttRes, taxRes, bankConfigsRes] = await Promise.all([
+                // SPECIFIC EVENT LOGIC
+                const [eventRes, ttRes, taxRes] = await Promise.all([
                     supabase.from('events').select('*, creators(brand_name)').eq('id', eventId).single(),
                     supabase.from('ticket_types').select('id, price').eq('event_id', eventId),
-                    supabase.from('event_taxes').select('*').eq('event_id', eventId).maybeSingle(),
-                    supabase.from('bank_configs').select('bank_code, bayarind_fee')
+                    supabase.from('event_taxes').select('*').eq('event_id', eventId).maybeSingle()
                 ]);
 
                 if (eventRes.error) throw eventRes.error;
@@ -49,10 +52,8 @@ export default function ProfitBreakdown() {
                 const ticketTypes = ttRes.data || [];
                 const eventTax = taxRes.data;
                 const priceMap = ticketTypes.reduce((acc, tt) => ({ ...acc, [tt.id]: Number(tt.price || 0) }), {});
-                const feeMap = (bankConfigsRes.data || []).reduce((acc, c) => ({ ...acc, [c.bank_code.toUpperCase()]: Number(c.bayarind_fee || 0) }), {});
                 const typeIds = ticketTypes.map(t => t.id);
 
-                // 3. Fetch Tickets to get Order IDs and calculate Net Revenue per Ticket
                 const { data: tickets, error: etError } = await supabase
                     .from('tickets')
                     .select('id, order_id, ticket_type_id')
@@ -66,7 +67,6 @@ export default function ProfitBreakdown() {
                     return;
                 }
 
-                // 4. Fetch Transactions and Orders
                 const [transRes, ordersRes] = await Promise.all([
                     supabase.from('transactions').select('*').in('order_id', orderIds).in('status', ['paid', 'success']),
                     supabase.from('orders').select('id, discount_amount').in('id', orderIds)
@@ -104,7 +104,6 @@ export default function ProfitBreakdown() {
                         txNetRevenue += ticketIncome;
                     });
 
-                    // Fee logic from EventCashDetail.jsx
                     const method = (tx.method || '').toUpperCase();
                     const provider = (tx.payment_provider_data?.bankName || '').toUpperCase();
                     
@@ -132,37 +131,85 @@ export default function ProfitBreakdown() {
                 });
 
                 setTotalProfit(calculatedProfit);
+
             } else {
-                // Global fetch - this is more complex to maintain 1:1 with EventCashDetail
-                // but we can approximate or do a broad fetch if needed.
-                // For now, let's just use the simplified global fetch but fix the eId issue.
+                // GLOBAL PLATFORM LOGIC (Using Separate Fetches to avoid join issues)
+                
+                // 1. Fetch all successful transactions
                 const { data: txs, error: txErr } = await supabase
                     .from('transactions')
-                    .select('*, orders!inner(tickets!inner(ticket_types(event_id)))')
+                    .select('*')
                     .in('status', ['paid', 'success']);
-
+                
                 if (txErr) throw txErr;
+                const orderIds = [...new Set(txs.map(tx => tx.order_id).filter(Boolean))];
 
-                const { data: allTaxes } = await supabase.from('event_taxes').select('*');
-                const { data: bankConfigs } = await supabase.from('bank_configs').select('bank_code, bayarind_fee');
+                if (orderIds.length === 0) {
+                    setTotalProfit(0);
+                    return;
+                }
 
-                const taxMap = (allTaxes || []).reduce((acc, t) => ({ ...acc, [t.event_id]: { value: Number(t.value || 0), is_included: t.is_included } }), {});
-                const feeMap = (bankConfigs || []).reduce((acc, c) => ({ ...acc, [c.bank_code.toUpperCase()]: Number(c.bayarind_fee || 0) }), {});
+                // 2. Fetch all orders and their tickets for these transactions
+                const { data: orders, error: oErr } = await supabase
+                    .from('orders')
+                    .select(`
+                        id, discount_amount,
+                        tickets (
+                            id, ticket_type_id,
+                            ticket_types (
+                                id, price, event_id
+                            )
+                        )
+                    `)
+                    .in('id', orderIds);
 
-                let calculatedProfit = 0;
+                if (oErr) throw oErr;
+
+                // 3. Fetch all event taxes to map correctly
+                const { data: eventTaxes } = await supabase.from('event_taxes').select('*');
+                const taxMap = (eventTaxes || []).reduce((acc, t) => ({ 
+                    ...acc, 
+                    [t.event_id]: { value: Number(t.value || 0), isIncluded: t.is_included } 
+                }), {});
+
+                // 4. Map Orders for lookup
+                const orderMap = (orders || []).reduce((acc, o) => ({ ...acc, [o.id]: o }), {});
+
+                let globalProfit = 0;
+
                 txs.forEach(tx => {
                     const amount = Number(tx.amount || 0);
-                    const eId = tx.orders?.tickets?.[0]?.ticket_types?.event_id;
-                    const taxConfig = taxMap[eId];
-                    
-                    // Simple approximation for global view as calculating every ticket precisely is expensive here
-                    // In a production app, the clean_profit should probably be a field in the transactions table
-                    const taxRate = taxConfig?.value ? (taxConfig.value / 100) : 0;
-                    const netRevenue = taxConfig?.is_included ? amount : (amount / (1 + taxRate));
-                    
+                    const order = orderMap[tx.order_id];
+                    if (!order) return;
+
+                    const tickets = order.tickets || [];
+                    const totalTicketsInOrder = tickets.length;
+                    if (totalTicketsInOrder === 0) return;
+
+                    // Calculate Creator Share
+                    let txCreatorShare = 0;
+                    tickets.forEach(t => {
+                        const tt = t.ticket_types;
+                        if (!tt) return;
+
+                        const basePrice = Number(tt.price || 0);
+                        const taxConfig = taxMap[tt.event_id] || { value: 0, isIncluded: false };
+                        
+                        let ticketIncome = basePrice;
+                        if (!taxConfig.isIncluded && taxConfig.value > 0) {
+                            ticketIncome += (basePrice * taxConfig.value / 100);
+                        }
+                        
+                        const discountShare = Number(order.discount_amount || 0) / totalTicketsInOrder;
+                        ticketIncome -= discountShare;
+                        txCreatorShare += ticketIncome;
+                    });
+
+                    // Calculate Payment Fee
                     const method = (tx.method || '').toUpperCase();
                     const provider = (tx.payment_provider_data?.bankName || '').toUpperCase();
                     let feeKey = null;
+
                     if (method.includes('BNI') || provider.includes('BNI')) feeKey = 'BNI';
                     else if (method.includes('BRI') || provider.includes('BRI')) feeKey = 'BRI';
                     else if (method.includes('MANDIRI') || provider.includes('MANDIRI')) feeKey = 'MANDIRI';
@@ -171,13 +218,21 @@ export default function ProfitBreakdown() {
                     else if (method.includes('SHOPEEPAY') || provider.includes('SHOPEEPAY')) feeKey = 'SHOPEEPAY';
                     else if (method.includes('LINKAJA') || provider.includes('LINKAJA')) feeKey = 'LINKAJA';
 
-                    const feeConfig = feeKey ? feeMap[feeKey] : 0;
-                    const cleanProfit = amount - netRevenue - paymentFee;
-                    const finalProfit = cleanProfit * 0.89;
-                    calculatedProfit += (finalProfit);
+                    const feeValue = feeKey ? (feeMap[feeKey] || 0) : 0;
+                    let paymentFee = 0;
+                    if (['QRIS', 'OVO', 'SHOPEEPAY'].includes(feeKey)) {
+                        paymentFee = (amount * feeValue / 100);
+                    } else {
+                        paymentFee = feeValue;
+                    }
+
+                    // Platform Clean Profit calculation
+                    const cleanProfit = amount - txCreatorShare - paymentFee;
+                    const finalProfit = cleanProfit > 0 ? (cleanProfit * 0.89) : 0;
+                    globalProfit += finalProfit;
                 });
 
-                setTotalProfit(calculatedProfit);
+                setTotalProfit(globalProfit);
             }
         } catch (err) {
             console.error('Error fetching breakdown:', err);
@@ -188,7 +243,7 @@ export default function ProfitBreakdown() {
     };
 
     const breakdown = [
-        { label: 'Perusahaan', percentage: 35, color: 'bg-blue-600', icon: Building2, desc: 'Corporate growth and operations' },
+        { label: 'Corporate', percentage: 35, color: 'bg-blue-600', icon: Building2, desc: 'Corporate growth and operations' },
         { label: 'Developer', percentage: 35, color: 'bg-indigo-600', icon: Code2, desc: 'Core platform engineering' },
         { label: 'UI/UX', percentage: 15, color: 'bg-purple-600', icon: Palette, desc: 'Interface and experience design' },
         { label: 'Maintenance', percentage: 15, color: 'bg-slate-600', icon: Settings, desc: 'Infrastructure and security' },
@@ -207,42 +262,51 @@ export default function ProfitBreakdown() {
 
     return (
         <div className="p-8 max-w-5xl mx-auto space-y-8">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10"
+            >
+                <div className="space-y-4">
+                    <button 
                         onClick={() => navigate(-1)}
-                        className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:bg-slate-50 transition-all text-slate-400 hover:text-slate-600"
+                        className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-blue-600 uppercase tracking-widest transition-colors mb-2"
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={14} /> Back to Summary
                     </button>
+                    <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                             Revenue Breakdown
+                        </span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {event ? event.title : 'Global Platform'}
+                        </span>
+                    </div>
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <img src="/Logo/Logo.png" alt="Heroestix" className="h-6 w-auto" />
-                            <div className="w-px h-4 bg-slate-200" />
-                            <div className="flex items-center gap-2">
-                                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-wider">Revenue Breakdown</span>
-                                {event && (
-                                    <>
-                                        <span className="text-slate-300">/</span>
-                                        <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{event.title}</span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                        <h1 className="text-2xl font-black text-slate-900 leading-tight">
-                            {event ? 'Event Profit Distribution' : 'Total Platform Revenue Split'}
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Profit <span className="text-blue-600">Distribution</span> <TrendingUp className="text-blue-600" size={32} />
                         </h1>
+                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                            Platform algorithmic revenue split between corporate, engineering, design, and infrastructure maintenance.
+                        </p>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={fetchData} className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm text-slate-400 hover:text-blue-600 transition-all">
+
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={fetchData}
+                        className="p-3 bg-white text-slate-400 rounded-2xl border border-slate-100 shadow-sm hover:text-blue-600 transition-all active:scale-95"
+                    >
                         <Activity size={20} />
                     </button>
+                    
+                    <div className="px-5 py-3 bg-slate-900 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-xl shadow-slate-200 border border-slate-800">
+                         PPN: 11% Included
+                    </div>
                 </div>
-            </div>
+            </motion.div>
 
-            {/* Total Profit Card */}
             <div className="bg-slate-900 rounded-[40px] p-12 text-center relative overflow-hidden group shadow-2xl shadow-slate-900/20">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 rounded-full blur-[100px] -mr-32 -mt-32 group-hover:bg-blue-600/30 transition-all duration-1000" />
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px] -ml-32 -mb-32 group-hover:bg-indigo-600/20 transition-all duration-1000" />
@@ -264,7 +328,6 @@ export default function ProfitBreakdown() {
                 </div>
             </div>
 
-            {/* Split Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {breakdown.map((item, idx) => {
                     const amount = (totalProfit * item.percentage) / 100;
@@ -313,7 +376,6 @@ export default function ProfitBreakdown() {
                 })}
             </div>
 
-            {/* Footer Information */}
             <div className="bg-blue-50/50 rounded-[32px] p-8 border border-blue-100/50 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-4 text-left">
                     <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white shrink-0">

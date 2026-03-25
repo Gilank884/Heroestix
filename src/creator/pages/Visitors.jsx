@@ -24,7 +24,7 @@ const Visitors = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [customColumns, setCustomColumns] = useState([]);
-    
+
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -160,14 +160,14 @@ const Visitors = () => {
     return (
         <div className="relative min-h-screen pb-20">
 
-            <motion.div 
+            <motion.div
                 className="relative z-10 space-y-10"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
                 {/* Unified Header & Stats Card */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 space-y-10"
                 >
@@ -190,7 +190,7 @@ const Visitors = () => {
                             </div>
                         </div>
 
-                        <motion.button 
+                        <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             className="flex items-center gap-2 px-6 py-4 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all group shrink-0"
@@ -217,7 +217,7 @@ const Visitors = () => {
                 </motion.div>
 
                 {/* Search & Filter Controls (Glassmorphism) */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="bg-white/60 backdrop-blur-xl p-4 rounded-[1.75rem] border border-white shadow-xl shadow-slate-200/30 flex flex-col md:flex-row gap-4"
                 >
@@ -231,11 +231,11 @@ const Visitors = () => {
                             className="w-full pl-14 pr-6 py-4 bg-slate-50/50 border border-slate-100/50 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:bg-white focus:border-blue-600 transition-all placeholder:text-slate-300 text-sm"
                         />
                     </div>
-                    
+
                     {/* Rows Per Page Selector */}
                     <div className="flex items-center gap-3 px-4 border-l border-slate-100/50">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Show</span>
-                        <select 
+                        <select
                             value={rowsPerPage}
                             onChange={(e) => setRowsPerPage(Number(e.target.value))}
                             className="bg-transparent font-black text-slate-900 text-sm outline-none cursor-pointer hover:text-blue-600 transition-colors"
@@ -254,7 +254,7 @@ const Visitors = () => {
                 </motion.div>
 
                 {/* Table Overhaul with Premium Styling */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 overflow-hidden"
                 >
@@ -279,8 +279,8 @@ const Visitors = () => {
                             <tbody>
                                 <AnimatePresence mode="popLayout">
                                     {paginatedVisitors.length === 0 ? (
-                                        <motion.tr 
-                                            initial={{ opacity: 0 }} 
+                                        <motion.tr
+                                            initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                         >
@@ -300,7 +300,7 @@ const Visitors = () => {
                                         </motion.tr>
                                     ) : (
                                         paginatedVisitors.map((visitor, idx) => (
-                                            <motion.tr 
+                                            <motion.tr
                                                 key={visitor.id}
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
@@ -379,10 +379,10 @@ const Visitors = () => {
                                 Showing {startIndex + 1}-{Math.min(startIndex + rowsPerPage, filteredVisitors.length)} of {filteredVisitors.length}
                             </span>
                         </div>
-                        
+
                         {/* Pagination Controls */}
                         <div className="flex items-center gap-2">
-                            <button 
+                            <button
                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                 disabled={currentPage === 1}
                                 className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 hover:border-blue-600 disabled:opacity-30 disabled:hover:border-slate-200 disabled:hover:text-slate-400 transition-all active:scale-95"
@@ -394,7 +394,7 @@ const Visitors = () => {
                                 <span className="text-slate-300">/</span>
                                 <span>{totalPages || 1}</span>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                 disabled={currentPage === totalPages || totalPages === 0}
                                 className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 hover:border-blue-600 disabled:opacity-30 disabled:hover:border-slate-200 disabled:hover:text-slate-400 transition-all active:scale-95"

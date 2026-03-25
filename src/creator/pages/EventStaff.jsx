@@ -49,16 +49,16 @@ const EventStaff = () => {
     const [isGeneratingToken, setIsGeneratingToken] = useState(false);
 
     const AVAILABLE_MODULES = [
-        "Detail Event", "Kategori Tiket", "Voucher", "Staff", 
-        "Formulir Tambahan", "Laporan Penjualan", "Penarikan Saldo", 
+        "Detail Event", "Kategori Tiket", "Voucher", "Staff",
+        "Formulir Tambahan", "Laporan Penjualan", "Penarikan Saldo",
         "Daftar Pengunjung", "Statistik Check-in", "Proses Check-in"
     ];
 
     const [selectedModules, setSelectedModules] = useState(AVAILABLE_MODULES);
 
     const toggleModule = (moduleName) => {
-        setSelectedModules(prev => 
-            prev.includes(moduleName) 
+        setSelectedModules(prev =>
+            prev.includes(moduleName)
                 ? prev.filter(m => m !== moduleName)
                 : [...prev, moduleName]
         );
@@ -236,14 +236,14 @@ const EventStaff = () => {
     return (
         <div className="relative min-h-screen pb-20">
 
-            <motion.div 
+            <motion.div
                 className="relative z-10 space-y-12"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
                 {/* Unified Header Card with Stats */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40"
                 >
@@ -337,15 +337,15 @@ const EventStaff = () => {
                                             {selectedModules.length} Terpilih
                                         </span>
                                     </div>
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={() => setSelectedModules(selectedModules.length === AVAILABLE_MODULES.length ? [] : AVAILABLE_MODULES)}
                                         className="text-[10px] font-black text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-widest flex items-center gap-1.5"
                                     >
                                         {selectedModules.length === AVAILABLE_MODULES.length ? 'Bersihkan Semua' : 'Otorisasi Semua'}
                                     </button>
                                 </div>
-                                
+
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                                     {AVAILABLE_MODULES.map((module) => (
                                         <motion.button
@@ -355,8 +355,8 @@ const EventStaff = () => {
                                             onClick={() => toggleModule(module)}
                                             className={`
                                                 flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 text-left
-                                                ${selectedModules.includes(module) 
-                                                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200' 
+                                                ${selectedModules.includes(module)
+                                                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200'
                                                     : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'}
                                             `}
                                         >
@@ -386,13 +386,12 @@ const EventStaff = () => {
 
                         <AnimatePresence>
                             {inviteStatus && (
-                                <motion.div 
+                                <motion.div
                                     initial={{ opacity: 0, height: 0, marginTop: 0 }}
                                     animate={{ opacity: 1, height: 'auto', marginTop: 24 }}
                                     exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                                    className={`p-5 rounded-2xl border flex items-center gap-4 transition-all ${
-                                        inviteStatus.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'
-                                    }`}
+                                    className={`p-5 rounded-2xl border flex items-center gap-4 transition-all ${inviteStatus.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'
+                                        }`}
                                 >
                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${inviteStatus.type === 'success' ? 'bg-emerald-100' : 'bg-rose-100'}`}>
                                         {inviteStatus.type === 'success' ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
@@ -406,7 +405,7 @@ const EventStaff = () => {
                     {/* Pending Invitations Table */}
                     <AnimatePresence>
                         {invitations.length > 0 && (
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="space-y-6"
@@ -428,8 +427,8 @@ const EventStaff = () => {
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
                                             {invitations.map((invite) => (
-                                                <motion.tr 
-                                                    key={invite.id} 
+                                                <motion.tr
+                                                    key={invite.id}
                                                     layout
                                                     initial={{ opacity: 0 }}
                                                     animate={{ opacity: 1 }}
@@ -499,7 +498,7 @@ const EventStaff = () => {
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
                                         {staffList.map((staff) => (
-                                            <motion.tr 
+                                            <motion.tr
                                                 key={staff.id}
                                                 layout
                                                 initial={{ opacity: 0 }}

@@ -56,9 +56,11 @@ const Events = () => {
                 .eq('id', user.id)
                 .single();
 
-            const verified = creatorData?.verified ?? false;
-            setIsVerified(verified);
-            if (!verified) { setLoading(false); return; }
+            const isVerifiedCreator = creatorData?.verified ?? false;
+
+            // Determine if we should show the "Verification Pending" screen.
+            // If they are a creator, they must be verified to use the portal normally.
+            // However, we'll fetch events first to see if they are a staff member.
 
             // 1. Fetch created events
             const { data: createdEvents, error: createdError } = await supabase
@@ -95,13 +97,22 @@ const Events = () => {
 
             if (staffError) throw staffError;
 
-            // Flatten staff events
-            const staffEvents = staffData?.map(item => item.events) || [];
+            const staffEvents = staffData?.map(item => item.events).filter(Boolean) || [];
 
-            // Combine and Dedup (just in case)
-            const allEvents = [...(createdEvents || []), ...staffEvents];
-            const uniqueEvents = Array.from(new Map(allEvents.map(item => [item.id, item])).values())
+            // Combine and Dedup
+            const allEventsRaw = [...(createdEvents || []), ...staffEvents];
+            const uniqueEvents = Array.from(new Map(allEventsRaw.map(item => [item.id, item])).values())
                 .sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
+
+            // LOGIC: If they have a creator record but it's not verified, 
+            // AND they are NOT staff for any events, show the pending screen.
+            // If they are staff, we let them through to manage those specific events.
+            if (creatorData && !isVerifiedCreator && staffEvents.length === 0) {
+                setIsVerified(false);
+                setLoading(false);
+                return;
+            }
+            setIsVerified(true);
 
             const eventIds = uniqueEvents.map(e => e.id);
 
@@ -188,7 +199,7 @@ const Events = () => {
 
         // Accurate Revenue Calculation using Fair-Share Logic
         const eventRevenueMap = {};
-        
+
         ticketsData.forEach(t => {
             const eventId = t.ticket_types?.event_id;
             const eventTax = taxMap[eventId];
@@ -280,14 +291,14 @@ const Events = () => {
                                 Global Tracking
                             </span>
                             <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pusat Statistik</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Statistics Center</span>
                         </div>
                         <div>
-                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3 uppercase">
+                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                                 Event Analytics <Activity className="text-blue-600" size={32} />
                             </h1>
                             <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
-                                Kelola kampanye event kamu dengan data real-time, pantau distribusi pendapatan, dan tingkat penjualan tiket.
+                                Manage your event campaigns with real-time data, monitor revenue distribution, and track ticket sales performance.
                             </p>
                         </div>
                     </div>
@@ -299,7 +310,7 @@ const Events = () => {
                         className="flex items-center gap-2 px-6 py-4 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all group shrink-0"
                     >
                         <Plus size={14} className="group-hover:rotate-180 transition-transform duration-700" />
-                        Buat Event Baru
+                        Create New Event
                     </motion.button>
                 </motion.div>
 
@@ -310,9 +321,9 @@ const Events = () => {
                 >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 divide-y md:divide-y-0 md:divide-x divide-slate-100">
                         {[
-                            { label: 'Total Kampanye', value: globalStats.totalEvents, icon: LayoutGrid, color: 'blue', suffix: 'Active' },
-                            { label: 'Pendapatan Bersih', value: rupiah(globalStats.totalRevenue), icon: Wallet, color: 'emerald', suffix: 'Net' },
-                            { label: 'Tiket Terjual', value: globalStats.totalSold.toLocaleString(), icon: Ticket, color: 'purple', suffix: `${globalStats.scaleRate.toFixed(1)}% Rate` }
+                            { label: 'Total Campaigns', value: globalStats.totalEvents, icon: LayoutGrid, color: 'blue', suffix: 'Active' },
+                            { label: 'Net Revenue', value: rupiah(globalStats.totalRevenue), icon: Wallet, color: 'emerald', suffix: 'Net' },
+                            { label: 'Tickets Sold', value: globalStats.totalSold.toLocaleString(), icon: Ticket, color: 'purple', suffix: `${globalStats.scaleRate.toFixed(1)}% Rate` }
                         ].map((stat, idx) => (
                             <div key={idx} className={`flex items-start gap-6 ${idx > 0 ? 'md:pl-12' : ''} ${idx < 2 ? 'pb-8 md:pb-0' : 'pt-8 md:pt-0'}`}>
                                 <div className={`w-14 h-14 bg-${stat.color}-500/10 rounded-2xl flex items-center justify-center text-${stat.color}-600 shrink-0`}>
@@ -341,8 +352,8 @@ const Events = () => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`px-6 py-3 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all
-                                    ${activeTab === tab.id 
-                                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' 
+                                    ${activeTab === tab.id
+                                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-200'
                                         : 'text-slate-400 hover:text-slate-600'
                                     }
                                 `}
@@ -358,102 +369,102 @@ const Events = () => {
                         </div>
                         <input
                             type="text"
-                            placeholder="Cari event spesifik..."
+                            placeholder="Search specific event..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-white/60 backdrop-blur-xl border border-white focus:border-blue-500 rounded-[1.5rem] py-4 pl-16 pr-6 text-[11px] font-black uppercase outline-none text-slate-700 placeholder:text-slate-300 transition-all shadow-xl shadow-slate-200/40"
+                            className="w-full bg-white/60 backdrop-blur-xl border border-white focus:border-blue-500 rounded-[1.5rem] py-4 pl-16 pr-6 text-[11px] font-black outline-none text-slate-700 placeholder:text-slate-300 transition-all shadow-xl shadow-slate-200/40"
                         />
                     </div>
                 </motion.div>
 
-            {/* Enhanced Event Analytics List */}
-            <div className="grid grid-cols-1 gap-6">
-                {filteredEvents.length > 0 ? (
-                    filteredEvents.map((ev) => {
-                        const eventSold = (ev.ticket_types || []).reduce((acc, tt) => acc + (tt.sold || 0), 0);
-                        const eventQuota = (ev.ticket_types || []).reduce((acc, tt) => acc + (tt.quota || 0), 0);
-                        const eventRevenue = ev.calculatedRevenue || 0;
-                        const soldPercent = eventQuota > 0 ? (eventSold / eventQuota) * 100 : 0;
+                {/* Enhanced Event Analytics List */}
+                <div className="grid grid-cols-1 gap-6">
+                    {filteredEvents.length > 0 ? (
+                        filteredEvents.map((ev) => {
+                            const eventSold = (ev.ticket_types || []).reduce((acc, tt) => acc + (tt.sold || 0), 0);
+                            const eventQuota = (ev.ticket_types || []).reduce((acc, tt) => acc + (tt.quota || 0), 0);
+                            const eventRevenue = ev.calculatedRevenue || 0;
+                            const soldPercent = eventQuota > 0 ? (eventSold / eventQuota) * 100 : 0;
 
-                        return (
-                            <div key={ev.id} className="group bg-white border border-slate-100/60 rounded-2xl p-5 flex flex-col lg:flex-row items-center gap-8 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:shadow-[0_25px_60px_rgba(59,130,246,0.12)] transition-all duration-500 border-l-4 border-l-slate-200 hover:border-l-blue-600">
-                                {/* Thumbnail - Compact */}
-                                <div className="w-full lg:w-48 h-32 rounded-xl overflow-hidden shadow-inner relative shrink-0">
-                                    <img
-                                        src={ev.poster_url || '/assets/placeholder.png'}
-                                        alt={ev.title}
-                                        className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${new Date(ev.event_date) < new Date() ? 'grayscale opacity-70' : ''}`}
-                                    />
-                                    <div className="absolute top-2 right-2">
-                                        <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest shadow-lg ${ev.status === 'active' ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'}`}>
-                                            {ev.status}
-                                        </span>
+                            return (
+                                <div key={ev.id} className="group bg-white border border-slate-100/60 rounded-2xl p-5 flex flex-col lg:flex-row items-center gap-8 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:shadow-[0_25px_60px_rgba(59,130,246,0.12)] transition-all duration-500 border-l-4 border-l-slate-200 hover:border-l-blue-600">
+                                    {/* Thumbnail - Compact */}
+                                    <div className="w-full lg:w-48 h-32 rounded-xl overflow-hidden shadow-inner relative shrink-0">
+                                        <img
+                                            src={ev.poster_url || '/assets/placeholder.png'}
+                                            alt={ev.title}
+                                            className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${new Date(ev.event_date) < new Date() ? 'grayscale opacity-70' : ''}`}
+                                        />
+                                        <div className="absolute top-2 right-2">
+                                            <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest shadow-lg ${ev.status === 'active' ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'}`}>
+                                                {ev.status}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Main Info & Real-time Stats */}
+                                    <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 items-center w-full">
+                                        {/* Event Meta */}
+                                        <div className="space-y-3">
+                                            <h3 className="text-sm font-bold text-slate-900 truncate tracking-tight group-hover:text-blue-600 transition-colors">
+                                                {ev.title}
+                                            </h3>
+                                            <div className="flex flex-col gap-1.5">
+                                                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                                    <Calendar size={12} className="text-slate-300" />
+                                                    <span>{new Date(ev.event_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} • {ev.event_time}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate">
+                                                    <MapPin size={12} className="text-slate-300" />
+                                                    <span className="truncate">{ev.location}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Sales Analytics Mini */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-end justify-between">
+                                                <div className="space-y-0.5">
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sales Performance</p>
+                                                    <h4 className="text-sm font-bold text-slate-900 tabular-nums">{eventSold} / {eventQuota} <span className="text-[10px] text-slate-400 font-medium">Sold</span></h4>
+                                                </div>
+                                                <span className="text-[10px] font-bold text-blue-600 tabular-nums">{soldPercent.toFixed(1)}%</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${soldPercent}%` }}
+                                                    className={`h-full bg-blue-600 transition-all duration-1000 ${soldPercent > 90 ? 'bg-emerald-500' : ''}`}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Financial Mini Stats */}
+                                        <div className="flex items-center gap-8 xl:justify-end">
+                                            <div className="text-right">
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Net Revenue</p>
+                                                <h4 className="text-sm font-black text-slate-900 whitespace-nowrap">{rupiah(eventRevenue)}</h4>
+                                            </div>
+                                            <Link
+                                                to={`/manage/event/${ev.id}`}
+                                                className="p-3 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200 hover:bg-blue-600 hover:scale-110 transition-all active:scale-95 group/btn"
+                                            >
+                                                <ChevronRight size={18} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
-
-                                {/* Main Info & Real-time Stats */}
-                                <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 items-center w-full">
-                                    {/* Event Meta */}
-                                    <div className="space-y-3">
-                                        <h3 className="text-sm font-bold text-slate-900 truncate uppercase tracking-tight group-hover:text-blue-600 transition-colors">
-                                            {ev.title}
-                                        </h3>
-                                        <div className="flex flex-col gap-1.5">
-                                            <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                                                <Calendar size={12} className="text-slate-300" />
-                                                <span>{new Date(ev.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} • {ev.event_time}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate">
-                                                <MapPin size={12} className="text-slate-300" />
-                                                <span className="truncate">{ev.location}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Sales Analytics Mini */}
-                                    <div className="space-y-3">
-                                        <div className="flex items-end justify-between">
-                                            <div className="space-y-0.5">
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sales Performance</p>
-                                                <h4 className="text-sm font-bold text-slate-900 tabular-nums uppercase">{eventSold} / {eventQuota} <span className="text-[10px] text-slate-400 font-medium">Sold</span></h4>
-                                            </div>
-                                            <span className="text-[10px] font-bold text-blue-600 tabular-nums">{soldPercent.toFixed(1)}%</span>
-                                        </div>
-                                        <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100">
-                                            <motion.div 
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${soldPercent}%` }}
-                                                className={`h-full bg-blue-600 transition-all duration-1000 ${soldPercent > 90 ? 'bg-emerald-500' : ''}`}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Financial Mini Stats */}
-                                    <div className="flex items-center gap-8 xl:justify-end">
-                                        <div className="text-right">
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Net Revenue</p>
-                                            <h4 className="text-sm font-black text-slate-900 whitespace-nowrap uppercase">{rupiah(eventRevenue)}</h4>
-                                        </div>
-                                        <Link
-                                            to={`/manage/event/${ev.id}`}
-                                            className="p-3 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200 hover:bg-blue-600 hover:scale-110 transition-all active:scale-95 group/btn"
-                                        >
-                                            <ChevronRight size={18} className="group-hover/btn:translate-x-0.5 transition-transform" />
-                                        </Link>
-                                    </div>
-                                </div>
+                            );
+                        })
+                    ) : (
+                        <div className="py-20 text-center bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+                            <div className="w-16 h-16 bg-slate-50 text-slate-200 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                <Calendar size={32} strokeWidth={1} />
                             </div>
-                        );
-                    })
-                ) : (
-                    <div className="py-20 text-center bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
-                        <div className="w-16 h-16 bg-slate-50 text-slate-200 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
-                            <Calendar size={32} strokeWidth={1} />
+                            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">No Events Tracked</h3>
+                            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2">Adjust filters or create your first campaign.</p>
                         </div>
-                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">No Events Tracked</h3>
-                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2">Adjust filters or create your first campaign.</p>
-                    </div>
-                )}
+                    )}
                 </div>
             </motion.div>
         </div>

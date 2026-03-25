@@ -11,6 +11,7 @@ import {
     Save,
     Layout
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const PAYMENT_CHANNELS = [
     { code: 'BNI', name: 'BNI Virtual Account', type: 'va' },
@@ -27,7 +28,7 @@ const EventConfig = () => {
     const navigate = useNavigate();
     const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [feeData, setFeeData] = useState({ name: 'Biaya Platform', type: 'fixed', value: 5000 });
+    const [feeData, setFeeData] = useState({ name: 'Platform Fee', type: 'fixed', value: 5000 });
     const [paymentConfigs, setPaymentConfigs] = useState({});
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('platform');
@@ -78,7 +79,7 @@ const EventConfig = () => {
 
             if (pfData) {
                 setFeeData({
-                    name: pfData.name || 'Biaya Platform',
+                    name: pfData.name || 'Platform Fee',
                     type: pfData.type || 'fixed',
                     value: pfData.value || 0
                 });
@@ -148,7 +149,7 @@ const EventConfig = () => {
             
             triggerToast(`System synchronised: Platform Fee updated!`);
         } catch (error) {
-            alert('Gagal menyimpan: ' + error.message);
+            alert('Failed to save: ' + error.message);
         } finally {
             setSaving(false);
         }
@@ -191,7 +192,7 @@ const EventConfig = () => {
 
             triggerToast(`System synchronised: Payment Channels updated!`);
         } catch (error) {
-            alert('Gagal menyimpan: ' + error.message);
+            alert('Failed to save: ' + error.message);
         } finally {
             setSaving(false);
         }
@@ -215,19 +216,47 @@ const EventConfig = () => {
                 </div>
             </div>
 
-            {/* Header / Nav */}
-            <div className="mb-8 flex items-center justify-between">
-                <div>
-                    <button
+            {/* Header section */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10"
+            >
+                <div className="space-y-4">
+                    <button 
                         onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-slate-500 font-bold hover:text-blue-600 transition-all mb-2"
+                        className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-blue-600 uppercase tracking-widest transition-colors mb-2"
                     >
-                        <ArrowLeft size={20} /> Back
+                        <ArrowLeft size={14} /> Back to Events
                     </button>
-                    <h1 className="text-3xl font-extrabold text-slate-900 italic">Event <span className="text-blue-600 not-italic">Configuration</span></h1>
-                    <p className="text-slate-500 font-medium text-sm mt-1">{event?.title}</p>
+                    <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                             Operational Control
+                        </span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Event Configuration
+                        </span>
+                    </div>
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            System <span className="text-blue-600">Engine</span> <Settings className="text-blue-600" size={32} />
+                        </h1>
+                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                            Fine-tune platform fees, payment channel availability, and financial logic for <span className="text-slate-900 font-bold">"{event?.title}"</span>.
+                        </p>
+                    </div>
                 </div>
-            </div>
+
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                    <div className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-mono tracking-wider shadow-lg">
+                        ID: {event?.id}
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mr-1">
+                        Priority Deployment
+                    </span>
+                </div>
+            </motion.div>
 
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-6">

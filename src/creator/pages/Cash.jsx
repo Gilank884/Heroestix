@@ -179,18 +179,18 @@ export default function CreatorCash() {
         const amount = Number(withdrawAmount);
 
         if (amount > balance) {
-            alert("Saldo tidak mencukupi.");
+            alert("Insufficient balance.");
             return;
         }
 
         if (amount <= 0) {
-            alert("Nominal tidak valid.");
+            alert("Invalid amount.");
             return;
         }
 
         const hasPending = requests.some(r => r.status === 'pending');
         if (hasPending) {
-            alert("Anda masih memiliki pengajuan yang sedang diproses.");
+            alert("You still have a pending request being processed.");
             return;
         }
 
@@ -205,7 +205,7 @@ export default function CreatorCash() {
 
             if (error) throw error;
 
-            alert("Pengajuan penarikan berhasil dikirim.");
+            alert("Withdrawal request sent successfully.");
             setIsRequestModalOpen(false);
             setWithdrawAmount('');
             fetchFinancials();
@@ -226,14 +226,14 @@ export default function CreatorCash() {
                     <h2 className="text-4xl font-black text-slate-900 tracking-tight">
                         Cash <span className="text-[#1b3bb6]">Management</span>
                     </h2>
-                    <p className="text-slate-500 font-medium mt-1">Lacak pendapatan, histori transaksi, dan penarikan saldo.</p>
+                    <p className="text-slate-500 font-medium mt-1">Track revenue, transaction history, and balance withdrawals.</p>
                 </div>
                 <button
                     onClick={() => setIsRequestModalOpen(true)}
                     className="bg-[#1b3bb6] text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 shadow-xl shadow-blue-500/20 hover:scale-105 transition-all active:scale-95"
                 >
                     <PlusCircle size={20} />
-                    Tarik Saldo
+                    Withdraw Funds
                 </button>
             </div>
 
@@ -249,18 +249,18 @@ export default function CreatorCash() {
                                 <Wallet size={28} />
                             </div>
                             <div>
-                                <p className="text-white/60 font-black text-[10px] uppercase tracking-[0.2em]">Saldo Tersedia</p>
+                                <p className="text-white/60 font-black text-[10px] tracking-[0.2em] uppercase">Available Balance</p>
                                 <h3 className="text-4xl md:text-5xl font-black tracking-tight mt-1">{rupiah(balance)}</h3>
                             </div>
                         </div>
 
                         <div className="flex flex-wrap gap-6 pt-4 border-t border-white/10">
                             <div>
-                                <p className="text-white/40 text-[9px] font-black uppercase tracking-widest mb-1">Total Pendapatan</p>
+                                <p className="text-white/40 text-[9px] font-black tracking-widest uppercase mb-1">Total Income</p>
                                 <p className="text-xl font-bold">{rupiah(totalIncome)}</p>
                             </div>
                             <div>
-                                <p className="text-white/40 text-[9px] font-black uppercase tracking-widest mb-1">Total Ditarik</p>
+                                <p className="text-white/40 text-[9px] font-black tracking-widest uppercase mb-1">Total Withdrawn</p>
                                 <p className="text-xl font-bold">{rupiah(totalWithdrawn)}</p>
                             </div>
                         </div>
@@ -271,7 +271,7 @@ export default function CreatorCash() {
                 <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
                     <div className="flex items-center gap-3 mb-2">
                         <Building2 size={20} className="text-[#1b3bb6]" />
-                        <h4 className="font-black text-slate-900 uppercase text-xs tracking-widest">Rekening Tujuan</h4>
+                        <h4 className="font-black text-slate-900 text-xs tracking-widest uppercase">Destination Account</h4>
                     </div>
 
                     {creatorInfo?.bank_account ? (
@@ -281,7 +281,7 @@ export default function CreatorCash() {
                                 <p className="font-bold text-slate-800">{creatorInfo.bank_name || 'N/A'}</p>
                             </div>
                             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Nomor Rekening</p>
+                                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase leading-none mb-2">Account Number</p>
                                 <p className="font-bold text-slate-800 flex items-center gap-2">
                                     <CreditCard size={16} className="text-slate-400" />
                                     {creatorInfo.bank_account}
@@ -292,7 +292,7 @@ export default function CreatorCash() {
                         <div className="p-6 bg-orange-50 rounded-2xl border border-orange-100 text-center space-y-3">
                             <Info size={24} className="text-orange-500 mx-auto" />
                             <p className="text-xs text-orange-700 font-bold leading-relaxed">
-                                Belum ada rekening terdaftar. Harap lengkapi di profil Anda.
+                                No bank account registered. Please complete your profile.
                             </p>
                         </div>
                     )}
@@ -304,17 +304,17 @@ export default function CreatorCash() {
                 <div className="space-y-6">
                     <div className="flex items-center gap-4 px-2">
                         <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
-                        <h3 className="text-xl font-black text-slate-900">Pengajuan Penarikan</h3>
+                        <h3 className="text-xl font-black text-slate-900">Withdrawal Requests</h3>
                     </div>
 
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-slate-50 border-b border-slate-100">
-                                    <tr>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Detail</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-100">
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 tracking-widest uppercase">Detail</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 tracking-widest uppercase">Amount</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 tracking-widest uppercase">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -333,7 +333,7 @@ export default function CreatorCash() {
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan="3" className="px-6 py-12 text-center text-slate-400 text-sm italic font-medium">Belum ada pengajuan penarikan</td>
+                                            <td colSpan="3" className="px-6 py-12 text-center text-slate-400 text-sm italic font-medium">No withdrawal requests yet</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -346,16 +346,16 @@ export default function CreatorCash() {
                 <div className="space-y-6">
                     <div className="flex items-center gap-4 px-2">
                         <div className="w-1.5 h-6 bg-[#1b3bb6] rounded-full" />
-                        <h3 className="text-xl font-black text-slate-900">Histori Transaksi</h3>
+                        <h3 className="text-xl font-black text-slate-900">Transaction History</h3>
                     </div>
 
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-slate-50 border-b border-slate-100">
-                                    <tr>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaksi</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Nominal</th>
+                                <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-100">
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 tracking-widest uppercase">Transaction</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 tracking-widest uppercase text-right">Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -368,7 +368,7 @@ export default function CreatorCash() {
                                                     </div>
                                                     <div>
                                                         <p className="text-sm font-bold text-slate-800 leading-tight">{h.description}</p>
-                                                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{new Date(h.created_at).toLocaleDateString()} • {h.type === 'credit' ? 'Incoming' : 'Withdrawal'}</p>
+                                                        <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-widest uppercase">{new Date(h.created_at).toLocaleDateString()} • {h.type === 'credit' ? 'Incoming' : 'Withdrawal'}</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -378,7 +378,7 @@ export default function CreatorCash() {
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan="2" className="px-6 py-12 text-center text-slate-400 text-sm italic font-medium">Belum ada histori transaksi</td>
+                                            <td colSpan="2" className="px-6 py-12 text-center text-slate-400 text-sm italic font-medium">No transaction history yet</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -394,18 +394,18 @@ export default function CreatorCash() {
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsRequestModalOpen(false)} />
                     <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
                         <div className="p-6 border-b border-slate-50 bg-slate-50/50">
-                            <h2 className="text-2xl font-black text-slate-900">Tarik <span className="text-[#1b3bb6]">Saldo</span></h2>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Nominal minimal Rp 10.000</p>
+                            <h2 className="text-2xl font-black text-slate-900">Withdraw <span className="text-[#1b3bb6]">Funds</span></h2>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Minimum amount Rp 10.000</p>
                         </div>
 
                         <form onSubmit={handleRequestWithdrawal} className="p-6 space-y-6">
                             <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-between">
-                                <span className="text-xs font-bold text-blue-800">Saldo Tersedia:</span>
+                                <span className="text-xs font-bold text-blue-800">Available Balance:</span>
                                 <span className="font-black text-blue-900">{rupiah(balance)}</span>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nominal Penarikan</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Withdrawal Amount</label>
                                 <div className="relative">
                                     <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-400">Rp</span>
                                     <input
@@ -425,13 +425,13 @@ export default function CreatorCash() {
                                     onClick={() => setIsRequestModalOpen(false)}
                                     className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold hover:bg-slate-200 transition-all"
                                 >
-                                    Batal
+                                    Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     className="flex-[2] py-4 bg-[#1b3bb6] text-white rounded-2xl font-bold shadow-lg shadow-blue-500/20 hover:bg-[#16319c] transition-all"
                                 >
-                                    Ajukan Sekarang
+                                    Withdraw Now
                                 </button>
                             </div>
                         </form>

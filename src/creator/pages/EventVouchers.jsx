@@ -155,14 +155,14 @@ const EventVouchers = () => {
     return (
         <div className="relative min-h-screen pb-20">
 
-            <motion.div 
+            <motion.div
                 initial="hidden"
                 animate="visible"
                 variants={containerVariants}
                 className="relative z-10 space-y-10 max-w-6xl mx-auto px-4 md:px-0"
             >
                 {/* Unified Header & Stats Card */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 space-y-10"
                 >
@@ -185,7 +185,7 @@ const EventVouchers = () => {
                             </div>
                         </div>
 
-                        <motion.button 
+                        <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setIsModalOpen(true)}
@@ -213,8 +213,8 @@ const EventVouchers = () => {
                 </motion.div>
 
                 {/* Search & Filter Controls Card (Separate) */}
-                <motion.div 
-                    variants={itemVariants} 
+                <motion.div
+                    variants={itemVariants}
                     className="bg-white/60 backdrop-blur-xl p-4 rounded-[1.75rem] border border-white shadow-xl shadow-slate-200/30 flex flex-col md:flex-row gap-4"
                 >
                     <div className="relative flex-1 group">
@@ -227,7 +227,7 @@ const EventVouchers = () => {
                             className="w-full pl-16 pr-8 h-16 bg-slate-50/50 border border-slate-100 rounded-3xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600/30 transition-all placeholder:text-slate-300 text-[13px]"
                         />
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
                         <button className="h-16 px-8 rounded-3xl bg-white/40 border border-slate-100 text-slate-900 font-black text-[10px] uppercase tracking-widest hover:border-slate-300 hover:shadow-lg transition-all flex items-center gap-3">
                             <Filter size={18} className="text-slate-400" />
@@ -260,7 +260,7 @@ const EventVouchers = () => {
                                             </tr>
                                         ))
                                     ) : filteredVouchers.length === 0 ? (
-                                        <motion.tr 
+                                        <motion.tr
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
@@ -339,13 +339,12 @@ const EventVouchers = () => {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6 text-center">
-                                                <button 
+                                                <button
                                                     onClick={(e) => handleToggleStatus(e, voucher.id, voucher.is_active)}
-                                                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-sm transition-all active:scale-95 ${
-                                                        voucher.is_active 
-                                                        ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100/50' 
-                                                        : 'bg-slate-100 text-slate-400 hover:bg-slate-200 border border-slate-200/50'
-                                                    }`}
+                                                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-sm transition-all active:scale-95 ${voucher.is_active
+                                                            ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100/50'
+                                                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200 border border-slate-200/50'
+                                                        }`}
                                                 >
                                                     {voucher.is_active ? 'Active' : 'Inactive'}
                                                 </button>

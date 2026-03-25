@@ -16,6 +16,7 @@ import {
     Layout,
     CreditCard as PaymentIcon
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const CreatorDetail = () => {
 
@@ -128,7 +129,7 @@ const CreatorDetail = () => {
                 bank_book_pic_url: creator.bank_book_pic_url // Assuming this field might exist or be added
             });
         } catch (err) {
-            alert("Gagal mengunduh PDF. Silakan coba lagi.");
+            alert("Failed to download PDF. Please try again.");
         } finally {
             setIsDownloadingPDF(false);
         }
@@ -144,16 +145,47 @@ const CreatorDetail = () => {
 
     return (
         <div className="max-w-5xl mx-auto pb-20">
-            {/* Header / Nav */}
-            <div className="mb-8">
-                <button
-                    onClick={() => navigate('/creators')}
-                    className="flex items-center gap-2 text-slate-500 font-bold hover:text-blue-600 transition-all mb-4"
-                >
-                    <ArrowLeft size={20} /> Back to List
-                </button>
-                <h1 className="text-3xl font-extrabold text-slate-900">Creator Details</h1>
-            </div>
+            {/* Header section Area */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-8"
+            >
+                <div className="space-y-4">
+                    <button 
+                        onClick={() => navigate('/creators')}
+                        className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-blue-600 uppercase tracking-widest transition-colors mb-2"
+                    >
+                        <ArrowLeft size={14} /> Back to Creators
+                    </button>
+                    <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                             Merchant Identity
+                        </span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Creator Detail
+                        </span>
+                    </div>
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Profile <span className="text-blue-600">Console</span> <Building2 className="text-blue-600" size={32} />
+                        </h1>
+                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                            Oversee merchant credentials, legal verification status, and active event catalog for <span className="text-slate-900 font-bold">"{creator.brand_name || 'System Merchant'}"</span>.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                    <div className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border shadow-sm ${creator.verified ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                        {creator.verified ? 'Verified Entity' : 'Verification Required'}
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mr-1">
+                        Platform Partner
+                    </span>
+                </div>
+            </motion.div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 {/* Hero / ID Section */}
@@ -176,7 +208,7 @@ const CreatorDetail = () => {
                                     {creator.verified ? <ShieldCheck size={14} /> : <Clock size={14} />}
                                     {creator.verified ? 'Verified Entity' : 'Pending Review'}
                                 </div>
-                                <h1 className="text-4xl font-extrabold text-slate-900 italic tracking-tight">{creator.brand_name || 'System Merchant'}</h1>
+                                <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">{creator.brand_name || 'System Merchant'}</h1>
                                 <div className="mt-2 flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-[#1a36c7]" />
                                     <p className="text-slate-500 font-black uppercase text-[10px] tracking-widest">Ownership: <span className="text-[#1a36c7]">{creator.profiles?.full_name || 'Anonymous Entity'}</span></p>
@@ -288,7 +320,7 @@ const CreatorDetail = () => {
             <div className="mt-12 space-y-8">
                 <div className="flex items-center gap-3">
                     <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-                    <h2 className="text-2xl font-extrabold text-slate-900 italic">Active <span className="text-blue-600 not-italic">Event Management</span></h2>
+                    <h2 className="text-2xl font-extrabold text-slate-900">Active <span className="text-blue-600">Event Management</span></h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

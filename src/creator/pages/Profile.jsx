@@ -190,10 +190,10 @@ export default function Profile() {
 
             if (error) throw error;
 
-            setStatus({ type: 'success', message: 'Profil Anda telah berhasil diperbarui!' });
+            setStatus({ type: 'success', message: 'Your profile has been updated successfully!' });
             setTimeout(() => setStatus(null), 4000);
         } catch (error) {
-            setStatus({ type: 'error', message: 'Terjadi kesalahan sistem: ' + error.message });
+            setStatus({ type: 'error', message: 'System error occurred: ' + error.message });
         } finally {
             setSaving(false);
         }
@@ -257,77 +257,78 @@ export default function Profile() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="max-w-5xl mx-auto space-y-6 pb-20"
+            className="max-w-5xl mx-auto space-y-6 pb-20 text-left"
         >
-            {/* Compact Header Section - Enhanced Shadows */}
-            <motion.div variants={itemVariants} className="relative group">
-                <div className="relative bg-white border border-slate-100/60 rounded-2xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] group-hover:shadow-[0_20px_50px_rgba(59,130,246,0.12)] transition-all duration-500 overflow-hidden">
-                    {/* Subtle Decorative elements */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/20 rounded-full blur-3xl -mr-32 -mt-32 transition-transform duration-700 group-hover:scale-110" />
+            {/* Header Area */}
+            <motion.div 
+                variants={itemVariants}
+                className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 relative overflow-hidden group"
+            >
+                {/* Subtle Decorative elements */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/20 rounded-full blur-3xl -mr-32 -mt-32 transition-transform duration-700 group-hover:scale-110" />
 
-                    <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-                        {/* Compact Avatar Section */}
-                        <div className="relative">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handlePhotoChange}
-                                className="hidden"
-                                id="profile-photo-upload"
-                            />
-                            <label
-                                htmlFor="profile-photo-upload"
-                                className="block relative w-24 h-24 rounded-2xl bg-slate-50 border border-slate-100/50 p-1 shadow-md group-hover:shadow-xl group-hover:shadow-blue-500/10 overflow-hidden cursor-pointer group/label transition-all duration-500"
-                            >
-                                <div className="w-full h-full rounded-xl overflow-hidden bg-white relative">
-                                    {photoPreview ? (
-                                        <img src={photoPreview} alt="Profile" className="w-full h-full object-cover transition-transform duration-500 group-hover/label:scale-110" />
-                                    ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
-                                            <Camera size={20} />
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/label:opacity-100 transition-all duration-300 flex flex-col items-center justify-center text-white backdrop-blur-sm">
-                                        <Upload size={14} />
-                                        <span className="text-[8px] font-bold uppercase tracking-widest mt-1 text-white/90">Update</span>
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                    {/* Compact Avatar Section */}
+                    <div className="relative">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoChange}
+                            className="hidden"
+                            id="profile-photo-upload"
+                        />
+                        <label
+                            htmlFor="profile-photo-upload"
+                            className="block relative w-24 h-24 rounded-2xl bg-slate-50 border border-slate-100/50 p-1 shadow-md group-hover:shadow-xl group-hover:shadow-blue-500/10 overflow-hidden cursor-pointer group/label transition-all duration-500"
+                        >
+                            <div className="w-full h-full rounded-xl overflow-hidden bg-white relative">
+                                {photoPreview ? (
+                                    <img src={photoPreview} alt="Profile" className="w-full h-full object-cover transition-transform duration-500 group-hover/label:scale-110" />
+                                ) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                                        <Camera size={20} />
                                     </div>
+                                )}
+                                <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/label:opacity-100 transition-all duration-300 flex flex-col items-center justify-center text-white backdrop-blur-sm">
+                                    <Upload size={14} />
+                                    <span className="text-[8px] font-bold uppercase tracking-widest mt-1 text-white/90">Update</span>
                                 </div>
-                            </label>
-                            {form.verified && (
-                                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-lg shadow-[0_4px_12px_rgba(37,99,235,0.4)] border-2 border-white flex items-center justify-center text-white">
-                                    <ShieldCheck size={12} />
-                                </div>
-                            )}
+                            </div>
+                        </label>
+                        {form.verified && (
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-lg shadow-[0_4px_12px_rgba(37,99,235,0.4)] border-2 border-white flex items-center justify-center text-white">
+                                <ShieldCheck size={12} />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Title &Simplified Progress */}
+                    <div className="flex-1 text-center md:text-left">
+                        <div className="space-y-1">
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${form.verified ? 'bg-blue-50 text-blue-600 border border-blue-100/50' : 'bg-amber-50 text-amber-600 border border-amber-100/50'}`}>
+                                    {form.verified ? 'Verified Creator' : 'Verification Pending'}
+                                </span>
+                            </div>
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none uppercase">
+                                {form.brand_name || "New Profile"}
+                            </h1>
+                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mt-1 opacity-70">{form.address || 'Address not set'}</p>
                         </div>
 
-                        {/* Title & Simplified Progress */}
-                        <div className="flex-1 text-center md:text-left">
-                            <div className="space-y-1">
-                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                                    <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${form.verified ? 'bg-blue-50 text-blue-600 border border-blue-100/50' : 'bg-amber-50 text-amber-600 border border-amber-100/50'}`}>
-                                        {form.verified ? 'Verified Creator' : 'Verification Pending'}
-                                    </span>
-                                </div>
-                                <h1 className="text-2xl font-bold text-slate-900 tracking-tight leading-none uppercase">
-                                    {form.brand_name || "New Profile"}
-                                </h1>
-                                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mt-1 opacity-70">{form.address || 'Address not set'}</p>
+                        {/* Minimalist Progress Bar */}
+                        <div className="mt-4 max-w-xs mx-auto md:mx-0 bg-slate-50/50 p-2 rounded-xl border border-slate-100/50">
+                            <div className="flex justify-between items-center mb-1.5 px-0.5">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Profile Status</span>
+                                <span className="text-[9px] font-bold text-blue-600">{Math.round(completionPercentage)}%</span>
                             </div>
-
-                            {/* Minimalist Progress Bar */}
-                            <div className="mt-4 max-w-xs mx-auto md:mx-0 bg-slate-50/50 p-2 rounded-xl border border-slate-100/50">
-                                <div className="flex justify-between items-center mb-1.5 px-0.5">
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Profile Status</span>
-                                    <span className="text-[9px] font-bold text-blue-600">{Math.round(completionPercentage)}%</span>
-                                </div>
-                                <div className="h-1 bg-white rounded-full overflow-hidden shadow-inner">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${completionPercentage}%` }}
-                                        transition={{ duration: 0.8 }}
-                                        className="h-full bg-blue-600 rounded-full"
-                                    />
-                                </div>
+                            <div className="h-1 bg-white rounded-full overflow-hidden shadow-inner">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${completionPercentage}%` }}
+                                    transition={{ duration: 0.8 }}
+                                    className="h-full bg-blue-600 rounded-full"
+                                />
                             </div>
                         </div>
                     </div>
@@ -405,7 +406,7 @@ export default function Profile() {
                     >
                         <div className="grid grid-cols-1 gap-5 p-6">
                             <div className="space-y-2">
-                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nama Bank</label>
+                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-left block">Bank Name</label>
                                 <Input
                                     name="bank_name"
                                     value={form.bank_name}
@@ -415,7 +416,7 @@ export default function Profile() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">No Rekening</label>
+                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-left block">Account Number</label>
                                 <Input
                                     name="bank_account"
                                     value={form.bank_account}
@@ -425,21 +426,21 @@ export default function Profile() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nama Pemilik</label>
+                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-left block">Account Holder Name</label>
                                 <Input
                                     name="bank_holder_name"
                                     value={form.bank_holder_name}
                                     onChange={handleChange}
-                                    placeholder="Nama Sesuai Buku Tabungan"
+                                    placeholder="Name as seen in Bank Book"
                                     required
                                 />
                             </div>
                         </div>
                     </Section>
 
-                    {/* Legalitas & Berkas - Premium Section */}
+                    {/* Legal Documents - Premium Section */}
                     <Section
-                        title="Legalitas & Berkas"
+                        title="Legal Documents"
                         description="Verified official documents and entity identity."
                         icon={<ShieldCheck size={18} />}
                     >
@@ -449,20 +450,20 @@ export default function Profile() {
                                     <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm border border-slate-100">
                                         <User size={14} />
                                     </div>
-                                    <div>
-                                        <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nama Direktur / PIC</div>
+                                    <div className="text-left">
+                                        <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Director / PIC Name</div>
                                         <div className="text-sm font-black text-slate-900">{form.director_name || 'N/A'}</div>
                                     </div>
                                 </div>
                                 {[
-                                    { label: 'Tipe Golongan', value: form.golongan, icon: <Briefcase size={14} /> },
-                                    { label: 'Nomor PKP', value: form.pkp_number || '-', icon: <FileText size={14} /> }
+                                    { label: 'Group Type', value: form.golongan, icon: <Briefcase size={14} /> },
+                                    { label: 'PKP Number', value: form.pkp_number || '-', icon: <FileText size={14} /> }
                                 ].map((item, idx) => (
                                     <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
                                         <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm border border-slate-100">
                                             {item.icon}
                                         </div>
-                                        <div>
+                                        <div className="text-left">
                                             <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.label}</div>
                                             <div className="text-sm font-black text-slate-900">{item.value || 'N/A'}</div>
                                         </div>
@@ -471,9 +472,9 @@ export default function Profile() {
                                 <div className="md:col-span-2 space-y-2">
                                     <div className="flex items-center gap-2 text-slate-400 mb-2">
                                         <MapPin size={12} />
-                                        <span className="text-[9px] font-black uppercase tracking-widest">Alamat Domisili</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest">Domicile Address</span>
                                     </div>
-                                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs font-bold text-slate-600 leading-relaxed">
+                                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs font-bold text-slate-600 leading-relaxed text-left">
                                         {form.company_address}
                                     </div>
                                 </div>
@@ -482,19 +483,19 @@ export default function Profile() {
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 text-slate-400">
                                     <Upload size={14} />
-                                    <span className="text-[9px] font-black uppercase tracking-widest">Arsip Dokumen</span>
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Document Archives</span>
                                 </div>
                                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                                     {[
                                         { label: 'KTP PIC', url: form.ktp_pic_url },
                                         { label: 'NPWP PIC', url: form.npwp_pic_url },
-                                        { label: 'NPWP Perusahaan', url: form.npwp_company_url },
-                                        { label: 'Akte Notaris', url: form.akte_notaris_url, kmn: 'Berkas Lainnya 1' },
-                                        { label: 'SK Kumham', url: form.sk_kumham_url, kmn: 'Berkas Lainnya 2' },
-                                        { label: 'Surat Kuasa', url: form.surat_kuasa_url, kmn: 'Berkas Lainnya 3' },
-                                        { label: 'NIB', url: form.nib_url, kmn: 'Berkas Lainnya 4' },
-                                        { label: 'Sertifikat Pendirian', url: form.sertifikat_pendirian_url },
-                                        { label: 'Pernyataan Pendirian', url: form.pernyataan_pendirian_url }
+                                        { label: 'Company NPWP', url: form.npwp_company_url },
+                                        { label: 'Notary Deed', url: form.akte_notaris_url, kmn: 'Other Document 1' },
+                                        { label: 'SK Kumham', url: form.sk_kumham_url, kmn: 'Other Document 2' },
+                                        { label: 'Power of Attorney', url: form.surat_kuasa_url, kmn: 'Other Document 3' },
+                                        { label: 'NIB', url: form.nib_url, kmn: 'Other Document 4' },
+                                        { label: 'Establishment Certificate', url: form.sertifikat_pendirian_url },
+                                        { label: 'Establishment Statement', url: form.pernyataan_pendirian_url }
                                     ].filter(doc => doc.url).map((doc, idx) => {
                                         const label = (form.golongan === 'Komunitas' && doc.kmn) ? doc.kmn : doc.label;
                                         return (
@@ -525,7 +526,7 @@ export default function Profile() {
                         description="Connect digital footprints."
                         icon={<Share2 size={16} />}
                     >
-                        <div className="space-y-3 p-6">
+                        <div className="space-y-3 p-6 text-left">
                             <SocialInput
                                 icon={<Instagram size={16} className="text-rose-500" />}
                                 name="instagram_url"
@@ -551,12 +552,12 @@ export default function Profile() {
                     </Section>
 
                     {/* Action Hub - Neat */}
-                    <div className="bg-slate-900 rounded-xl p-6 shadow-xl shadow-slate-900/20 group/save hover:shadow-blue-600/20 transition-all duration-500 relative overflow-hidden">
+                    <div className="bg-slate-900 rounded-2xl p-6 shadow-xl shadow-slate-900/20 group/save hover:shadow-blue-600/20 transition-all duration-500 relative overflow-hidden text-left">
                         {/* Decorative glow */}
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl group-hover/save:scale-150 transition-transform duration-700" />
 
                         <div className="space-y-1 relative z-10">
-                            <h3 className="text-white font-bold text-sm tracking-tight uppercase">Update Profile</h3>
+                            <h3 className="text-white font-black text-sm tracking-tight uppercase">Update Profile</h3>
                             <p className="text-slate-400 text-[9px] font-bold leading-tight uppercase tracking-widest opacity-80">
                                 Push changes globally to events.
                             </p>
@@ -578,7 +579,7 @@ export default function Profile() {
                     </div>
 
                     {/* Branding Tip - Compact */}
-                    <div className="p-5 bg-white border border-slate-100/50 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col gap-3 group hover:shadow-lg transition-all">
+                    <div className="p-5 bg-white border border-slate-100/50 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col gap-3 group hover:shadow-lg transition-all text-left">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center border border-blue-100/50 shadow-inner group-hover:rotate-6 transition-transform">
                                 <Sparkles className="text-blue-600" size={14} />
@@ -602,15 +603,15 @@ const Section = ({ title, description, icon, children }) => (
             hidden: { opacity: 0, y: 10 },
             visible: { opacity: 1, y: 0 }
         }}
-        className="bg-white border border-slate-100/60 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(59,130,246,0.08)] transition-all duration-500 overflow-hidden relative group/section"
+        className="bg-white border border-slate-100/60 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(59,130,246,0.08)] transition-all duration-500 overflow-hidden relative group/section"
     >
         <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between gap-4 relative z-10">
             <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover/section:bg-blue-50 group-hover/section:text-blue-600 transition-all shadow-inner border border-slate-100/50">
                     {React.cloneElement(icon, { size: 18 })}
                 </div>
-                <div>
-                    <h2 className="text-sm font-bold text-slate-900 tracking-tight uppercase leading-none">{title}</h2>
+                <div className="text-left">
+                    <h2 className="text-sm font-black text-slate-900 tracking-tight uppercase leading-none">{title}</h2>
                     <p className="text-[9px] text-slate-400 font-medium mt-1 uppercase tracking-widest leading-none opacity-80">{description}</p>
                 </div>
             </div>
@@ -627,7 +628,7 @@ const Section = ({ title, description, icon, children }) => (
 const Input = (props) => (
     <input
         {...props}
-        className="w-full bg-slate-50/20 border border-slate-100 rounded-lg px-4 py-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-300 text-xs shadow-sm hover:shadow-md"
+        className="w-full bg-slate-50/20 border border-slate-100 rounded-lg px-4 py-2.5 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-300 text-xs shadow-sm hover:shadow-md"
     />
 );
 
@@ -638,7 +639,7 @@ const SocialInput = ({ icon, ...props }) => (
         </div>
         <input
             {...props}
-            className="w-full bg-slate-50/20 border border-slate-100 rounded-lg pl-10 pr-4 py-2.5 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/5 focus:border-blue-600 transition-all text-xs placeholder:text-slate-200 shadow-sm hover:shadow-md"
+            className="w-full bg-slate-50/20 border border-slate-100 rounded-lg pl-10 pr-4 py-2.5 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/5 focus:border-blue-600 transition-all text-xs placeholder:text-slate-200 shadow-sm hover:shadow-md"
         />
     </div>
 );

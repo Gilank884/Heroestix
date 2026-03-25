@@ -57,18 +57,37 @@ export default function Overview() {
                 .eq('id', user.id)
                 .single();
 
-            const verified = creatorData?.verified ?? false;
-            setIsVerified(verified);
-            if (!verified) { setLoading(false); return; }
+            const isVerifiedCreator = creatorData?.verified ?? false;
 
-            // 1. Fetch all events for this creator
-            const { data: eventsData, error: eventsError } = await supabase
-                .from('events')
-                .select('*')
-                .eq('creator_id', user.id)
-                .order('created_at', { ascending: false });
+            // 1. Fetch all events (Owner + Staff)
+            const [ownerEventsRes, staffEventsRes] = await Promise.all([
+                supabase
+                    .from('events')
+                    .select('*')
+                    .eq('creator_id', user.id)
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('event_staffs')
+                    .select('events (*)')
+                    .eq('staff_id', user.id)
+            ]);
 
-            if (eventsError) throw eventsError;
+            const ownerEvents = ownerEventsRes.data || [];
+            const staffEvents = staffEventsRes.data?.map(s => s.events).filter(Boolean) || [];
+
+            // Combine and Dedup
+            const allEvents = [...ownerEvents, ...staffEvents];
+            const eventsData = Array.from(new Map(allEvents.map(item => [item.id, item])).values());
+
+            // Determine if we should show the "Verification Pending" screen.
+            // Rule: If they are a creator, they must be verified.
+            // If they are ONLY staff (no creator record), we allow them to see their assigned events.
+            if (creatorData && !isVerifiedCreator) {
+                setIsVerified(false);
+                setLoading(false);
+                return;
+            }
+            setIsVerified(true);
 
             // 2. Fetch all tickets and their associated orders for these events
             const eventIds = eventsData.map(e => e.id);
@@ -224,14 +243,14 @@ export default function Overview() {
                                 Financial Reports
                             </span>
                             <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Laporan Penjualan</span>
+                            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Sales Report</span>
                         </div>
                         <div>
-                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3 uppercase">
+                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                                 Sales Overview <TrendingUp className="text-blue-600" size={32} />
                             </h1>
                             <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
-                                Analisis performa penjualan tiket kamu secara mendalam, pantau pertumbuhan pendapatan bersih, dan distribusi per event.
+                                Analyze your ticket sales performance deeply, monitor net revenue growth, and track distribution per event.
                             </p>
                         </div>
                     </div>
@@ -240,10 +259,10 @@ export default function Overview() {
                         onClick={fetchSalesData}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="flex items-center gap-2 px-6 py-4 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all group shrink-0"
+                        className="flex items-center gap-2 px-6 py-4 bg-slate-900 text-white font-black text-[10px] tracking-widest rounded-[1.25rem] shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all group shrink-0 uppercase"
                     >
                         <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-700" />
-                        Refresh Laporan
+                        Refresh Report
                     </motion.button>
                 </motion.div>
 
@@ -254,22 +273,22 @@ export default function Overview() {
                 >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 divide-y md:divide-y-0 md:divide-x divide-slate-100">
                         {[
-                            { label: 'Total Kampanye', value: stats.totalEvents, icon: LayoutGrid, color: 'blue', suffix: 'Semua Event' },
-                            { label: 'Tiket Terjual', value: stats.ticketsSold.toLocaleString(), icon: Ticket, color: 'purple', suffix: 'Total Paid' },
-                            { label: 'Pendapatan Bersih', value: rupiah(stats.totalRevenue), icon: Wallet, color: 'emerald', suffix: 'Net Revenue' }
+                            { label: 'Total Campaigns', value: stats.totalEvents, icon: LayoutGrid, color: 'blue', suffix: 'All Events' },
+                            { label: 'Tickets Sold', value: stats.ticketsSold.toLocaleString(), icon: Ticket, color: 'purple', suffix: 'Total Paid' },
+                            { label: 'Net Revenue', value: rupiah(stats.totalRevenue), icon: Wallet, color: 'emerald', suffix: 'Net Revenue' }
                         ].map((stat, idx) => (
                             <div key={idx} className={`flex items-start gap-6 ${idx > 0 ? 'md:pl-12' : ''} ${idx < 2 ? 'pb-8 md:pb-0' : 'pt-8 md:pt-0'}`}>
                                 <div className={`w-14 h-14 bg-${stat.color}-500/10 rounded-2xl flex items-center justify-center text-${stat.color}-600 shrink-0`}>
                                     <stat.icon size={28} />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em]">{stat.label}</p>
+                                    <p className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase">{stat.label}</p>
                                     <h4 className={`text-2xl md:text-3xl font-black text-slate-900 tabular-nums tracking-tighter`}>
                                         {stat.value}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <div className={`w-1 h-1 rounded-full bg-${stat.color}-500`} />
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{stat.suffix}</span>
+                                        <span className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">{stat.suffix}</span>
                                     </div>
                                 </div>
                             </div>
@@ -281,9 +300,9 @@ export default function Overview() {
                 <div className="space-y-8">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
                         <div className="flex items-center gap-3">
-                            <span className="text-xl font-black text-slate-900 tracking-tight uppercase">Performa Per Event</span>
+                            <span className="text-xl font-black text-slate-900 tracking-tight">Performance Per Event</span>
                             <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Detail Penjualan</span>
+                            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Sales Detail</span>
                         </div>
                         <div className="relative group w-full md:w-80">
                             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-300 group-focus-within:text-blue-600 transition-colors">
@@ -291,10 +310,10 @@ export default function Overview() {
                             </div>
                             <input
                                 type="text"
-                                placeholder="Cari laporan event..."
+                                placeholder="Search event reports..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-white/60 backdrop-blur-xl border border-white focus:border-blue-500 rounded-[1.25rem] py-3.5 pl-14 pr-4 text-[11px] font-black uppercase outline-none text-slate-700 placeholder:text-slate-300 transition-all shadow-xl shadow-slate-200/40"
+                                className="w-full bg-white/60 backdrop-blur-xl border border-white focus:border-blue-500 rounded-[1.25rem] py-3.5 pl-14 pr-4 text-[11px] font-black outline-none text-slate-700 placeholder:text-slate-300 transition-all shadow-xl shadow-slate-200/40 uppercase tracking-widest"
                             />
                         </div>
                     </div>
@@ -307,10 +326,10 @@ export default function Overview() {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-slate-50">
-                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Nama Event & Metadata</th>
-                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Tickets Sold</th>
-                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Market Status</th>
-                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Revenue Share</th>
+                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase">Event Name & Metadata</th>
+                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase text-center">Tickets Sold</th>
+                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase text-center">Market Status</th>
+                                        <th className="px-8 py-6 text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase text-right">Revenue Share</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -332,9 +351,9 @@ export default function Overview() {
                                                         )}
                                                     </div>
                                                     <div className="space-y-0.5">
-                                                        <p className="text-sm font-black text-slate-900 tracking-tight uppercase group-hover:text-blue-600 transition-colors">{item.title}</p>
+                                                        <p className="text-sm font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors uppercase">{item.title}</p>
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded">ID: {item.id.substring(0, 8)}</span>
+                                                            <span className="text-[9px] font-bold text-slate-400 tracking-widest bg-slate-50 px-2 py-0.5 rounded uppercase">ID: {item.id.substring(0, 8)}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -342,21 +361,21 @@ export default function Overview() {
                                             <td className="px-8 py-5 text-center">
                                                 <div className="inline-flex flex-col items-center">
                                                     <span className="text-lg font-black text-slate-900 tabular-nums tracking-tighter">{item.ticketsSold.toLocaleString()}</span>
-                                                    <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">Paid Tickets</span>
+                                                    <span className="text-[8px] font-black text-slate-300 tracking-tighter uppercase">Paid Tickets</span>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-5 text-center">
-                                                <div className={`mx-auto inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-colors ${item.status === 'Aktif'
+                                                <div className={`mx-auto inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest border transition-colors uppercase ${item.status === 'Aktif'
                                                     ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
                                                     : 'bg-slate-50 text-slate-400 border-slate-100'
                                                     }`}>
-                                                    {item.status}
+                                                    {item.status === 'Aktif' ? 'Active' : 'Ended'}
                                                 </div>
                                             </td>
                                             <td className="px-8 py-5 text-right">
                                                 <div className="flex flex-col items-end">
                                                     <p className="text-sm font-black text-slate-900 tracking-tighter uppercase">{rupiah(item.totalRevenue)}</p>
-                                                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Available for payout</span>
+                                                    <span className="text-[9px] font-bold text-emerald-500 tracking-widest uppercase">Available for payout</span>
                                                 </div>
                                             </td>
                                         </tr>
@@ -368,8 +387,8 @@ export default function Overview() {
                                                         <Search size={32} strokeWidth={1} />
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Records Missing</h3>
-                                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Adjust search filters to view specific data.</p>
+                                                        <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Records Missing</h3>
+                                                        <p className="text-slate-400 text-[10px] font-bold tracking-widest uppercase">Adjust search filters to view specific data.</p>
                                                     </div>
                                                 </div>
                                             </td>

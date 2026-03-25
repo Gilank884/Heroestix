@@ -44,6 +44,7 @@ export default function EventSection({ searchTerm = "" }) {
                 .from("events")
                 .select(`
                     *,
+                    creators(brand_name, image_url),
                     ticket_types (
                         price,
                         quota,
@@ -92,7 +93,8 @@ export default function EventSection({ searchTerm = "" }) {
                     price: minPrice,
                     status: ev.status,
                     category: ev.category,
-                    isEnded: isEnded
+                    isEnded: isEnded,
+                    creator: ev.creators
                 };
             });
 
@@ -183,7 +185,7 @@ export default function EventSection({ searchTerm = "" }) {
     return (
         <div className="flex flex-wrap justify-center gap-6">
             {filteredEvents.map((ev) => (
-                <div key={ev.id} className="w-full max-w-[240px]">
+                <div key={ev.id} className="w-full sm:w-[320px] px-2 mb-6">
                     <EventCard {...ev} />
                 </div>
             ))}

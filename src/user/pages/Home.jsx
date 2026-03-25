@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Navbar from "../../components/Layout/Navbar";
 import EventSection from "../../components/home/EventSection";
-import HeroSection from "../../components/home/HeroSection";
+import BannerSlider from "../../components/home/BannerSlider";
 import BottomBar from "../../components/Layout/Footer";
 
 import { Ticket } from "lucide-react";
@@ -22,7 +22,7 @@ export default function Home() {
         <div className="min-h-screen bg-white dark:bg-[#0f172a] relative">
             <Navbar searchTerm={searchTerm} onSearchChange={(e) => setSearchTerm(e.target.value)} />
 
-            <div className="relative" onMouseMove={handleMouseMove}>
+            <div className="relative min-h-screen" onMouseMove={handleMouseMove}>
                 {/* UNIFIED GRID BACKGROUND - Restricted to Hero + Event + Features sections */}
                 <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
                     {/* BASE LIGHT GRID (Gray) */}
@@ -49,25 +49,29 @@ export default function Home() {
                     ></div>
                 </div>
 
-                <div className="relative z-10">
-                    {/* HERO SECTION - Hide when searching */}
-                    {!searchTerm && <HeroSection />}
+                <div className="relative">
+                    {/* Banner Slider - Higher z-index to overlay content and prevent clipping */}
+                    <div className="relative z-30">
+                        {!searchTerm && <BannerSlider />}
+                    </div>
 
-                    <main className={`w-full bg-transparent relative z-20 ${searchTerm ? 'pt-36 pb-32' : 'pb-32'}`}>
-                        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-12 pt-4 flex flex-col items-center">
-                            <div className="w-full flex items-center gap-2 mb-6">
-                                <Ticket className="text-black dark:text-white" size={20} />
-                                <h2 className="text-lg font-medium text-black dark:text-white tracking-tight">
-                                    Pilih Tiket Anda
-                                </h2>
+                    <main className={`w-full bg-transparent relative z-10 ${searchTerm ? 'pt-36 pb-32' : 'pb-32'}`}>
+                        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-12 pt-10 flex flex-col items-center">
+                            <div className="w-full flex items-center justify-between mb-8 border-b border-slate-100 dark:border-slate-800 pb-4">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                                        <Ticket className="text-blue-600 dark:text-blue-400" size={20} />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                                        Pilih Tiket Anda
+                                    </h2>
+                                </div>
                             </div>
 
                             {/* EVENT SECTION: Handles its own data fetching and state */}
                             <EventSection searchTerm={searchTerm} />
                         </div>
                     </main>
-
-                    {/* FEATURES SECTION - Removed from here, moved to About Us */}
                 </div>
             </div>
 

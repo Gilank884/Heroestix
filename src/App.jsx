@@ -78,7 +78,14 @@ import DevEventCashDetail from "./dev/pages/EventCashDetail";
 import DevProfitBreakdown from "./dev/pages/ProfitBreakdown";
 import DevTransactions from "./dev/pages/Transactions";
 import CreatorCustomOrder from "./creator/pages/CustomOrder";
+import CreatorCustomOrderDetail from "./creator/pages/CustomOrderDetail";
 import DevCustomOrders from "./dev/pages/CustomOrders";
+import DevCustomOrderDetail from "./dev/pages/CustomOrderDetail";
+import DevTax from "./dev/pages/Tax";
+import DevTaxDetail from "./dev/pages/TaxDetail";
+import DevBanners from "./dev/pages/Banners";
+import DevAddBanner from "./dev/pages/AddBanner";
+import DevBannerDetail from "./dev/pages/BannerDetail";
 
 
 
@@ -367,6 +374,7 @@ export default function App() {
                 <Route path="/withdrawals/:id" element={<CreatorWithdrawalDetail />} />
                 <Route path="/withdrawals/request" element={<EventRequestWithdrawal />} />
                 <Route path="/custom-order" element={<CreatorCustomOrder />} />
+                <Route path="/custom-order/:orderId" element={<CreatorCustomOrderDetail />} />
                 <Route path="/additional-form" element={<AdditionalForm />} />
               </Routes>
             </EventManagementLayout>
@@ -435,6 +443,12 @@ export default function App() {
                   <Route path="/transactions" element={<DevTransactions />} />
                   <Route path="/documents" element={<DevDocuments />} />
                   <Route path="/custom-orders" element={<DevCustomOrders />} />
+                  <Route path="/custom-orders/:orderId" element={<DevCustomOrderDetail />} />
+                  <Route path="/tax" element={<DevTax />} />
+                  <Route path="/tax/:eventId" element={<DevTaxDetail />} />
+                  <Route path="/banners" element={<DevBanners />} />
+                  <Route path="/banners/add" element={<DevAddBanner />} />
+                  <Route path="/banners/:id" element={<DevBannerDetail />} />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </DevLayout>

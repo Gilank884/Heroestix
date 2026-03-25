@@ -41,11 +41,11 @@ export default function EventWithdrawals() {
     const [totalWithdrawn, setTotalWithdrawn] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const [creatorInfo, setCreatorInfo] = useState(null);
-    
+
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-    
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -212,14 +212,14 @@ export default function EventWithdrawals() {
     return (
         <div className="relative min-h-screen pb-20">
 
-            <motion.div 
+            <motion.div
                 className="relative z-10 space-y-10"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
                 {/* Unified Header & Financials Card */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 space-y-10"
                 >
@@ -243,7 +243,7 @@ export default function EventWithdrawals() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <motion.button 
+                            <motion.button
                                 onClick={fetchEventFinancials}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -251,16 +251,15 @@ export default function EventWithdrawals() {
                             >
                                 <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-700" />
                             </motion.button>
-                            <motion.button 
+                            <motion.button
                                 onClick={handleRequestWithdrawal}
                                 disabled={balance < 100000}
                                 whileHover={balance >= 100000 ? { scale: 1.05 } : {}}
                                 whileTap={balance >= 100000 ? { scale: 0.95 } : {}}
-                                className={`flex items-center gap-2 px-8 py-4 px-6 rounded-[1.25rem] font-black text-[10px] uppercase tracking-widest shadow-xl transition-all group shrink-0 ${
-                                    balance >= 100000 
-                                    ? 'bg-slate-900 text-white shadow-slate-200 hover:bg-indigo-600' 
-                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
-                                }`}
+                                className={`flex items-center gap-2 px-8 py-4 px-6 rounded-[1.25rem] font-black text-[10px] uppercase tracking-widest shadow-xl transition-all group shrink-0 ${balance >= 100000
+                                        ? 'bg-slate-900 text-white shadow-slate-200 hover:bg-indigo-600'
+                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                                    }`}
                             >
                                 <PlusCircle size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                 Tarik Saldo Sekarang
@@ -290,7 +289,7 @@ export default function EventWithdrawals() {
                 </motion.div>
 
                 {/* Controls Area (Search & Rows) */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="bg-white/60 backdrop-blur-xl p-4 rounded-[1.75rem] border border-white shadow-xl shadow-slate-200/30 flex flex-col md:flex-row gap-4"
                 >
@@ -304,10 +303,10 @@ export default function EventWithdrawals() {
                             className="w-full pl-14 pr-6 py-4 bg-slate-50/50 border border-slate-100/50 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:bg-white focus:border-indigo-600 transition-all placeholder:text-slate-300 text-sm"
                         />
                     </div>
-                    
+
                     <div className="flex items-center gap-3 px-6 border-l border-slate-100/50">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Show</span>
-                        <select 
+                        <select
                             value={rowsPerPage}
                             onChange={(e) => setRowsPerPage(Number(e.target.value))}
                             className="bg-transparent font-black text-slate-900 text-sm outline-none cursor-pointer hover:text-indigo-600 transition-colors"
@@ -320,7 +319,7 @@ export default function EventWithdrawals() {
                 </motion.div>
 
                 {/* Transaction History Overhaul */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 overflow-hidden"
                 >
@@ -357,7 +356,7 @@ export default function EventWithdrawals() {
                                         </motion.tr>
                                     ) : (
                                         paginatedRequests.map((req, idx) => (
-                                            <motion.tr 
+                                            <motion.tr
                                                 key={req.id}
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
@@ -412,16 +411,16 @@ export default function EventWithdrawals() {
                                 Page {currentPage} of {totalPages || 1} ({filteredRequests.length} Transactions)
                             </span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
-                            <button 
+                            <button
                                 onClick={(e) => { e.stopPropagation(); setCurrentPage(prev => Math.max(prev - 1, 1)); }}
                                 disabled={currentPage === 1}
                                 className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 hover:border-indigo-600 disabled:opacity-30 transition-all active:scale-95"
                             >
                                 Previous
                             </button>
-                            <button 
+                            <button
                                 onClick={(e) => { e.stopPropagation(); setCurrentPage(prev => Math.min(prev + 1, totalPages)); }}
                                 disabled={currentPage === totalPages || totalPages === 0}
                                 className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 hover:border-indigo-600 disabled:opacity-30 transition-all active:scale-95"

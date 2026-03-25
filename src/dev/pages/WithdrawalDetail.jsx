@@ -175,7 +175,7 @@ export default function WithdrawalDetail() {
                     }
                 });
 
-                if (txError) throw new Error("Gagal mencatat transaksi pengeluaran: " + txError.message);
+                if (txError) throw new Error("Failed to record payout transaction: " + txError.message);
             }
 
             const { error } = await supabase
@@ -223,19 +223,47 @@ export default function WithdrawalDetail() {
 
     return (
         <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 pt-6">
-            {/* Header */}
-            <div className="flex items-center gap-4">
-                <button
-                    onClick={() => navigate('/withdrawals')}
-                    className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all shadow-sm group"
-                >
-                    <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                </button>
-                <div>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight">Withdrawal Detail</h1>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">ID: #{request.id.substring(0, 8)}</p>
+            {/* Header section Area */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-6"
+            >
+                <div className="space-y-4">
+                    <button 
+                        onClick={() => navigate('/withdrawals')}
+                        className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-blue-600 uppercase tracking-widest transition-colors mb-2"
+                    >
+                        <ArrowLeft size={14} /> Back to Withdrawals
+                    </button>
+                    <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-rose-200">
+                             Funding Operations
+                        </span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Payout Verification
+                        </span>
+                    </div>
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Withdrawal <span className="text-blue-600">Detail</span> <Wallet className="text-blue-600" size={32} />
+                        </h1>
+                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                            Review and authorize merchant payout request for <span className="text-slate-900 font-bold uppercase">{request.creators?.brand_name}</span>.
+                        </p>
+                    </div>
                 </div>
-            </div>
+
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                    <div className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-mono tracking-wider shadow-lg">
+                        ID: #{request.id.substring(0, 8)}
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mr-1">
+                        Security Audited
+                    </span>
+                </div>
+            </motion.div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Left Column: Confirmation Card */}
@@ -253,7 +281,7 @@ export default function WithdrawalDetail() {
                                     Status: {request.status === 'approved' ? 'Paid / Done' : request.status === 'rejected' ? 'Rejected' : 'Pending Review'}
                                 </span>
                             </div>
-                            <span className="text-[10px] font-bold text-slate-400 capitalize">Requested on {new Date(request.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                            <span className="text-[10px] font-bold text-slate-400">Requested on {new Date(request.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         </div>
 
                         <div className="p-5 lg:p-8 space-y-6">
@@ -262,7 +290,7 @@ export default function WithdrawalDetail() {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-                                        <h2 className="text-lg font-black text-slate-900 tracking-tight">Konfirmasi Transaksi</h2>
+                                        <h2 className="text-lg font-black text-slate-900 tracking-tight">Transaction Confirmation</h2>
                                     </div>
                                     <button 
                                         onClick={handleExport}
@@ -280,19 +308,19 @@ export default function WithdrawalDetail() {
                                         <div className="relative z-10 space-y-4">
                                             <div className="flex items-center gap-2 opacity-60">
                                                 <Building2 size={12} />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">Pengirim (Platform)</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Sender (Platform)</span>
                                             </div>
                                             <div className="space-y-3">
                                                 <div>
-                                                    <p className="text-[9px] font-bold text-blue-200 uppercase tracking-widest mb-1 leading-none">Nama Bank</p>
+                                                    <p className="text-[9px] font-bold text-blue-200 uppercase tracking-widest mb-1 leading-none">Bank Name</p>
                                                     <p className="font-bold text-white text-sm">Bank BNI</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[9px] font-bold text-blue-200 uppercase tracking-widest mb-1 leading-none">No. Rekening</p>
+                                                    <p className="text-[9px] font-bold text-blue-200 uppercase tracking-widest mb-1 leading-none">Account Number</p>
                                                     <p className="font-mono font-black text-white text-base tracking-wider">1905373456</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[8px] font-bold text-blue-200 uppercase tracking-widest leading-none mb-1">Atas Nama</p>
+                                                    <p className="text-[8px] font-bold text-blue-200 uppercase tracking-widest leading-none mb-1">Account Holder</p>
                                                     <p className="font-bold text-white text-xs truncate">PT Peristiwa Kreatif Nusantara</p>
                                                 </div>
                                             </div>
@@ -311,19 +339,19 @@ export default function WithdrawalDetail() {
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-2 text-blue-600/60">
                                                 <User size={12} />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">Penerima (Creator)</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Receiver (Creator)</span>
                                             </div>
                                             <div className="space-y-3">
                                                 <div>
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Nama Bank</p>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Bank Name</p>
                                                     <p className="font-bold text-slate-900 text-sm">{request.creators?.bank_name}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">No. Rekening</p>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 leading-none">Account Number</p>
                                                     <p className="font-mono font-black text-slate-900 text-base tracking-wider">{request.creators?.bank_account}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Atas Nama</p>
+                                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Account Holder</p>
                                                     <p className="font-bold text-slate-900 text-xs truncate">{request.creators?.account_bank_name || 'N/A'}</p>
                                                 </div>
                                             </div>
@@ -333,7 +361,7 @@ export default function WithdrawalDetail() {
 
                                 <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-2">
                                     <Info size={14} className="text-blue-600" />
-                                    <p className="text-[11px] font-bold text-blue-800 italic">"Apakah benar Konfirmasi Transaksi ini Sudah Di transfer?"</p>
+                                    <p className="text-[11px] font-bold text-blue-800 italic">"Has this transaction been successfully transferred?"</p>
                                 </div>
                             </div>
 
@@ -480,9 +508,9 @@ export default function WithdrawalDetail() {
                                         : 'bg-red-50 border-red-100 text-red-700'
                                     }`}>
                                     {request.status === 'approved' ? (
-                                        <><CheckCircle2 size={24} /> Withdrawal ini telah berhasil ditransfer pada {new Date(request.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}. Jumlah: {rupiah(request.amount)}</>
+                                        <><CheckCircle2 size={24} /> This withdrawal request was successfully transferred on {new Date(request.updated_at).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}. Amount: {rupiah(request.amount)}</>
                                     ) : (
-                                        <><XCircle size={24} /> Withdrawal ini telah ditolak.</>
+                                        <><XCircle size={24} /> This withdrawal request has been rejected.</>
                                     )}
                                 </div>
                             )}

@@ -27,6 +27,7 @@ export default function Cash() {
     const [searchQuery, setSearchQuery] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [displayLimit, setDisplayLimit] = useState(20);
     const [isExporting, setIsExporting] = useState(false);
     const [debugData, setDebugData] = useState(null);
 
@@ -264,7 +265,7 @@ export default function Cash() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                 <div className="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-widest animate-pulse">Calculating Platform Sales...</p>
+                <p className="text-xs font-medium text-slate-400 tracking-widest animate-pulse uppercase">Calculating Platform Sales...</p>
             </div>
         );
     }
@@ -276,56 +277,68 @@ export default function Cash() {
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-            {/* Header */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-4">
-                            <img src="/Logo/Logo.png" alt="Heroestix" className="h-8 w-auto" />
-                            <div className="w-1 h-6 bg-slate-200" />
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-blue-600" />
-                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Live Revenue Stream</span>
-                            </div>
-                        </div>
-                        <h1 className="text-4xl font-medium tracking-tight text-slate-900 italic">Platform <span className="text-blue-600 not-italic">Gross Sales</span></h1>
-                        <p className="text-slate-500 font-medium text-sm mt-2">Laporan penjualan kotor seluruh event tanpa potongan.</p>
+            {/* Header section */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10"
+            >
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                             Live Revenue Stream
+                        </span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+                            Platform Gross Sales
+                        </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                            <Calendar size={14} className="text-slate-400" />
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="bg-transparent border-none outline-none text-xs font-medium text-slate-600 w-28 cursor-pointer"
-                            />
-                            <span className="text-slate-300 mx-1">—</span>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="bg-transparent border-none outline-none text-xs font-medium text-slate-600 w-28 cursor-pointer"
-                            />
-                        </div>
-                        <button
-                            onClick={fetchData}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all active:scale-95 shadow-sm"
-                        >
-                            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-                            Sync Data
-                        </button>
-                        <button
-                            onClick={exportFinancialReport}
-                            disabled={isExporting}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-lg shadow-blue-600/20 disabled:opacity-50"
-                        >
-                            <TrendingUp size={14} className={isExporting ? 'animate-spin' : ''} />
-                            Export Cash Flow (PDF)
-                        </button>
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Financial <span className="text-blue-600">Matrix</span> <Wallet className="text-blue-600" size={32} />
+                        </h1>
+                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                            Comprehensive reporting of total gross sales across all events, providing full transparency of platform cash flow movements.
+                        </p>
                     </div>
                 </div>
-            </div>
+
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2 bg-white/50 border border-white rounded-2xl px-4 py-2 shadow-sm backdrop-blur-md">
+                        <Calendar size={14} className="text-blue-600" />
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-wider text-slate-600 w-28 cursor-pointer"
+                        />
+                        <span className="text-slate-300 mx-1">—</span>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-wider text-slate-600 w-28 cursor-pointer"
+                        />
+                    </div>
+                    
+                    <button
+                        onClick={fetchData}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm border border-slate-100 hover:bg-slate-50"
+                    >
+                        <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                        Sync Data
+                    </button>
+
+                    <button
+                        onClick={exportFinancialReport}
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-100 border border-blue-500 hover:bg-blue-700 disabled:opacity-50"
+                    >
+                        <TrendingUp size={14} className={isExporting ? 'animate-spin' : ''} />
+                        Export Flow (PDF)
+                    </button>
+                </div>
+            </motion.div>
 
             {/* Main Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -351,13 +364,13 @@ export default function Cash() {
                     <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48 group-hover:bg-white/20 transition-all duration-700" />
                     <div className="relative z-10 space-y-4">
                         <div className="flex items-center justify-between">
-                            <p className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Platform Net Profit (Hasil Akhir)</p>
+                            <p className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Platform Net Profit (Final)</p>
                             <TrendingUp size={16} className="text-blue-200 opacity-50 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <h3 className="text-3xl font-black tracking-tighter tabular-nums">{rupiah(metrics.totalFinalProfit)}</h3>
                         <p className="text-[10px] font-bold text-blue-200/60 uppercase tracking-widest pt-2 border-t border-white/10 group-hover:text-white transition-colors flex justify-between items-center">
                             <span>Click to view breakdown</span>
-                            <span className="bg-white/10 px-2 py-0.5 rounded-lg text-white">Incl. 11% PPN</span>
+                            <span className="bg-white/10 px-2 py-0.5 rounded-lg text-white">Incl. 11% VAT</span>
                         </p>
                     </div>
                 </motion.div>
@@ -373,7 +386,7 @@ export default function Cash() {
                             <Wallet size={24} />
                         </div>
                         <div>
-                            <p className="text-slate-400 text-[9px] font-medium uppercase tracking-widest">Creator Share (Netrevenue)</p>
+                            <p className="text-slate-400 text-[9px] font-medium uppercase tracking-widest">Creator Share (Net Revenue)</p>
                             <h3 className="text-xl font-medium text-slate-900 tabular-nums">{rupiah(metrics.totalNetRevenue)}</h3>
                         </div>
                     </motion.div>
@@ -384,7 +397,7 @@ export default function Cash() {
                             transition={{ delay: 0.3 }}
                             className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm"
                         >
-                            <p className="text-slate-400 text-[8px] font-medium uppercase tracking-widest mb-1">Sold</p>
+                            <p className="text-slate-400 text-[8px] font-bold uppercase tracking-widest mb-1">Sold</p>
                             <h3 className="text-lg font-medium text-slate-900 tabular-nums">{metrics.totalTickets}</h3>
                         </motion.div>
                         <motion.div
@@ -393,7 +406,7 @@ export default function Cash() {
                             transition={{ delay: 0.4 }}
                             className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm"
                         >
-                            <p className="text-slate-400 text-[8px] font-medium uppercase tracking-widest mb-1">Active</p>
+                            <p className="text-slate-400 text-[8px] font-bold uppercase tracking-widest mb-1">Active</p>
                             <h3 className="text-lg font-medium text-slate-900">{metrics.activeEvents}</h3>
                         </motion.div>
                     </div>
@@ -420,23 +433,37 @@ export default function Cash() {
                             className="bg-transparent border-none outline-none text-sm font-medium w-full placeholder:text-slate-400 text-slate-800"
                         />
                     </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-slate-500">Show:</span>
+                        <select
+                            value={displayLimit}
+                            onChange={(e) => setDisplayLimit(Number(e.target.value))}
+                            className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-1 text-xs font-medium text-slate-700 outline-none"
+                        >
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                            <option value={filteredEvents.length}>All</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto no-scrollbar">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/50">
-                                <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest">Event & Creator</th>
-                                <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest">Date</th>
-                                <th className="px-8 py-5 text-[10px] font-medium text-slate-400 uppercase tracking-widest text-right">Gross</th>
-                                <th className="px-8 py-5 text-[10px] font-medium text-amber-600 uppercase tracking-widest text-right">Netrevenue</th>
-                                <th className="px-8 py-5 text-[10px] font-medium text-rose-500 uppercase tracking-widest text-right">Bayarind Fee</th>
-                                <th className="px-8 py-5 text-[10px] font-medium text-indigo-500 uppercase tracking-widest text-right">PPN (11%)</th>
-                                <th className="px-8 py-5 text-[10px] font-medium text-blue-600 uppercase tracking-widest text-right">Hasil Akhir</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 tracking-widest uppercase">Event & Creator</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 tracking-widest uppercase">Date</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 tracking-widest uppercase text-right">Gross</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-amber-600 tracking-widest uppercase text-right">Net Revenue</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-rose-500 tracking-widest uppercase text-right">Fee</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-indigo-500 tracking-widest uppercase text-right">VAT (11%)</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-blue-600 tracking-widest uppercase text-right">Final Result</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {filteredEvents.map((e, idx) => (
+                            {filteredEvents.slice(0, displayLimit).map((e, idx) => (
                                 <motion.tr
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -452,7 +479,7 @@ export default function Cash() {
                                             </div>
                                             <div>
                                                 <p className="font-medium text-slate-900 text-sm tracking-tight line-clamp-1">{e.title}</p>
-                                                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{e.creatorBrand}</p>
+                                                <p className="text-[10px] font-medium text-slate-400 tracking-wider uppercase">{e.creatorBrand}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -464,7 +491,7 @@ export default function Cash() {
                                     </td>
                                     <td className="px-8 py-5 text-right font-medium text-amber-600 tabular-nums text-xs">
                                         {rupiah(e.netRevenue)}
-                                        <span className="block text-[8px] text-slate-400 font-bold mt-0.5">{e.ticketsSold} SOLD</span>
+                                        <span className="block text-[8px] text-slate-400 font-bold mt-0.5 uppercase">{e.ticketsSold} SOLD</span>
                                     </td>
                                     <td className="px-8 py-5 text-right font-medium text-rose-500 tabular-nums text-xs">
                                         {rupiah(e.paymentFee)}

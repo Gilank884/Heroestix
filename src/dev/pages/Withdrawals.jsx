@@ -13,7 +13,8 @@ import {
     MoreVertical,
     Building2,
     AlertCircle,
-    Download
+    Download,
+    RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -175,30 +176,50 @@ export default function Withdrawals() {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Header */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-4">
-                            <img src="/Logo/Logo.png" alt="Heroestix" className="h-8 w-auto" />
-                            <div className="w-1 h-6 bg-slate-200" />
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-blue-600" />
-                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Funding Operations</span>
-                            </div>
-                        </div>
-                        <h1 className="text-4xl font-medium tracking-tight text-slate-900 italic">Merchant <span className="text-blue-600 not-italic">Withdrawals</span></h1>
-                        <p className="text-slate-500 font-medium text-sm mt-2">Review and process creator payout requests.</p>
+            {/* Header section */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10"
+            >
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-rose-200">
+                             Funding Operations
+                        </span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Merchant Withdrawals
+                        </span>
                     </div>
-                    <button
-                        onClick={fetchWithdrawals}
-                        className="px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all active:scale-95 shadow-sm flex items-center gap-2"
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Payout <span className="text-blue-600">Gateway</span> <Wallet className="text-blue-600" size={32} />
+                        </h1>
+                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                            Review and process creator payout requests, ensuring liquidity and transaction integrity across the ecosystem.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={fetchWithdrawals} 
+                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm border border-slate-100 hover:bg-slate-50"
                     >
-                        <Clock size={16} />
-                        Refresh Sync
+                        <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                        Sync Registry
+                    </button>
+                    
+                    <button
+                        onClick={() => navigate('/withdrawals/history')}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-100 border border-blue-500 hover:bg-blue-700"
+                    >
+                        <ArrowUpRight size={14} />
+                        Payout History
                     </button>
                 </div>
-            </div>
+            </motion.div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -291,10 +312,10 @@ export default function Withdrawals() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="text-xs font-bold text-slate-500">
-                                            {new Date(req.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            {new Date(req.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </span>
                                         <p className="text-[10px] text-slate-400">
-                                            {new Date(req.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(req.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </td>
                                     <td className="px-6 py-4 text-right">

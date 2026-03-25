@@ -72,24 +72,46 @@ export default function EventSalesReport() {
     const fetchEventSalesData = async () => {
         setLoading(true);
         try {
-            const { data: creatorData } = await supabase
-                .from('creators')
-                .select('verified, brand_name, bank_name, bank_account, bank_account_name')
-                .eq('id', user.id)
-                .single();
-
-            setCreatorInfo(creatorData);
-
-            const verified = creatorData?.verified ?? false;
-            setIsVerified(verified);
-            if (!verified) { setLoading(false); return; }
-
-            const { data: event } = await supabase
+            // 1. Fetch Event Detail first to know the owner (creator_id)
+            const { data: event, error: eventError } = await supabase
                 .from('events')
-                .select('title')
+                .select('*, creators (*)')
                 .eq('id', eventId)
                 .single();
+
+            if (eventError) throw eventError;
             setEventData(event);
+
+            // 2. Check Authorization (Is Owner or Staff?)
+            const isOwner = event.creator_id === user.id;
+            let isStaff = false;
+
+            if (!isOwner) {
+                const { data: staffRecord } = await supabase
+                    .from('event_staffs')
+                    .select('id')
+                    .eq('event_id', eventId)
+                    .eq('staff_id', user.id)
+                    .maybeSingle();
+                isStaff = !!staffRecord;
+            }
+
+            if (!isOwner && !isStaff) {
+                throw new Error("Unauthorized access to this event report.");
+            }
+
+            // 3. Check Verification (Using the EVENT OWNER'S verified status)
+            const eventCreator = event.creators;
+            setCreatorInfo(eventCreator);
+
+            const verified = eventCreator?.verified ?? false;
+            setIsVerified(verified);
+
+            // If not verified, only the owner sees the "Verification Pending" screen.
+            // Staff don't need to see it, or maybe they should? 
+            // Usually, if the creator isn't verified, the event can't have "Paid" tickets anyway, 
+            // but for UI consistency, we'll keep the block.
+            if (!verified) { setLoading(false); return; }
 
             const { data: eventTax } = await supabase
                 .from('event_taxes')
@@ -245,8 +267,8 @@ export default function EventSalesReport() {
                     </div>
                 </div>
                 <div className="space-y-1 text-center">
-                    <span className="text-sm font-black text-slate-800 uppercase tracking-[0.3em] block">GENERATING REPORT</span>
-                    <span className="text-[10px] text-slate-400 font-bold">Harap tunggu, kami sedang menyusun laporan penjualan Anda...</span>
+                    <span className="text-sm font-black text-slate-800 tracking-[0.3em] block uppercase">GENERATING REPORT</span>
+                    <span className="text-[10px] text-slate-400 font-bold">Please wait, we are compiling your sales report...</span>
                 </div>
             </div>
         );
@@ -257,14 +279,14 @@ export default function EventSalesReport() {
     return (
         <div className="relative min-h-screen pb-20">
 
-            <motion.div 
+            <motion.div
                 className="relative z-10 space-y-10"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
                 {/* Unified Header & Analytics Card */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 space-y-10"
                 >
@@ -275,43 +297,43 @@ export default function EventSalesReport() {
                                     Sales Hub
                                 </span>
                                 <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Laporan Penjualan</span>
+                                <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Sales Report</span>
                             </div>
                             <div>
                                 <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                                     Sales Analytics <BarChart3 className="text-blue-600" size={32} />
                                 </h1>
                                 <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed text-balance">
-                                    Laporan mendalam mengenai performa penjualan tiket untuk event <span className="text-slate-900 font-bold italic">"{eventData?.title}"</span>.
+                                    In-depth reporting on ticket sales performance for the event <span className="text-slate-900 font-bold italic">"{eventData?.title}"</span>.
                                 </p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <motion.button 
+                            <motion.button
                                 onClick={exportFinancialReport}
                                 disabled={isExporting}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-6 py-4 bg-emerald-50 border border-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-sm hover:bg-emerald-100 transition-all group"
+                                className="flex items-center gap-2 px-6 py-4 bg-emerald-50 border border-emerald-100 text-emerald-700 font-black text-[10px] tracking-widest rounded-[1.25rem] shadow-sm hover:bg-emerald-100 transition-all group uppercase"
                             >
                                 <ArrowUpRight size={14} className={isExporting ? 'animate-spin' : ''} />
                                 {isExporting ? 'Processing...' : 'Export Cash Flow'}
                             </motion.button>
-                            <motion.button 
+                            <motion.button
                                 onClick={() => window.print()}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-6 py-4 bg-white border border-slate-200 text-slate-900 font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-sm hover:border-blue-600 hover:text-blue-600 transition-all group"
+                                className="flex items-center gap-2 px-6 py-4 bg-white border border-slate-200 text-slate-900 font-black text-[10px] tracking-widest rounded-[1.25rem] shadow-sm hover:border-blue-600 hover:text-blue-600 transition-all group uppercase"
                             >
                                 <FileText size={14} className="group-hover:text-blue-500 transition-colors" />
                                 PDF Report
                             </motion.button>
-                            <motion.button 
+                            <motion.button
                                 onClick={exportToExcel}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-6 py-4 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all group shrink-0"
+                                className="flex items-center gap-2 px-6 py-4 bg-slate-900 text-white font-black text-[10px] tracking-widest rounded-[1.25rem] shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all group shrink-0 uppercase"
                             >
                                 <Download size={14} className="group-hover:translate-y-0.5 transition-transform" />
                                 Export CSV
@@ -322,9 +344,9 @@ export default function EventSalesReport() {
                     {/* Integrated Summary Metrics */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-10 border-t border-slate-100">
                         {[
-                            { label: 'Tiket Terjual', value: filteredStats.ticketsSold, icon: Ticket, color: 'blue', desc: 'Total Inventory' },
-                            { label: 'Estimasi Pendapatan', value: rupiah(filteredStats.totalRevenue), icon: TrendingUp, color: 'emerald', desc: 'Sudah Terhitung Pajak' },
-                            { label: 'Status Laporan', value: 'Terverifikasi', icon: ClipboardList, color: 'indigo', desc: 'Update Real-time' }
+                            { label: 'Tickets Sold', value: filteredStats.ticketsSold, icon: Ticket, color: 'blue', desc: 'Total Inventory' },
+                            { label: 'Estimated Revenue', value: rupiah(filteredStats.totalRevenue), icon: TrendingUp, color: 'emerald', desc: 'After Tax Deduction' },
+                            { label: 'Report Status', value: 'Verified', icon: ClipboardList, color: 'indigo', desc: 'Real-time Update' }
                         ].map((stat, idx) => (
                             <div key={idx} className="flex items-start gap-5">
                                 <div className={`w-12 h-12 bg-${stat.color}-500/10 rounded-2xl flex items-center justify-center text-${stat.color}-600 shrink-0`}>
@@ -332,8 +354,8 @@ export default function EventSalesReport() {
                                 </div>
                                 <div>
                                     <h4 className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter">{stat.value}</h4>
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">{stat.label}</p>
-                                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{stat.desc}</p>
+                                    <p className="text-[9px] font-black text-slate-400 tracking-widest mt-1 uppercase">{stat.label}</p>
+                                    <p className="text-[9px] font-bold text-slate-300 tracking-widest uppercase">{stat.desc}</p>
                                 </div>
                             </div>
                         ))}
@@ -341,7 +363,7 @@ export default function EventSalesReport() {
                 </motion.div>
 
                 {/* Filters Area (Glassmorphism) */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="bg-white/60 backdrop-blur-xl p-5 rounded-[2.25rem] border border-white shadow-xl shadow-slate-200/30 space-y-5"
                 >
@@ -351,7 +373,7 @@ export default function EventSalesReport() {
                             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
                                 type="text"
-                                placeholder="Cari nama, email, atau ID pesanan..."
+                                placeholder="Search name, email, or order ID..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-14 pr-6 py-4 bg-slate-50/50 border border-slate-100/50 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:bg-white focus:border-blue-600 transition-all placeholder:text-slate-300 text-sm"
@@ -375,8 +397,8 @@ export default function EventSalesReport() {
                             </div>
 
                             <div className="flex items-center gap-3 px-6 bg-white/50 border border-slate-100 rounded-2xl py-3 shadow-sm h-full grow md:grow-0">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Grid</span>
-                                <select 
+                                <span className="text-[10px] font-black text-slate-400 tracking-widest whitespace-nowrap uppercase">Grid</span>
+                                <select
                                     value={pageSize}
                                     onChange={(e) => setPageSize(Number(e.target.value))}
                                     className="bg-transparent font-black text-slate-900 text-sm outline-none cursor-pointer hover:text-blue-600 transition-colors"
@@ -391,7 +413,7 @@ export default function EventSalesReport() {
                 </motion.div>
 
                 {/* Sales Table Overhaul */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 overflow-hidden"
                 >
@@ -399,16 +421,16 @@ export default function EventSalesReport() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50/50 border-b border-slate-100">
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pembeli</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Email & Phone</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender & B-Day</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 tracking-widest uppercase">Customer</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 tracking-widest uppercase">Email & Phone</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 tracking-widest uppercase">Gender & B-Day</th>
                                     {customFieldKeys.map(key => (
-                                        <th key={key} className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">{key}</th>
+                                        <th key={key} className="px-8 py-5 text-[10px] font-black text-slate-400 tracking-widest uppercase">{key}</th>
                                     ))}
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                        <div className="flex items-center gap-2">Waktu Order <ArrowUpDown size={12} /></div>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 tracking-widest uppercase">
+                                        <div className="flex items-center gap-2">Order Time <ArrowUpDown size={12} /></div>
                                     </th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Potensi Pendapatan</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 tracking-widest text-right uppercase">Potential Revenue</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -418,7 +440,7 @@ export default function EventSalesReport() {
                                             <td colSpan="100%" className="px-8 py-24 text-center text-slate-400 italic font-medium">
                                                 <div className="flex flex-col items-center gap-4 opacity-40">
                                                     <Search size={40} />
-                                                    <p className="text-xs uppercase tracking-[0.2em] font-black">Laporan tidak ditemukan</p>
+                                                    <p className="text-xs tracking-[0.2em] font-black uppercase">Reports not found</p>
                                                 </div>
                                             </td>
                                         </motion.tr>
@@ -426,9 +448,9 @@ export default function EventSalesReport() {
                                         filteredHistory.slice(0, pageSize).map((item, idx) => {
                                             let customData = {};
                                             try { customData = typeof item.custom_responses === 'string' ? JSON.parse(item.custom_responses) : (item.custom_responses || {}); } catch (e) { }
-                                            
+
                                             return (
-                                                <motion.tr 
+                                                <motion.tr
                                                     key={item.id}
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
@@ -446,7 +468,7 @@ export default function EventSalesReport() {
                                                                     {item.full_name || 'N/A'}
                                                                     <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                                                                 </p>
-                                                                <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest">{item.qr_code}</p>
+                                                                <p className="text-[9px] font-black text-blue-500 tracking-widest uppercase">{item.qr_code}</p>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -474,13 +496,13 @@ export default function EventSalesReport() {
                                                     <td className="px-8 py-6">
                                                         <div className="flex flex-col">
                                                             <span className="text-xs font-black text-slate-700 tracking-tight">
-                                                                {item.orders?.created_at ? new Date(item.orders.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                                                                {item.orders?.created_at ? new Date(item.orders.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                                                             </span>
                                                             <span className="text-[9px] font-bold text-slate-400 uppercase">Paid Order</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-6 text-right">
-                                                        <p 
+                                                        <p
                                                             className="text-base font-black text-blue-600 tabular-nums group-hover:scale-110 transition-transform"
                                                             style={shadowTextStyle}
                                                         >
@@ -501,13 +523,13 @@ export default function EventSalesReport() {
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-200 animate-pulse" />
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calculated Real-time</span>
+                                <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Calculated Real-time</span>
                             </div>
                             <div className="text-[10px] font-black text-slate-300">|</div>
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Total Result: {filteredHistory.length} Transactions</span>
+                            <span className="text-[10px] font-black text-slate-500 tracking-[0.2em] uppercase">Total Result: {filteredHistory.length} Transactions</span>
                         </div>
-                        <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                             HEROESTIX <Activity size={10} /> SALES REPORT ENGINE
+                        <div className="text-[10px] font-black text-slate-300 tracking-widest flex items-center gap-2 uppercase">
+                            HEROESTIX <Activity size={10} /> SALES REPORT ENGINE
                         </div>
                     </div>
                 </motion.div>
@@ -515,15 +537,15 @@ export default function EventSalesReport() {
 
             {/* Hidden Sales Report Template */}
             <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-                <FormalReport 
-                    type="sales_report_creator" 
-                    data={history} 
-                    metrics={{ 
+                <FormalReport
+                    type="sales_report_creator"
+                    data={history}
+                    metrics={{
                         totalGross: stats.totalRevenue, // Adjusting mapping based on component props
                         totalNetRevenue: stats.totalRevenue,
                         totalTickets: stats.ticketsSold
-                    }} 
-                    eventData={eventData} 
+                    }}
+                    eventData={eventData}
                 />
             </div>
         </div>

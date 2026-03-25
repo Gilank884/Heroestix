@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import useAuthStore from '../../auth/useAuthStore';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
     ClipboardList, 
     Plus, 
@@ -14,7 +14,9 @@ import {
     Users,
     ChevronRight,
     Search,
-    ArrowLeft
+    ArrowLeft,
+    X,
+    FileText
 } from 'lucide-react';
 
 const CustomOrder = () => {
@@ -32,12 +34,12 @@ const CustomOrder = () => {
     const [description, setDescription] = useState('');
 
     const requestItems = [
-        { id: 'Gelang tiket', label: 'Gelang Tiket', icon: Package },
+        { id: 'Ticket wristbands', label: 'Ticket Wristbands', icon: Package },
         { id: 'Jersey', label: 'Jersey', icon: Package },
-        { id: 'Medali', label: 'Medali', icon: Package },
+        { id: 'Medal', label: 'Medal', icon: Package },
         { id: 'BIB Number', label: 'BIB Number', icon: Package },
-        { id: 'Tootbag', label: 'Tote Bag', icon: Package },
-        { id: 'Man Power Ticketing', label: 'Man Power Ticketing', icon: Users },
+        { id: 'Tote bag', label: 'Tote Bag', icon: Package },
+        { id: 'Ticketing Manpower', label: 'Ticketing Manpower', icon: Users },
     ];
 
     useEffect(() => {
@@ -93,7 +95,7 @@ const CustomOrder = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (selectedItems.length === 0) {
-            alert('Minimal satu item yang diperlukan');
+            alert('At least one item is required');
             return;
         }
 
@@ -116,10 +118,10 @@ const CustomOrder = () => {
             
             // Refresh List
             fetchData();
-            alert('Order berhasil dikirim!');
+            alert('Order submitted successfully!');
         } catch (error) {
             console.error('Error submitting order:', error.message);
-            alert('Gagal mengirim order: ' + error.message);
+            alert('Failed to submit order: ' + error.message);
         } finally {
             setSubmitting(false);
         }
@@ -154,18 +156,18 @@ const CustomOrder = () => {
             >
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                        <span className="px-3 py-1 bg-[#1a36c7] text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                        <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
                              Event Logistics
                         </span>
                         <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Support Request</span>
                     </div>
                     <div>
-                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3 uppercase">
-                            Custom Order <ClipboardList className="text-[#1a36c7]" size={32} />
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Custom Order <ClipboardList className="text-blue-600" size={32} />
                         </h1>
-                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed italic uppercase tracking-tight">
-                            Event: <span className="text-slate-900 font-black tracking-normal not-italic">{eventData?.title || 'Unknown Event'}</span>
+                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                            Request additional logistics, equipment, and manpower to support the success of event <span className="text-slate-900 font-bold">"{eventData?.title}"</span>.
                         </p>
                     </div>
                 </div>
@@ -181,7 +183,7 @@ const CustomOrder = () => {
                     <div className="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-xl shadow-slate-200/50 h-full">
                         <form onSubmit={handleSubmit} className="space-y-8">
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kebutuhan Perlengkapan</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left block">Required Equipment</label>
                                 <div className="grid grid-cols-1 gap-2">
                                     {requestItems.map((item) => {
                                         const isSelected = selectedItems.includes(item.id);
@@ -193,11 +195,11 @@ const CustomOrder = () => {
                                                 onClick={() => toggleItem(item.id)}
                                                 className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all text-left ${
                                                     isSelected 
-                                                        ? 'bg-blue-50 border-[#1a36c7] text-[#1a36c7] shadow-sm' 
+                                                        ? 'bg-blue-50 border-blue-600 text-blue-600 shadow-sm' 
                                                         : 'bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100'
                                                 }`}
                                             >
-                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? 'bg-[#1a36c7] text-white' : 'bg-slate-200 text-slate-400'}`}>
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
                                                     <Icon size={16} />
                                                 </div>
                                                 <span className="text-[11px] font-black uppercase tracking-tight">{item.label}</span>
@@ -209,24 +211,24 @@ const CustomOrder = () => {
                             </div>
 
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Spesifikasi Detail</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left block">Detailed Specifications</label>
                                 <textarea
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
-                                    placeholder="Misal: Ukuran jersey, jumlah gelang, atau spesifikasi lainnya..."
-                                    className="w-full bg-slate-50 border-2 border-transparent focus:border-[#1a36c7] focus:bg-white rounded-2xl p-4 text-[11px] font-black uppercase outline-none transition-all h-40 resize-none"
+                                    placeholder="Example: Jersey sizes, number of wristbands, or other specifications..."
+                                    className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-2xl p-4 text-[11px] font-black uppercase outline-none transition-all h-40 resize-none"
                                 />
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full bg-[#1a36c7] text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {submitting ? (
                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 ) : <Plus size={14} />}
-                                Ajukan Pesanan
+                                Submit Order
                             </button>
                         </form>
                     </div>
@@ -241,25 +243,32 @@ const CustomOrder = () => {
                     <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-xl shadow-slate-200/50 min-h-[600px]">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                                Riwayat Pesanan <Clock size={16} className="text-slate-400" />
+                                Order History <Clock size={16} className="text-slate-400" />
                             </h3>
                         </div>
 
                         {orders.length > 0 ? (
                             <div className="space-y-4">
                                 {orders.map((req) => (
-                                    <div key={req.id} className="group bg-slate-50 border border-slate-100 rounded-3xl p-6 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 flex flex-col md:flex-row md:items-center justify-between gap-6 border-l-4 border-l-slate-200 hover:border-l-[#1a36c7]">
+                                    <div 
+                                        key={req.id} 
+                                        onClick={() => {
+                                            console.log("Navigating to detail:", req.id);
+                                            navigate(req.id);
+                                        }}
+                                        className="group bg-slate-50 border border-slate-100 rounded-3xl p-6 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 flex flex-col md:flex-row md:items-center justify-between gap-6 border-l-4 border-l-slate-200 hover:border-l-blue-600 cursor-pointer"
+                                    >
                                         <div className="space-y-3 flex-1">
                                             <div className="flex items-center gap-3">
                                                 <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-[0.2em] rounded-full text-white shadow-lg ${getStatusColor(req.status)}`}>
                                                     {req.status}
                                                 </span>
                                                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                                                    {new Date(req.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    {new Date(req.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
                                                 </span>
                                             </div>
                                             <div className="space-y-1">
-                                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                                <div className="flex flex-wrap gap-1.5 mt-2 text-left">
                                                     {req.items.map((item, idx) => (
                                                         <span key={idx} className="px-2 py-0.5 bg-white border border-slate-100 text-[9px] font-bold text-slate-500 rounded-lg uppercase tracking-tight">
                                                             {item}
@@ -267,22 +276,32 @@ const CustomOrder = () => {
                                                     ))}
                                                 </div>
                                                 {req.description && (
-                                                    <p className="text-[10px] text-slate-400 font-bold italic mt-2 uppercase tracking-tight">
+                                                    <p className="text-[10px] text-slate-400 font-bold italic mt-2 uppercase tracking-tight text-left">
                                                         "{req.description}"
                                                     </p>
                                                 )}
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-4">
-                                            <div className="text-right hidden md:block">
-                                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">REF ID</p>
-                                                <p className="text-[10px] font-bold text-slate-400">#{req.id.slice(0, 8)}</p>
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-right hidden md:block mr-2">
+                                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">REF ID</p>
+                                                    <p className="text-[10px] font-bold text-slate-400">#{req.id.slice(0, 8)}</p>
+                                                </div>
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        console.log("Button: Navigating to", req.id);
+                                                        navigate(req.id);
+                                                    }}
+                                                    className="px-4 py-2 bg-blue-50 text-blue-600 text-[9px] font-black uppercase tracking-widest rounded-xl border border-blue-100 hover:bg-blue-600 hover:text-white transition-all active:scale-95"
+                                                >
+                                                    Details
+                                                </button>
+                                                <div className="p-3 bg-white border border-slate-100 rounded-xl text-slate-300 group-hover:text-blue-600 transition-colors">
+                                                    <ChevronRight size={18} />
+                                                </div>
                                             </div>
-                                            <div className="p-3 bg-white border border-slate-100 rounded-xl text-slate-300 group-hover:text-[#1a36c7] transition-colors">
-                                                <ChevronRight size={18} />
-                                            </div>
-                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -292,8 +311,8 @@ const CustomOrder = () => {
                                     <ClipboardList size={32} strokeWidth={1} />
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Belum Ada Pesanan</h4>
-                                    <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">Pesanan Anda akan muncul di sini.</p>
+                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">No Orders Yet</h4>
+                                    <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">Your orders will appear here.</p>
                                 </div>
                             </div>
                         )}

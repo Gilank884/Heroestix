@@ -29,6 +29,7 @@ export default function EventCashDetail() {
     const [paymentBreakdown, setPaymentBreakdown] = useState({});
     const [metrics, setMetrics] = useState({ totalGross: 0, ticketCount: 0 });
     const [isExporting, setIsExporting] = useState(false);
+    const [displayLimit, setDisplayLimit] = useState(20);
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -215,13 +216,13 @@ export default function EventCashDetail() {
         
         const dataToExport = transactions.map(tx => ({
             'Transaction ID': tx.id.toUpperCase(),
-            'Date': new Date(tx.created_at).toLocaleString('id-ID'),
+            'Date': new Date(tx.created_at).toLocaleString('en-US'),
             'Customer': tx.customerName,
             'Tickets': tx.ticketCount,
             'Method': tx.methodLabel,
             'Gross (Rp)': tx.amount,
-            'NetRevenue/Creator (Rp)': tx.netRevenue,
-            'Bayarind Fee (Rp)': tx.paymentFee,
+            'Net Revenue/Creator (Rp)': tx.netRevenue,
+            'Fee (Rp)': tx.paymentFee,
             'Platform Profit (Rp)': tx.cleanProfit,
             'Status': tx.status.toUpperCase()
         }));
@@ -244,7 +245,7 @@ export default function EventCashDetail() {
             <div className="p-8 flex items-center justify-center min-h-[400px]">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-slate-400 font-bold text-xs tracking-widest uppercase">Memuat Detail Keuangan...</p>
+                    <p className="text-slate-400 font-bold text-xs tracking-widest uppercase">Loading Financial Details...</p>
                 </div>
             </div>
         );
@@ -256,7 +257,7 @@ export default function EventCashDetail() {
                 <div className="bg-red-50 border border-red-100 rounded-2xl p-6 text-red-600">
                     <p className="font-bold">Error loading details</p>
                     <p className="text-sm">{error}</p>
-                    <button onClick={() => navigate('/cash')} className="mt-4 text-sm font-bold underline">Kembali ke Ringkasan</button>
+                    <button onClick={() => navigate('/cash')} className="mt-4 text-sm font-bold underline">Back to Summary</button>
                 </div>
             </div>
         );
@@ -264,51 +265,64 @@ export default function EventCashDetail() {
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button
+            {/* Header section */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10"
+            >
+                <div className="space-y-4">
+                    <button 
                         onClick={() => navigate('/cash')}
-                        className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:bg-slate-50 transition-all text-slate-400 hover:text-slate-600"
+                        className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-blue-600 uppercase tracking-widest transition-colors mb-2"
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={14} /> Back to Financial Summary
                     </button>
+                    <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                             Event Detail
+                        </span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+                            {event?.creators?.brand_name}
+                        </span>
+                    </div>
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <img src="/Logo/Logo.png" alt="Heroestix" className="h-6 w-auto" />
-                            <div className="w-px h-4 bg-slate-200" />
-                            <div className="flex items-center gap-2">
-                                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-wider">Event Detail</span>
-                                <span className="text-slate-300">/</span>
-                                <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{event?.creators?.brand_name}</span>
-                            </div>
-                        </div>
-                        <h1 className="text-2xl font-black text-slate-900 leading-tight">{event?.title}</h1>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Financial <span className="text-blue-600">Matrix</span> <Activity className="text-blue-600" size={32} />
+                        </h1>
+                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                            Comprehensive revenue audit and cash flow analysis for <span className="text-slate-900 font-bold">"{event?.title}"</span>.
+                        </p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+
+                <div className="flex items-center gap-3">
                     <button 
                         onClick={exportFinancialReport}
                         disabled={isExporting}
-                        className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm text-slate-400 hover:text-blue-600 transition-all flex items-center gap-2 group"
-                        title="Export to PDF"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-slate-200 border border-slate-800 hover:bg-slate-800"
                     >
-                        <TrendingUp size={20} className={isExporting ? 'animate-spin' : ''} />
-                        <span className="hidden md:inline font-bold text-xs uppercase tracking-widest text-slate-400 group-hover:text-blue-600">Export Cash Flow</span>
+                        <TrendingUp size={14} className={isExporting ? 'animate-spin' : ''} />
+                        Export PDF
                     </button>
-                    <button 
+                    
+                    <button
                         onClick={handleExport}
-                        className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm text-slate-400 hover:text-emerald-600 transition-all flex items-center gap-2 group"
-                        title="Export to Excel"
+                        className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-emerald-100 border border-emerald-500 hover:bg-emerald-700"
                     >
-                        <FileSpreadsheet size={20} />
-                        <span className="hidden md:inline font-bold text-xs uppercase tracking-widest text-slate-400 group-hover:text-emerald-600">Export Excel</span>
+                        <FileSpreadsheet size={14} />
+                        Export Excel
                     </button>
-                    <button onClick={fetchDetail} className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm text-slate-400 hover:text-blue-600 transition-all">
+
+                    <button
+                        onClick={fetchDetail}
+                        className="p-2.5 bg-white text-slate-400 rounded-2xl border border-slate-100 shadow-sm hover:text-blue-600 transition-all active:scale-95"
+                    >
                         <Activity size={20} />
                     </button>
                 </div>
-            </div>
+            </motion.div>
 
             {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -337,10 +351,10 @@ export default function EventCashDetail() {
                             <CheckCircle2 size={24} />
                         </div>
                         <div>
-                            <p className="text-blue-100/60 text-[10px] font-black uppercase tracking-widest mb-1">Platform Clean Profit (After PPN)</p>
+                            <p className="text-blue-100/60 text-[10px] font-black uppercase tracking-widest mb-1">Platform Clean Profit (After VAT)</p>
                             <p className="text-2xl font-black tracking-tight">{rupiah(metrics.totalFinalProfit)}</p>
                         </div>
-                        <p className="text-[10px] font-bold text-blue-100/40 uppercase tracking-widest pt-2 border-t border-white/10 group-hover:text-white transition-colors">Click for 11% PPN Breakdown</p>
+                        <p className="text-[10px] font-bold text-blue-100/40 uppercase tracking-widest pt-2 border-t border-white/10 group-hover:text-white transition-colors">Click for 11% VAT Breakdown</p>
                     </div>
                 </motion.div>
 
@@ -349,7 +363,7 @@ export default function EventCashDetail() {
                         <Wallet size={24} />
                     </div>
                     <div>
-                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Creator Share (Netrevenue)</p>
+                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Creator Share (Net Revenue)</p>
                         <p className="text-2xl font-black text-slate-900">{rupiah(metrics.totalNetRevenue)}</p>
                     </div>
                 </div>
@@ -359,10 +373,10 @@ export default function EventCashDetail() {
                         <ShoppingBag size={24} />
                     </div>
                     <div>
-                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Tiket Terjual</p>
+                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Tickets Sold</p>
                         <div className="flex items-end gap-2">
                             <p className="text-2xl font-black text-slate-900">{metrics.ticketCount}</p>
-                            <p className="text-slate-400 font-bold mb-1 text-xs uppercase tracking-widest">Tiket</p>
+                            <p className="text-slate-400 font-bold mb-1 text-xs uppercase tracking-widest">Tickets</p>
                         </div>
                     </div>
                 </div>
@@ -377,8 +391,21 @@ export default function EventCashDetail() {
                         </div>
                         <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Payment Method Breakdown</h2>
                     </div>
-                    <div className="px-4 py-1.5 bg-slate-50 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        Total {transactions.length} Transaksi
+                    <div className="flex items-center gap-3">
+                        <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                            Total {transactions.length} Records
+                        </div>
+                        <select
+                            value={displayLimit}
+                            onChange={(e) => setDisplayLimit(Number(e.target.value))}
+                            className="px-4 py-2 bg-white border border-slate-100 rounded-xl text-[9px] font-black text-slate-600 uppercase tracking-widest shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value={10}>Show 10</option>
+                            <option value={20}>Show 20</option>
+                            <option value={50}>Show 50</option>
+                            <option value={100}>Show 100</option>
+                            <option value={transactions.length}>Show All</option>
+                        </select>
                     </div>
                 </div>
                 <div className="p-8">
@@ -439,15 +466,21 @@ export default function EventCashDetail() {
                                 <th className="p-5">Customer / Tickets</th>
                                 <th className="p-5">Payment</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Gross</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-amber-600 uppercase tracking-widest text-right">Netrev</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-rose-500 uppercase tracking-widest text-right">Fee</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-indigo-500 uppercase tracking-widest text-right">PPN</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-blue-600 uppercase tracking-widest text-right">Net Profit</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-amber-600 uppercase tracking-widest text-right">Net Rev</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-rose-500 uppercase tracking-widest text-right">Payment Fee</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-indigo-500 uppercase tracking-widest text-right">VAT (11%)</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-blue-600 uppercase tracking-widest text-right">Platform Profit</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {transactions.map((tx) => (
-                                <tr key={tx.id} className="hover:bg-slate-50/50 transition-all group">
+                            {transactions.slice(0, displayLimit).map((tx, idx) => (
+                                <motion.tr
+                                    key={tx.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.02 }}
+                                    className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
+                                >
                                     <td className="p-5 pl-8">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-slate-100 rounded-lg text-slate-400">
@@ -455,13 +488,13 @@ export default function EventCashDetail() {
                                             </div>
                                             <div>
                                                 <p className="text-xs font-black text-slate-900 tracking-tight">#{tx.id.slice(0, 8).toUpperCase()}</p>
-                                                <p className="text-[10px] font-bold text-slate-400">{new Date(tx.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                                <p className="text-[10px] font-bold text-slate-400">{new Date(tx.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="p-5">
                                         <p className="text-sm font-bold text-slate-700">{tx.customerName}</p>
-                                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{tx.ticketCount} Tiket</p>
+                                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{tx.ticketCount} Tickets</p>
                                     </td>
                                     <td className="p-5">
                                         <div className="flex items-center gap-2">
@@ -487,7 +520,7 @@ export default function EventCashDetail() {
                                     <td className="px-6 py-4 text-right tabular-nums text-xs font-bold text-blue-600">
                                         {rupiah(tx.finalProfit)}
                                     </td>
-                                </tr>
+                                </motion.tr>
                             ))}
                             {transactions.length === 0 && (
                                 <tr>

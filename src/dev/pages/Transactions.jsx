@@ -115,12 +115,12 @@ export default function Transactions() {
 
     const handleManualWithdraw = async () => {
         if (!withdrawAmount || Number(withdrawAmount) <= 0) {
-            alert("Jumlah penarikan tidak valid");
+            alert("Invalid withdrawal amount");
             return;
         }
 
         if (Number(withdrawAmount) > metrics.totalBalance) {
-            alert("Saldo tidak mencukupi");
+            alert("Insufficient balance");
             return;
         }
 
@@ -139,14 +139,14 @@ export default function Transactions() {
 
             if (error) throw error;
 
-            alert("Penarikan berhasil dicatat!");
+            alert("Withdrawal successfully recorded!");
             setIsWithdrawModalOpen(false);
             setWithdrawAmount('');
             setWithdrawNote('');
             fetchTransactions();
         } catch (error) {
             console.error('Error recording withdrawal:', error);
-            alert("Gagal mencatat penarikan: " + error.message);
+            alert("Failed to record withdrawal: " + error.message);
         } finally {
             setIsWithdrawing(false);
         }
@@ -182,7 +182,7 @@ export default function Transactions() {
             const end = new Date(endDate);
             let curr = new Date(start);
             while (curr <= end) {
-                const label = curr.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                const label = curr.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
                 groups[label] = { name: label, inflow: 0, outflow: 0, rawDate: new Date(curr) };
                 curr.setDate(curr.getDate() + 1);
             }
@@ -191,7 +191,7 @@ export default function Transactions() {
         // 2. Fill with actual data
         filteredTransactions.forEach(tx => {
             const d = new Date(tx.created_at);
-            const label = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            const label = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
             
             if (!groups[label]) {
                 groups[label] = { name: label, inflow: 0, outflow: 0, rawDate: d };
@@ -218,55 +218,65 @@ export default function Transactions() {
 
     return (
         <div className="space-y-8 pb-20">
-            {/* Header */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-4">
-                            <img src="/Logo/Logo.png" alt="Heroestix" className="h-8 w-auto" />
-                            <div className="w-1 h-6 bg-slate-200" />
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-blue-600" />
-                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Audit Trail</span>
-                            </div>
-                        </div>
-                        <h1 className="text-4xl font-medium tracking-tight text-slate-900 italic">Platform <span className="text-blue-600 not-italic">Ledger</span></h1>
-                        <p className="text-slate-500 font-medium text-sm mt-2">Comprehensive record of all financial movements.</p>
-                    </div>
+            {/* Header section */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10"
+            >
+                <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex bg-slate-100 p-1 rounded-2xl mr-2">
-                             <button 
-                                onClick={() => setViewMode('table')}
-                                title="Table View"
-                                className={`p-2 rounded-xl transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                             >
-                                <LayoutDashboard size={18} />
-                             </button>
-                             <button 
-                                onClick={() => setViewMode('chart')}
-                                title="Chart View"
-                                className={`p-2 rounded-xl transition-all ${viewMode === 'chart' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                             >
-                                <BarChart3 size={18} />
-                             </button>
-                        </div>
-                        <button
-                            onClick={() => setIsWithdrawModalOpen(true)}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-lg shadow-rose-200"
-                        >
-                            <ArrowUpRight size={14} />
-                            Tarik Saldo
-                        </button>
-                        <button
-                            onClick={fetchTransactions}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all active:scale-95 shadow-sm"
-                        >
-                            <RefreshCw size={14} />
-                            Sync Ledger
-                        </button>
+                        <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                             Audit Trail
+                        </span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+                            Platform Ledger
+                        </span>
+                    </div>
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Transaction <span className="text-blue-600">Engine</span> <Activity className="text-blue-600" size={32} />
+                        </h1>
+                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                            Comprehensive record of all financial movements, balancing entries, and ecosystem capital flows.
+                        </p>
                     </div>
                 </div>
-            </div>
+
+                <div className="flex items-center gap-4">
+                    <div className="flex bg-white/50 p-1 rounded-2xl border border-white shadow-sm backdrop-blur-md">
+                         <button 
+                            onClick={() => setViewMode('table')}
+                            className={`p-2.5 rounded-xl transition-all ${viewMode === 'table' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+                         >
+                            <LayoutDashboard size={18} />
+                         </button>
+                         <button 
+                            onClick={() => setViewMode('chart')}
+                            className={`p-2.5 rounded-xl transition-all ${viewMode === 'chart' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+                         >
+                            <BarChart3 size={18} />
+                         </button>
+                    </div>
+
+                    <button
+                        onClick={fetchTransactions}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm border border-slate-100 hover:bg-slate-50"
+                    >
+                        <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                        Sync Ledger
+                    </button>
+
+                    <button
+                        onClick={() => setIsWithdrawModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-rose-100 border border-rose-500 hover:bg-rose-700"
+                    >
+                        <ArrowUpRight size={14} />
+                        Withdrawal
+                    </button>
+                </div>
+            </motion.div>
 
             {/* Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -323,14 +333,14 @@ export default function Transactions() {
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="bg-transparent border-none outline-none text-[10px] font-bold text-slate-600 uppercase tracking-tight w-28"
+                                className="bg-transparent border-none outline-none text-[10px] font-bold text-slate-600 tracking-tight w-28 uppercase"
                             />
                             <span className="text-slate-300 text-xs">→</span>
                             <input
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="bg-transparent border-none outline-none text-[10px] font-bold text-slate-600 uppercase tracking-tight w-28"
+                                className="bg-transparent border-none outline-none text-[10px] font-bold text-slate-600 tracking-tight w-28 uppercase"
                             />
                             {(startDate || endDate) && (
                                 <button 
@@ -359,7 +369,7 @@ export default function Transactions() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 tracking-widest border-b border-slate-100 uppercase">
                                     <th className="p-6 pl-8">Transaction</th>
                                     <th className="p-6">Entity / Description</th>
                                     <th className="p-6">Method</th>
@@ -380,7 +390,7 @@ export default function Transactions() {
                                                         </div>
                                                         <div>
                                                             <p className="text-xs font-black text-slate-900 uppercase tracking-tight">#{tx.id.slice(0, 8).toUpperCase()}</p>
-                                                            <p className="text-[10px] font-bold text-slate-400">{new Date(tx.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                                            <p className="text-[10px] font-bold text-slate-400">{new Date(tx.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -462,7 +472,7 @@ export default function Transactions() {
                                 <Area 
                                     type="monotone" 
                                     dataKey="inflow" 
-                                    name="Pemasukan (Sale)" 
+                                    name="Inflow (Sale)" 
                                     stroke="#2563eb" 
                                     strokeWidth={3}
                                     fillOpacity={1} 
@@ -471,7 +481,7 @@ export default function Transactions() {
                                 <Area 
                                     type="monotone" 
                                     dataKey="outflow" 
-                                    name="Pengeluaran (Out)" 
+                                    name="Outflow (Payout)" 
                                     stroke="#e11d48" 
                                     strokeWidth={3}
                                     fillOpacity={1} 
@@ -495,7 +505,7 @@ export default function Transactions() {
                         >
                             <div className="p-8 space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Tarik Saldo Platform</h3>
+                                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Withdraw Platform Balance</h3>
                                     <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
                                         <Wallet size={20} />
                                     </div>
@@ -503,7 +513,7 @@ export default function Transactions() {
 
                                 <div className="space-y-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Jumlah Penarikan</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Withdrawal Amount</label>
                                         <div className="relative">
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
                                             <input
@@ -517,16 +527,16 @@ export default function Transactions() {
                                                 placeholder="0"
                                             />
                                         </div>
-                                        <p className="text-[10px] font-bold text-slate-400 pl-1">Saldo Tersedia: {rupiah(metrics.totalBalance)}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 pl-1 uppercase tracking-widest">Available Balance: {rupiah(metrics.totalBalance)}</p>
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Catatan (Opsional)</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Note (Optional)</label>
                                         <textarea
                                             value={withdrawNote}
                                             onChange={(e) => setWithdrawNote(e.target.value)}
                                             className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:bg-white focus:ring-4 focus:ring-rose-500/5 transition-all outline-none min-h-[100px] resize-none"
-                                            placeholder="Contoh: Penarikan profit operasional..."
+                                            placeholder="Example: Operational profit withdrawal..."
                                         />
                                     </div>
                                 </div>
@@ -536,14 +546,14 @@ export default function Transactions() {
                                         onClick={() => setIsWithdrawModalOpen(false)}
                                         className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all"
                                     >
-                                        Batal
+                                        Cancel
                                     </button>
                                     <button
                                         onClick={handleManualWithdraw}
                                         disabled={isWithdrawing}
                                         className="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-rose-200 disabled:opacity-50"
                                     >
-                                        {isWithdrawing ? 'Memproses...' : 'Konfirmasi Tarik'}
+                                        {isWithdrawing ? 'Processing...' : 'Confirm Withdrawal'}
                                     </button>
                                 </div>
                             </div>

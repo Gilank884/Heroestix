@@ -161,7 +161,7 @@ export default function Withdrawals() {
         return (
             <div className="p-20 flex flex-col items-center justify-center gap-4">
                 <div className="w-12 h-12 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin" />
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Menghitung Saldo...</span>
+                <span className="text-xs font-bold text-slate-400 tracking-[0.2em] uppercase">Calculating Balance...</span>
             </div>
         );
     }
@@ -175,19 +175,19 @@ export default function Withdrawals() {
                 <div className="space-y-1">
                     <div className="flex items-center gap-2 mb-1">
                         <div className="w-2 h-2 rounded-full bg-blue-600" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Pemanfaatan Saldo</span>
+                        <span className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase">Balance Utilization</span>
                     </div>
                     <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-                        Penarikan <span className="text-blue-600 italic">Saldo</span>
+                        Balance <span className="text-blue-600">Withdrawal</span>
                     </h2>
-                    <p className="text-slate-500 font-medium text-sm">Kelola dana Anda dan pantau status pencairan ke rekening bank.</p>
+                    <p className="text-slate-500 font-medium text-sm">Manage your funds and track disbursement status to your bank account.</p>
                 </div>
                 <button
                     onClick={handleRequestWithdrawal}
                     className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 shadow-xl shadow-blue-500/20 hover:scale-105 hover:bg-blue-700 transition-all active:scale-95 text-sm"
                 >
                     <PlusCircle size={18} />
-                    Ajukan Penarikan
+                    Request Withdrawal
                 </button>
             </div>
 
@@ -203,14 +203,14 @@ export default function Withdrawals() {
                                 <Wallet size={32} className="text-blue-400" />
                             </div>
                             <div>
-                                <p className="text-white/40 font-medium text-[10px] uppercase tracking-[0.2em] mb-1">Saldo Tersedia Untuk Dicairkan</p>
+                                <p className="text-white/40 font-medium text-[10px] tracking-[0.2em] uppercase mb-1">Available Balance for Withdrawal</p>
                                 <h3 className="text-4xl md:text-5xl font-bold tracking-tight tabular-nums">{rupiah(balance)}</h3>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2 text-white/40">
                             <Info size={14} />
-                            <p className="text-[10px] font-bold uppercase tracking-widest leading-none">Min. Penarikan Rp 100.000 • Maksimal 3 hari pengerjaan</p>
+                            <p className="text-[10px] font-bold tracking-widest leading-none uppercase">Min. Withdrawal Rp 100.000 • Max. 3 working days processing</p>
                         </div>
                     </div>
                 </div>
@@ -221,17 +221,17 @@ export default function Withdrawals() {
                         <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
                             <Building2 size={18} />
                         </div>
-                        <h4 className="font-black text-slate-900 uppercase text-[10px] tracking-widest">Rekening Tujuan</h4>
+                        <h4 className="font-black text-slate-900 text-[10px] tracking-widest uppercase">Destination Account</h4>
                     </div>
 
                     {creatorInfo?.bank_account ? (
                         <div className="space-y-4">
                             <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-blue-200 transition-colors">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 leading-none">Nama Bank</p>
+                                <p className="text-[10px] font-black text-slate-400 tracking-widest mb-2 uppercase leading-none">Bank Name</p>
                                 <p className="font-bold text-slate-800">{creatorInfo.bank_name}</p>
                             </div>
                             <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-blue-200 transition-colors">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 leading-none">Nomor Rekening</p>
+                                <p className="text-[10px] font-black text-slate-400 tracking-widest mb-2 uppercase leading-none">Account Number</p>
                                 <div className="flex items-center gap-2">
                                     <CreditCard size={14} className="text-slate-400" />
                                     <p className="font-black text-slate-800 tracking-wider">{creatorInfo.bank_account}</p>
@@ -241,8 +241,8 @@ export default function Withdrawals() {
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center p-6 bg-amber-50 rounded-2xl border border-amber-100 text-center gap-3">
                             <AlertCircle size={32} className="text-amber-500" />
-                            <p className="text-xs font-bold text-amber-800 leading-relaxed uppercase tracking-widest">Belum Ada Rekening Terdaftar</p>
-                            <p className="text-[10px] text-amber-600 font-medium">Lengkapi data bank di menu Profil Anda untuk melakukan penarikan.</p>
+                            <p className="text-xs font-bold text-amber-800 leading-relaxed tracking-widest uppercase">No Bank Account Registered</p>
+                            <p className="text-[10px] text-amber-600 font-medium">Complete your bank information in the Profile menu to withdraw funds.</p>
                         </div>
                     )}
                 </div>
@@ -252,7 +252,7 @@ export default function Withdrawals() {
             <div className="space-y-6">
                 <div className="flex items-center gap-4 px-2">
                     <div className="w-1.5 h-6 bg-amber-500 rounded-full" />
-                    <h3 className="text-xl font-black text-slate-900">Histori Pengajuan</h3>
+                    <h3 className="text-xl font-black text-slate-900">Request History</h3>
                 </div>
 
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -260,10 +260,10 @@ export default function Withdrawals() {
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
-                                    <th className="px-8 py-5 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Referensi</th>
-                                    <th className="px-8 py-5 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Tanggal</th>
-                                    <th className="px-8 py-5 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Nominal</th>
-                                    <th className="px-8 py-5 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Status</th>
+                                    <th className="px-8 py-5 text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase">Reference</th>
+                                    <th className="px-8 py-5 text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase">Date</th>
+                                    <th className="px-8 py-5 text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase">Amount</th>
+                                    <th className="px-8 py-5 text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase text-right">Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
@@ -277,7 +277,7 @@ export default function Withdrawals() {
                                             <p className="text-xs font-black text-slate-700 tracking-wider">WD-{req.id.substring(0, 8).toUpperCase()}</p>
                                         </td>
                                         <td className="px-8 py-5">
-                                            <span className="text-xs font-bold text-slate-500">{new Date(req.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                            <span className="text-xs font-bold text-slate-500">{new Date(req.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                         </td>
                                         <td className="px-8 py-5">
                                             <p className="font-black text-slate-900">{rupiah(req.amount)}</p>
@@ -291,7 +291,7 @@ export default function Withdrawals() {
                                 )) : (
                                     <tr>
                                         <td colSpan="4" className="px-8 py-16 text-center">
-                                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest opacity-60 italic">Belum ada pengajuan penarikan dana</p>
+                                            <p className="text-slate-400 text-xs font-bold tracking-widest opacity-60 italic uppercase">No withdrawal requests yet</p>
                                         </td>
                                     </tr>
                                 )}
@@ -308,9 +308,9 @@ export default function Withdrawals() {
 
 function StatusBadge({ status }) {
     const configs = {
-        pending: { label: 'Diproses', icon: Clock, className: 'bg-amber-50 text-amber-600 border-amber-100' },
-        approved: { label: 'Berhasil', icon: CheckCircle2, className: 'bg-blue-50 text-blue-600 border-blue-100' },
-        rejected: { label: 'Ditolak', icon: XCircle, className: 'bg-red-50 text-red-600 border-red-100' },
+        pending: { label: 'Processing', icon: Clock, className: 'bg-amber-50 text-amber-600 border-amber-100' },
+        approved: { label: 'Success', icon: CheckCircle2, className: 'bg-blue-50 text-blue-600 border-blue-100' },
+        rejected: { label: 'Rejected', icon: XCircle, className: 'bg-red-50 text-red-600 border-red-100' },
     };
 
     const config = configs[status] || configs.pending;

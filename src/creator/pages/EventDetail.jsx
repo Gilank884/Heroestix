@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
-import { 
-    Info, 
-    Calendar, 
-    Tag, 
-    ChevronLeft, 
-    LayoutDashboard, 
-    Settings, 
-    HelpCircle, 
+import {
+    Info,
+    Calendar,
+    Tag,
+    ChevronLeft,
+    LayoutDashboard,
+    Settings,
+    HelpCircle,
     ArrowLeft,
     CheckCircle2,
     AlertCircle,
@@ -102,7 +102,7 @@ const EventDetail = () => {
     return (
         <div className="relative min-h-screen pb-20">
 
-            <motion.div 
+            <motion.div
                 initial="hidden"
                 animate="visible"
                 variants={containerVariants}
@@ -123,7 +123,7 @@ const EventDetail = () => {
                 </motion.div>
 
                 {/* Unified Header & Title Card */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="relative group"
                 >
@@ -131,7 +131,7 @@ const EventDetail = () => {
                     <div className="relative bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 overflow-hidden">
                         {/* Decorative elements */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-32 -mt-32" />
-                        
+
                         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8 text-left">
                             <div className="space-y-5">
                                 <div className="flex items-center gap-3">
@@ -146,12 +146,12 @@ const EventDetail = () => {
                                     <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-none">
                                         {event?.title || 'Detail Event'}
                                     </h1>
-                                    <p className="text-slate-500 font-bold text-sm max-w-xl leading-relaxed uppercase tracking-tight opacity-70">
+                                    <p className="text-slate-500 font-bold text-sm max-w-xl leading-relaxed tracking-tight opacity-70">
                                         Pantau detail, ubah waktu dan lokasi, serta kelola pengaturan pajak hiburan untuk kampanye operasional Anda.
                                     </p>
                                 </div>
                             </div>
-                            
+
                             <div className="flex items-center gap-4">
                                 <div className="w-20 h-20 bg-slate-900 text-white rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-slate-200 group-hover:rotate-3 transition-transform duration-500">
                                     <Activity size={32} strokeWidth={2.5} className="text-blue-500 animate-pulse" />
@@ -218,7 +218,7 @@ const EventDetail = () => {
 
                     {/* RIGHT COLUMN: Sidebar Navigation */}
                     <aside className="lg:col-span-3 space-y-6 lg:sticky lg:top-6">
-                        <motion.div 
+                        <motion.div
                             variants={itemVariants}
                             className="bg-white/60 backdrop-blur-xl p-5 rounded-[2rem] border border-white shadow-xl shadow-slate-200/30"
                         >
@@ -256,7 +256,7 @@ const EventDetail = () => {
                         </motion.div>
 
                         {/* Quick Help Integrated Design */}
-                        <motion.div 
+                        <motion.div
                             variants={itemVariants}
                             className="bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden group"
                         >

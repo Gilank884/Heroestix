@@ -8,7 +8,8 @@ import {
     Download,
     Building2,
     Database,
-    AlertCircle
+    AlertCircle,
+    RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -76,7 +77,7 @@ const DevDocuments = () => {
                 bank_book_pic_url: creator.bank_book_pic_url // Assuming this field might exist or be added
             });
         } catch (err) {
-            alert("Gagal mengunduh PDF. Silakan coba lagi.");
+            alert("Failed to download PDF. Please try again.");
         } finally {
             setIsGeneratingPDF(null);
         }
@@ -97,28 +98,42 @@ const DevDocuments = () => {
 
     return (
         <div className="max-w-[1600px] mx-auto space-y-8 pb-10">
-            {/* Header */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-4">
-                            <img src="/Logo/Logo.png" alt="Heroestix" className="h-8 w-auto" />
-                            <div className="w-1 h-6 bg-slate-200" />
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-blue-600" />
-                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Legal & Compliance</span>
-                            </div>
-                        </div>
-                        <h1 className="text-4xl font-medium tracking-tight text-slate-900 italic">Merchant <span className="text-blue-600 not-italic">Documents</span></h1>
-                        <p className="text-slate-500 font-medium text-sm mt-2">Manage partnership agreements and creator documentations.</p>
-                    </div>
+            {/* Header section */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10"
+            >
+                <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                        <button onClick={fetchCreators} className="px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all active:scale-95 shadow-sm">
-                            Refresh Sync
-                        </button>
+                        <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-200">
+                             Legal & Compliance
+                        </span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Merchant Documents
+                        </span>
+                    </div>
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Contract <span className="text-blue-600">Vault</span> <FileText className="text-blue-600" size={32} />
+                        </h1>
+                        <p className="text-slate-500 font-medium text-sm mt-3 max-w-xl leading-relaxed">
+                            Manage partnership agreements, creator documentations, and compliance certifications globally.
+                        </p>
                     </div>
                 </div>
-            </div>
+
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={fetchCreators} 
+                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-100 border border-blue-500 hover:bg-blue-700"
+                    >
+                        <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                        Sync Vault
+                    </button>
+                </div>
+            </motion.div>
 
             {/* Error Display */}
             <AnimatePresence>
