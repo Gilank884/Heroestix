@@ -119,19 +119,19 @@ export default function CreatorCash() {
                             const countInOrder = orderTicketCounts[t.order_id] || 1;
                             const ticketType = t.ticket_types;
                             const eventTax = taxMap[ticketType.event_id];
-                            
+
                             const basePrice = Number(ticketType.price || 0);
                             const taxRate = eventTax ? parseFloat(eventTax.value || 0) : 0;
                             const isTaxIncluded = eventTax ? eventTax.is_included : false;
-                            
+
                             let ticketIncome = basePrice;
                             if (!isTaxIncluded && taxRate > 0) {
                                 ticketIncome += (basePrice * taxRate / 100);
                             }
-                            
+
                             const discountShare = Number(t.orders.discount_amount || 0) / countInOrder;
                             ticketIncome -= discountShare;
-                            
+
                             fallbackIncome += ticketIncome;
                         });
                         calculatedIncome = fallbackIncome;

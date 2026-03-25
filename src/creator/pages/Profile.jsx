@@ -24,7 +24,9 @@ import {
     Activity,
     Trophy,
     Sparkles,
-    ArrowRight
+    ArrowRight,
+    Briefcase,
+    FileText
 } from 'lucide-react';
 import VerificationPending from '../components/VerificationPending';
 
@@ -50,6 +52,7 @@ export default function Profile() {
         brand_name: '',
         bank_name: '',
         bank_account: '',
+        bank_holder_name: '',
         instagram_url: '',
         x_url: '',
         tiktok_url: '',
@@ -57,7 +60,22 @@ export default function Profile() {
         description: '',
         address: '',
         image_url: '',
-        verified: false
+        verified: false,
+        // New Legal Data
+        golongan: '',
+        director_name: '',
+        company_address: '',
+        pkp_number: '',
+        // Doc URLs
+        ktp_pic_url: '',
+        npwp_pic_url: '',
+        npwp_company_url: '',
+        akte_notaris_url: '',
+        sk_kumham_url: '',
+        surat_kuasa_url: '',
+        nib_url: '',
+        sertifikat_pendirian_url: '',
+        pernyataan_pendirian_url: ''
     });
 
     const [newPhotoFile, setNewPhotoFile] = useState(null);
@@ -84,6 +102,7 @@ export default function Profile() {
                     brand_name: data.brand_name || '',
                     bank_name: data.bank_name || '',
                     bank_account: data.bank_account || '',
+                    bank_holder_name: data.bank_holder_name || '',
                     instagram_url: data.instagram_url || '',
                     x_url: data.x_url || '',
                     tiktok_url: data.tiktok_url || '',
@@ -91,7 +110,20 @@ export default function Profile() {
                     description: data.description || '',
                     address: data.address || '',
                     image_url: data.image_url || '',
-                    verified: data.verified || false
+                    verified: data.verified || false,
+                    golongan: data.golongan || '',
+                    director_name: data.director_name || '',
+                    company_address: data.company_address || '',
+                    pkp_number: data.pkp_number || '',
+                    ktp_pic_url: data.ktp_pic_url || '',
+                    npwp_pic_url: data.npwp_pic_url || '',
+                    npwp_company_url: data.npwp_company_url || '',
+                    akte_notaris_url: data.akte_notaris_url || '',
+                    sk_kumham_url: data.sk_kumham_url || '',
+                    surat_kuasa_url: data.surat_kuasa_url || '',
+                    nib_url: data.nib_url || '',
+                    sertifikat_pendirian_url: data.sertifikat_pendirian_url || '',
+                    pernyataan_pendirian_url: data.pernyataan_pendirian_url || ''
                 });
                 setPhotoPreview(data.image_url || null);
             }
@@ -232,7 +264,7 @@ export default function Profile() {
                 <div className="relative bg-white border border-slate-100/60 rounded-2xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] group-hover:shadow-[0_20px_50px_rgba(59,130,246,0.12)] transition-all duration-500 overflow-hidden">
                     {/* Subtle Decorative elements */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/20 rounded-full blur-3xl -mr-32 -mt-32 transition-transform duration-700 group-hover:scale-110" />
-                    
+
                     <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
                         {/* Compact Avatar Section */}
                         <div className="relative">
@@ -371,26 +403,116 @@ export default function Profile() {
                         description="Verified settlement account for revenue distribution."
                         icon={<CreditCard size={18} />}
                     >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-6">
+                        <div className="grid grid-cols-1 gap-5 p-6">
                             <div className="space-y-2">
-                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Bank Name</label>
+                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nama Bank</label>
                                 <Input
                                     name="bank_name"
                                     value={form.bank_name}
                                     onChange={handleChange}
-                                    placeholder="e.g. BCA"
+                                    placeholder="e.g. BCA / Mandiri"
                                     required
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Account Number</label>
+                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">No Rekening</label>
                                 <Input
                                     name="bank_account"
                                     value={form.bank_account}
                                     onChange={handleChange}
-                                    placeholder="000000000"
+                                    placeholder="000-000-000"
                                     required
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nama Pemilik</label>
+                                <Input
+                                    name="bank_holder_name"
+                                    value={form.bank_holder_name}
+                                    onChange={handleChange}
+                                    placeholder="Nama Sesuai Buku Tabungan"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    </Section>
+
+                    {/* Legalitas & Berkas - Premium Section */}
+                    <Section
+                        title="Legalitas & Berkas"
+                        description="Verified official documents and entity identity."
+                        icon={<ShieldCheck size={18} />}
+                    >
+                        <div className="p-8 space-y-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="md:col-span-2 flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm border border-slate-100">
+                                        <User size={14} />
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nama Direktur / PIC</div>
+                                        <div className="text-sm font-black text-slate-900">{form.director_name || 'N/A'}</div>
+                                    </div>
+                                </div>
+                                {[
+                                    { label: 'Tipe Golongan', value: form.golongan, icon: <Briefcase size={14} /> },
+                                    { label: 'Nomor PKP', value: form.pkp_number || '-', icon: <FileText size={14} /> }
+                                ].map((item, idx) => (
+                                    <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm border border-slate-100">
+                                            {item.icon}
+                                        </div>
+                                        <div>
+                                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.label}</div>
+                                            <div className="text-sm font-black text-slate-900">{item.value || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="md:col-span-2 space-y-2">
+                                    <div className="flex items-center gap-2 text-slate-400 mb-2">
+                                        <MapPin size={12} />
+                                        <span className="text-[9px] font-black uppercase tracking-widest">Alamat Domisili</span>
+                                    </div>
+                                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs font-bold text-slate-600 leading-relaxed">
+                                        {form.company_address}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-slate-400">
+                                    <Upload size={14} />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Arsip Dokumen</span>
+                                </div>
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {[
+                                        { label: 'KTP PIC', url: form.ktp_pic_url },
+                                        { label: 'NPWP PIC', url: form.npwp_pic_url },
+                                        { label: 'NPWP Perusahaan', url: form.npwp_company_url },
+                                        { label: 'Akte Notaris', url: form.akte_notaris_url, kmn: 'Berkas Lainnya 1' },
+                                        { label: 'SK Kumham', url: form.sk_kumham_url, kmn: 'Berkas Lainnya 2' },
+                                        { label: 'Surat Kuasa', url: form.surat_kuasa_url, kmn: 'Berkas Lainnya 3' },
+                                        { label: 'NIB', url: form.nib_url, kmn: 'Berkas Lainnya 4' },
+                                        { label: 'Sertifikat Pendirian', url: form.sertifikat_pendirian_url },
+                                        { label: 'Pernyataan Pendirian', url: form.pernyataan_pendirian_url }
+                                    ].filter(doc => doc.url).map((doc, idx) => {
+                                        const label = (form.golongan === 'Komunitas' && doc.kmn) ? doc.kmn : doc.label;
+                                        return (
+                                            <a
+                                                key={idx}
+                                                href={doc.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex flex-col items-center justify-center p-4 rounded-2xl border border-blue-50 bg-blue-50/20 hover:bg-blue-600 hover:border-blue-600 group/doc transition-all gap-3 relative overflow-hidden"
+                                            >
+                                                <div className="w-10 h-10 rounded-xl bg-white text-blue-600 flex items-center justify-center shadow-sm group-hover/doc:scale-110 group-hover/doc:rotate-3 transition-all relative z-10">
+                                                    <ShieldCheck size={20} />
+                                                </div>
+                                                <span className="text-[8px] font-black uppercase tracking-[0.1em] text-blue-700 group-hover/doc:text-white text-center transition-colors px-1 relative z-10">{label}</span>
+                                            </a>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     </Section>
@@ -432,7 +554,7 @@ export default function Profile() {
                     <div className="bg-slate-900 rounded-xl p-6 shadow-xl shadow-slate-900/20 group/save hover:shadow-blue-600/20 transition-all duration-500 relative overflow-hidden">
                         {/* Decorative glow */}
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl group-hover/save:scale-150 transition-transform duration-700" />
-                        
+
                         <div className="space-y-1 relative z-10">
                             <h3 className="text-white font-bold text-sm tracking-tight uppercase">Update Profile</h3>
                             <p className="text-slate-400 text-[9px] font-bold leading-tight uppercase tracking-widest opacity-80">

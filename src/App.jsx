@@ -73,6 +73,12 @@ import DevEventConfig from "./dev/pages/EventConfig";
 import DevCash from "./dev/pages/Cash";
 import DevWithdrawals from "./dev/pages/Withdrawals";
 import DevWithdrawalDetail from "./dev/pages/WithdrawalDetail";
+import DevDocuments from "./dev/pages/Documents";
+import DevEventCashDetail from "./dev/pages/EventCashDetail";
+import DevProfitBreakdown from "./dev/pages/ProfitBreakdown";
+import DevTransactions from "./dev/pages/Transactions";
+import CreatorCustomOrder from "./creator/pages/CustomOrder";
+import DevCustomOrders from "./dev/pages/CustomOrders";
 
 
 
@@ -199,7 +205,7 @@ export default function App() {
             if (role === "user" && (isCreatorSub || isDevSub)) {
               try {
                 const tableCheck = isCreatorSub ? "creators" : "developers";
-                const { data: hasRecord } = await supabase.from(tableCheck).select("id").eq("id", session.user.id).single();
+                const { data: hasRecord } = await supabase.from(tableCheck).select("id").eq("id", session.user.id).maybeSingle();
                 if (hasRecord) {
                   console.log(`[checkRedirect] Auto-promoting user to ${isCreatorSub ? 'creator' : 'developer'} based on existence in ${tableCheck} table.`);
                   role = isCreatorSub ? "creator" : "developer";
@@ -360,6 +366,7 @@ export default function App() {
                 <Route path="/withdrawals" element={<EventWithdrawals />} />
                 <Route path="/withdrawals/:id" element={<CreatorWithdrawalDetail />} />
                 <Route path="/withdrawals/request" element={<EventRequestWithdrawal />} />
+                <Route path="/custom-order" element={<CreatorCustomOrder />} />
                 <Route path="/additional-form" element={<AdditionalForm />} />
               </Routes>
             </EventManagementLayout>
@@ -420,8 +427,14 @@ export default function App() {
                   <Route path="/events" element={<DevEvents />} />
                   <Route path="/events/:eventId/config" element={<DevEventConfig />} />
                   <Route path="/cash" element={<DevCash />} />
+                  <Route path="/cash/:eventId" element={<DevEventCashDetail />} />
+                  <Route path="/cash/breakdown" element={<DevProfitBreakdown />} />
+                  <Route path="/cash/:eventId/breakdown" element={<DevProfitBreakdown />} />
                   <Route path="/withdrawals" element={<DevWithdrawals />} />
                   <Route path="/withdrawals/:id" element={<DevWithdrawalDetail />} />
+                  <Route path="/transactions" element={<DevTransactions />} />
+                  <Route path="/documents" element={<DevDocuments />} />
+                  <Route path="/custom-orders" element={<DevCustomOrders />} />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </DevLayout>

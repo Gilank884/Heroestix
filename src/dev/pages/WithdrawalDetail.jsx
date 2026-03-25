@@ -159,6 +159,23 @@ export default function WithdrawalDetail() {
 
             if (actionType === 'approve') {
                 updates.amount = actionAmount;
+
+                // Log the Payout Transaction into platform ledger
+                const { error: txError } = await supabase.from('transactions').insert({
+                    amount: -actionAmount, // Negative for outflow
+                    status: 'success',
+                    method: 'WITHDRAWAL',
+                    payment_provider_data: {
+                        type: 'withdrawal_payout',
+                        withdrawal_id: request.id,
+                        creator_id: request.creator_id,
+                        creator_name: request.creators?.profiles?.full_name || request.creators?.brand_name,
+                        bank_name: request.creators?.bank_name,
+                        bank_account: request.creators?.bank_account
+                    }
+                });
+
+                if (txError) throw new Error("Gagal mencatat transaksi pengeluaran: " + txError.message);
             }
 
             const { error } = await supabase

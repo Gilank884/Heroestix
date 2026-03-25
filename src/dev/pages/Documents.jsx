@@ -1,32 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { generateMOUPDF } from '../../utils/pdfGenerator';
 import {
-    Users,
+    FileText,
     Search,
-    CheckCircle2,
-    XCircle,
-    Clock,
-    MoreHorizontal,
-    ExternalLink,
+    ShieldCheck,
+    Download,
     Building2,
-    Mail,
-    Phone,
-    ArrowRight,
-    Filter,
-    CreditCard,
-    ShieldCheck
+    Database,
+    AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const Creators = () => {
+const DevDocuments = () => {
     const [creators, setCreators] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [filter, setFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
-    const navigate = useNavigate();
-
+    const [selectedCreator, setSelectedCreator] = useState(null);
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(null);
 
     useEffect(() => {
         fetchCreators();
@@ -63,32 +55,43 @@ const Creators = () => {
         }
     };
 
-
-    const handleToggleVerification = async (id, currentStatus) => {
+    const handleDownloadMOU = async (creator) => {
+        setIsGeneratingPDF(creator.id);
         try {
-            const { error } = await supabase
-                .from('creators')
-                .update({ verified: !currentStatus })
-                .eq('id', id);
-
-            if (error) throw error;
-            fetchCreators();
-        } catch (error) {
-            alert('Error updating verification status: ' + error.message);
+            await generateMOUPDF({
+                brand_name: creator.brand_name,
+                company_address: creator.company_address || creator.address,
+                director_name: creator.director_name,
+                phone: creator.phone || '',
+                email: creator.email,
+                bank_name: creator.bank_name,
+                bank_account_holder: creator.bank_holder_name,
+                bank_account_number: creator.bank_account,
+                // Pass document URLs for the appendix
+                ktp_pic_url: creator.ktp_pic_url,
+                npwp_pic_url: creator.npwp_pic_url,
+                npwp_company_url: creator.npwp_company_url,
+                akte_notaris_url: creator.akte_notaris_url,
+                nib_url: creator.nib_url,
+                bank_book_pic_url: creator.bank_book_pic_url // Assuming this field might exist or be added
+            });
+        } catch (err) {
+            alert("Gagal mengunduh PDF. Silakan coba lagi.");
+        } finally {
+            setIsGeneratingPDF(null);
         }
     };
 
     const filteredCreators = creators.filter(c => {
-        const matchesFilter = filter === 'all' ? true : (filter === 'verified' ? c.verified : !c.verified);
-        const matchesSearch = c.brand_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            c.email?.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesFilter && matchesSearch;
+        return (c.brand_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+               (c.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+               (c.director_name || '').toLowerCase().includes(searchQuery.toLowerCase());
     });
 
     if (loading) return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
             <div className="w-12 h-12 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin" />
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Accessing Creator Network...</span>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Loading Document Records...</span>
         </div>
     );
 
@@ -103,15 +106,15 @@ const Creators = () => {
                             <div className="w-1 h-6 bg-slate-200" />
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-blue-600" />
-                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Network Governance</span>
+                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Legal & Compliance</span>
                             </div>
                         </div>
-                        <h1 className="text-4xl font-medium tracking-tight text-slate-900 italic">Creator <span className="text-blue-600 not-italic">Registry</span></h1>
-                        <p className="text-slate-500 font-medium text-sm mt-2">Manage merchant identities and verification standards.</p>
+                        <h1 className="text-4xl font-medium tracking-tight text-slate-900 italic">Merchant <span className="text-blue-600 not-italic">Documents</span></h1>
+                        <p className="text-slate-500 font-medium text-sm mt-2">Manage partnership agreements and creator documentations.</p>
                     </div>
                     <div className="flex items-center gap-3">
                         <button onClick={fetchCreators} className="px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all active:scale-95 shadow-sm">
-                            Refresh Database
+                            Refresh Sync
                         </button>
                     </div>
                 </div>
@@ -126,7 +129,7 @@ const Creators = () => {
                         exit={{ height: 0, opacity: 0 }}
                         className="px-8 py-4 bg-red-50 border border-red-100 rounded-[1.5rem] flex items-center gap-3 text-red-600 text-xs font-bold shadow-sm"
                     >
-                        <ShieldCheck size={16} className="text-red-400" />
+                        <AlertCircle size={16} className="text-red-400" />
                         <span>System Sync Issue: {error}. Data integrity may be affected.</span>
                     </motion.div>
                 )}
@@ -136,25 +139,11 @@ const Creators = () => {
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 {/* Tools */}
                 <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-2xl border border-slate-100 w-fit">
-                        {['all', 'verified', 'unverified'].map((f) => (
-                            <button
-                                key={f}
-                                onClick={() => setFilter(f)}
-                                className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${filter === f
-                                    ? 'bg-white text-blue-600 shadow-sm border border-slate-200'
-                                    : 'text-slate-400 hover:text-slate-600'
-                                    }`}
-                            >
-                                {f}
-                            </button>
-                        ))}
-                    </div>
                     <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-100 text-slate-400 focus-within:bg-white focus-within:border-blue-400 focus-within:text-blue-500 transition-all w-full md:w-80 shadow-sm">
                         <Search size={16} />
                         <input
                             type="text"
-                            placeholder="Search by brand or email..."
+                            placeholder="Search by brand, email, or director..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="bg-transparent border-none outline-none text-sm font-medium w-full placeholder:text-slate-400 text-slate-800"
@@ -168,26 +157,24 @@ const Creators = () => {
                         <thead>
                             <tr className="border-b border-slate-100 bg-slate-50/50">
                                 <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest w-16 text-center">No</th>
-                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Creator Identity</th>
-                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Owner</th>
-                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact Email</th>
-                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Action</th>
+                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Creator Info</th>
+                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Legal Entity</th>
+                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Settlement Info</th>
+                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Export</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {filteredCreators.map((creator, idx) => (
                                 <tr
                                     key={creator.id}
-                                    onClick={() => navigate(`/creators/${creator.id}`)}
-                                    className={`group transition-all cursor-pointer hover:bg-slate-50`}
+                                    className="group transition-all hover:bg-slate-50"
                                 >
                                     <td className="p-6 text-center text-xs font-bold text-slate-400">
                                         {idx + 1}
                                     </td>
                                     <td className="p-6">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 overflow-hidden relative shadow-sm group-hover:border-blue-200 transition-all">
+                                            <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 overflow-hidden relative shadow-sm group-hover:border-blue-200 transition-all">
                                                 {creator.image_url ? (
                                                     <img
                                                         src={creator.image_url}
@@ -197,37 +184,38 @@ const Creators = () => {
                                                     />
                                                 ) : null}
                                                 <div className={`absolute inset-0 flex items-center justify-center ${creator.image_url ? 'hidden' : ''}`}>
-                                                    {creator.brand_name?.charAt(0) || <Building2 size={20} />}
+                                                    {creator.brand_name?.charAt(0) || <Building2 size={16} />}
                                                 </div>
                                             </div>
                                             <div>
                                                 <h4 className="font-bold text-slate-900 text-sm">{creator.brand_name || 'Anonymous Brand'}</h4>
-                                                <p className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {creator.id.substring(0, 8)}</p>
+                                                <p className="text-[10px] text-slate-500 mt-0.5">{creator.email}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="p-6">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
-                                                {creator.profiles?.full_name?.charAt(0)}
-                                            </div>
-                                            <span className="text-sm font-bold text-slate-600">{creator.profiles?.full_name || 'Anonymous'}</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-slate-600">{creator.director_name || creator.profiles?.full_name || 'N/A'}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 mt-0.5">{creator.golongan || 'General'}</span>
                                         </div>
                                     </td>
                                     <td className="p-6">
-                                        <span className="text-sm font-medium text-slate-500">{creator.email}</span>
-                                    </td>
-                                    <td className="p-6 text-center">
-                                        <div className={`inline-flex items-center justify-center px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-wide ${creator.verified
-                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                            : 'bg-amber-50 text-amber-600 border-amber-100'
-                                            }`}>
-                                            {creator.verified ? 'Verified' : 'Pending'}
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-slate-600">{creator.bank_account || 'N/A'}</span>
+                                            <span className="text-[10px] text-slate-400 font-mono mt-0.5">{creator.bank_name || 'Bank Not Set'} - {creator.bank_holder_name}</span>
                                         </div>
                                     </td>
                                     <td className="p-6 text-center">
-                                        <button className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-300 group-hover:text-blue-600 group-hover:border-blue-200 transition-all">
-                                            <ArrowRight size={16} />
+                                        <button 
+                                            onClick={() => handleDownloadMOU(creator)}
+                                            disabled={isGeneratingPDF === creator.id}
+                                            className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 focus:ring-4 focus:ring-blue-50 rounded-xl text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 w-36 mx-auto shadow-sm"
+                                        >
+                                            {isGeneratingPDF === creator.id ? (
+                                                <><div className="w-3.5 h-3.5 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" /> Fetching...</>
+                                            ) : (
+                                                <><Download size={14} /> MOU PDF</>
+                                            )}
                                         </button>
                                     </td>
                                 </tr>
@@ -238,13 +226,15 @@ const Creators = () => {
 
                 {filteredCreators.length === 0 && (
                     <div className="p-20 flex flex-col items-center justify-center opacity-50">
-                        <Users size={48} className="text-slate-200 mb-4" />
-                        <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] italic">No records in the current view</p>
+                        <Database size={48} className="text-slate-200 mb-4" />
+                        <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] italic">No document records found</p>
                     </div>
                 )}
             </div>
+
+            {/* Table remains unchanged */}
         </div>
     );
 };
 
-export default Creators;
+export default DevDocuments;

@@ -18,9 +18,9 @@ const loadScript = (src) => {
 
 export const exportToPDF = async (elementId, filename = 'receipt.pdf') => {
     try {
-        // Load dependencies from CDN
+        // Load newer html-to-image to avoid html2canvas CSS parsing bugs (like unsupported oklch)
         await Promise.all([
-            loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'),
+            loadScript('https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js'),
             loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
         ]);
 
@@ -31,47 +31,51 @@ export const exportToPDF = async (elementId, filename = 'receipt.pdf') => {
         }
 
         // Wait a bit for images to render if any
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 800));
 
-        const canvas = await window.html2canvas(element, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
+        const imgData = await window.htmlToImage.toPng(element, {
+            quality: 1.0,
+            pixelRatio: 1.5, // Reduced from 2 for "lighter" file size while maintaining readability
             backgroundColor: '#ffffff',
-            onclone: (clonedDoc, clonedElement) => {
-                // Fix for "oklch" and other modern color functions that html2canvas doesn't support
-                // We iterate over the original elements to get their computed RGB values
-                const allElements = element.querySelectorAll('*');
-                const allClonedElements = clonedElement.querySelectorAll('*');
-                
-                // Also handle the root element
-                [element, ...allElements].forEach((el, index) => {
-                    const clonedEl = index === 0 ? clonedElement : allClonedElements[index - 1];
-                    if (!clonedEl) return;
-
-                    const style = window.getComputedStyle(el);
-                    
-                    // html2canvas fails when it sees modern color functions in any style property
-                    // We force the most common ones to computed RGB
-                    clonedEl.style.color = style.color;
-                    clonedEl.style.backgroundColor = style.backgroundColor;
-                    clonedEl.style.borderColor = style.borderColor;
-                    clonedEl.style.fill = style.fill;
-                    clonedEl.style.stroke = style.stroke;
-                });
+            style: {
+                height: 'auto',
+                maxHeight: 'none',
+                overflow: 'visible'
             }
         });
 
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'px',
-            format: [canvas.width / 2, canvas.height / 2] // Matching the element's size
-        });
+        // Load image to get true dimensions
+        const img = new Image();
+        img.src = imgData;
+        await new Promise(r => img.onload = r);
 
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+        const imgWidth = img.width;
+        const imgHeight = img.height;
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        // Calculate the height of the image when scaled to A4 width
+        const canvasHeightInMm = (imgHeight * pdfWidth) / imgWidth;
+
+        let heightLeft = canvasHeightInMm;
+        let position = 0;
+
+        // First page
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, canvasHeightInMm);
+        heightLeft -= pdfHeight;
+
+        // Add additional pages if the image is taller than one A4 page
+        while (heightLeft > 0) {
+            position = heightLeft - canvasHeightInMm;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, canvasHeightInMm);
+            heightLeft -= pdfHeight;
+        }
+
         pdf.save(filename);
         
         return true;

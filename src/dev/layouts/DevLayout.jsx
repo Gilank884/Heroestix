@@ -8,12 +8,15 @@ import {
     Percent,
     Wallet,
     ShieldAlert,
+    Activity,
     LogOut,
     ChevronRight,
     Search,
     Bell,
     Settings,
-    User
+    User,
+    FileText,
+    ClipboardList
 } from 'lucide-react';
 import useAuthStore from '../../auth/useAuthStore';
 import { supabase } from '../../lib/supabaseClient';
@@ -35,20 +38,23 @@ const DevLayout = ({ children }) => {
         { name: 'Events', path: '/events', icon: Calendar },
         { name: 'Cash', path: '/cash', icon: CreditCard },
         { name: 'Withdrawals', path: '/withdrawals', icon: Wallet },
+        { name: 'Transactions', path: '/transactions', icon: Activity },
+        { name: 'Documents', path: '/documents', icon: FileText },
+        { name: 'Custom Orders', path: '/custom-orders', icon: ClipboardList },
     ];
 
     return (
         <div className="flex h-screen bg-[#F8FAFC] text-slate-800 overflow-hidden font-sans selection:bg-blue-100 selection:text-blue-700">
             {/* Sidebar */}
             <aside
-                className={`relative z-20 flex flex-col transition-all duration-500 ease-in-out border-r border-slate-200 bg-white shadow-sm ${isSidebarOpen ? 'w-72' : 'w-20'
+                className={`relative z-20 flex flex-col transition-all duration-500 ease-in-out border-r border-slate-200 bg-white/80 backdrop-blur-md shadow-sm ${isSidebarOpen ? 'w-72' : 'w-20'
                     }`}
             >
                 {/* Logo Section */}
                 <div className="h-20 flex items-center px-6 border-b border-slate-100">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-200">
-                            <ShieldAlert className="text-white" size={20} />
+                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-200 overflow-hidden p-1.5">
+                            <img src="/Logo/Logo.png" alt="Logo" className="w-full h-full object-contain brightness-0 invert" />
                         </div>
                         {isSidebarOpen && (
                             <motion.div

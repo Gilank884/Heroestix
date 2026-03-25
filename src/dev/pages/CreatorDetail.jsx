@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { generateMOUPDF } from '../../utils/pdfGenerator';
 import {
     ArrowLeft,
     CheckCircle2,
@@ -10,6 +11,7 @@ import {
     Check,
     ShieldCheck,
     Clock,
+    Download,
     Settings,
     Layout,
     CreditCard as PaymentIcon
@@ -22,6 +24,7 @@ const CreatorDetail = () => {
     const [creator, setCreator] = useState(null);
     const [loading, setLoading] = useState(true);
     const [events, setEvents] = useState([]);
+    const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
 
     useEffect(() => {
         const fetchCreator = async () => {
@@ -101,6 +104,33 @@ const CreatorDetail = () => {
             setCreator({ ...creator, verified: newStatus });
         } catch (error) {
             alert('Error updating verification status: ' + error.message);
+        }
+    };
+
+    const handleDownloadMOU = async () => {
+        setIsDownloadingPDF(true);
+        try {
+            await generateMOUPDF({
+                brand_name: creator.brand_name,
+                company_address: creator.company_address || creator.address,
+                director_name: creator.director_name,
+                phone: creator.phone || '',
+                email: creator.email,
+                bank_name: creator.bank_name,
+                bank_account_holder: creator.bank_holder_name,
+                bank_account_number: creator.bank_account,
+                // Pass document URLs for the appendix
+                ktp_pic_url: creator.ktp_pic_url,
+                npwp_pic_url: creator.npwp_pic_url,
+                npwp_company_url: creator.npwp_company_url,
+                akte_notaris_url: creator.akte_notaris_url,
+                nib_url: creator.nib_url,
+                bank_book_pic_url: creator.bank_book_pic_url // Assuming this field might exist or be added
+            });
+        } catch (err) {
+            alert("Gagal mengunduh PDF. Silakan coba lagi.");
+        } finally {
+            setIsDownloadingPDF(false);
         }
     };
 
@@ -237,6 +267,18 @@ const CreatorDetail = () => {
                                     </>
                                 )}
                             </button>
+                            
+                            <button
+                                onClick={handleDownloadMOU}
+                                disabled={isDownloadingPDF}
+                                className="w-full py-5 font-black text-xs uppercase tracking-widest rounded-2xl border transition-all active:scale-95 shadow-sm flex items-center justify-center gap-3 bg-white text-blue-600 border-blue-200 hover:bg-blue-50 disabled:opacity-50"
+                            >
+                                {isDownloadingPDF ? (
+                                    <div className="w-4 h-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+                                ) : (
+                                    <><Download size={18} /> Download MOU</>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -286,6 +328,8 @@ const CreatorDetail = () => {
                     )}
                 </div>
             </div>
+
+            {/* Signature logic handled by pdfGenerator */}
         </div>
     );
 };

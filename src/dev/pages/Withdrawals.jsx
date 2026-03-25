@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import {
     Wallet,
@@ -25,6 +26,7 @@ const rupiah = (value) => {
 };
 
 export default function Withdrawals() {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [requests, setRequests] = useState([]);
     const [stats, setStats] = useState({ total_pending: 0, total_processed: 0, pending_amount: 0 });
@@ -174,18 +176,28 @@ export default function Withdrawals() {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header */}
-            <div className="flex items-end justify-between">
-                <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Withdrawals</h1>
-                    <p className="text-slate-500 font-medium mt-1">Manage creator payout requests and history.</p>
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-10">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                        <div className="flex items-center gap-3 mb-4">
+                            <img src="/Logo/Logo.png" alt="Heroestix" className="h-8 w-auto" />
+                            <div className="w-1 h-6 bg-slate-200" />
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-blue-600" />
+                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Funding Operations</span>
+                            </div>
+                        </div>
+                        <h1 className="text-4xl font-medium tracking-tight text-slate-900 italic">Merchant <span className="text-blue-600 not-italic">Withdrawals</span></h1>
+                        <p className="text-slate-500 font-medium text-sm mt-2">Review and process creator payout requests.</p>
+                    </div>
+                    <button
+                        onClick={fetchWithdrawals}
+                        className="px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all active:scale-95 shadow-sm flex items-center gap-2"
+                    >
+                        <Clock size={16} />
+                        Refresh Sync
+                    </button>
                 </div>
-                <button
-                    onClick={fetchWithdrawals}
-                    className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 font-bold text-xs uppercase tracking-wider hover:bg-slate-50 transition-all flex items-center gap-2"
-                >
-                    <Clock size={16} />
-                    Refresh
-                </button>
             </div>
 
             {/* Stats Cards */}

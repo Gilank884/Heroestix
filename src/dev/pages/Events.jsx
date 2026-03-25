@@ -107,19 +107,25 @@ const Events = () => {
     return (
         <div className="max-w-[1600px] mx-auto space-y-8 pb-10">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-600" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Global Catalog</span>
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-10">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                        <div className="flex items-center gap-3 mb-4">
+                            <img src="/Logo/Logo.png" alt="Heroestix" className="h-8 w-auto" />
+                            <div className="w-1 h-6 bg-slate-200" />
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-blue-600" />
+                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Global Catalog</span>
+                            </div>
+                        </div>
+                        <h1 className="text-4xl font-medium tracking-tight text-slate-900 italic">Event <span className="text-blue-600 not-italic">Manager</span></h1>
+                        <p className="text-slate-500 font-medium text-sm mt-2">Oversee all platform listings and creator assignments.</p>
                     </div>
-                    <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 italic">Event <span className="text-blue-600 not-italic">Manager</span></h2>
-                    <p className="text-slate-500 font-medium text-sm mt-2">Oversee all platform listings and creator assignments.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button onClick={fetchEvents} className="px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all active:scale-95 shadow-sm">
-                        Refresh Sync
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button onClick={fetchEvents} className="px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all active:scale-95 shadow-sm">
+                            Refresh Sync
+                        </button>
+                    </div>
                 </div>
             </div>
 

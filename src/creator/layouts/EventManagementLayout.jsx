@@ -127,6 +127,7 @@ const EventManagementLayout = ({ children }) => {
             title: "PENGUNJUNG",
             items: [
                 { name: "Daftar Pengunjung", path: `/manage/event/${eventId}/visitors`, icon: Users },
+                { name: "Custom Order", path: `/manage/event/${eventId}/custom-order`, icon: ClipboardList },
             ],
         },
         {

@@ -18,6 +18,9 @@ import {
     Search
 } from 'lucide-react';
 import VerificationPending from '../components/VerificationPending';
+import { exportToPDF } from '../../utils/pdfExport';
+import FormalReport from '../../components/Finance/FormalReport';
+import { useRef } from 'react';
 
 const rupiah = (value) => {
     return new Intl.NumberFormat("id-ID", {
@@ -41,6 +44,8 @@ export default function EventCash() {
     const [creatorInfo, setCreatorInfo] = useState(null);
     const [eventData, setEventData] = useState(null);
     const [isVerified, setIsVerified] = useState(true);
+    const [isExporting, setIsExporting] = useState(false);
+    const reportRef = useRef(null);
 
     useEffect(() => {
         if (user?.id && eventId) {
@@ -152,15 +157,15 @@ export default function EventCash() {
                     ticketsWithOrders.forEach(t => {
                         const totalTicketsInOrder = orderTicketCounts[t.order_id] || 1;
                         const basePrice = Number(t.ticket_types?.price || 0);
-                        
+
                         let ticketIncome = basePrice;
                         if (!isTaxIncluded && taxRate > 0) {
                             ticketIncome += (basePrice * taxRate / 100);
                         }
-                        
+
                         const discountShare = Number(t.orders?.discount_amount || 0) / totalTicketsInOrder;
                         ticketIncome -= discountShare;
-                        
+
                         calculatedSales += ticketIncome;
                         // Attach to ticket for ledger display
                         t.calculated_revenue = ticketIncome;
@@ -247,6 +252,15 @@ export default function EventCash() {
         }
     };
 
+    const exportFinancialReport = async () => {
+        setIsExporting(true);
+        try {
+            await exportToPDF('financial-report-content', `Financial_Report_${eventData?.title || 'Event'}.pdf`);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     if (loading && !eventData) {
         return (
             <div className="p-20 flex flex-col items-center justify-center gap-4">
@@ -272,13 +286,23 @@ export default function EventCash() {
                     </h2>
                     <p className="text-slate-500 font-medium text-sm">Monitor pendapatan dan ajukan pencairan tiket.</p>
                 </div>
-                <button
-                    onClick={() => setIsRequestModalOpen(true)}
-                    className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 shadow-xl shadow-indigo-500/20 hover:scale-105 hover:bg-indigo-700 transition-all active:scale-95 text-sm"
-                >
-                    <PlusCircle size={18} />
-                    Tarik Saldo Event
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={exportFinancialReport}
+                        disabled={isExporting}
+                        className="bg-emerald-50 text-emerald-700 px-8 py-4 rounded-2xl font-bold flex items-center gap-2 border border-emerald-100 shadow-sm hover:bg-emerald-100 transition-all active:scale-95 text-sm"
+                    >
+                        <ArrowUpRight size={18} className={isExporting ? 'animate-spin' : ''} />
+                        {isExporting ? 'Processing...' : 'Export Cash Flow'}
+                    </button>
+                    <button
+                        onClick={() => setIsRequestModalOpen(true)}
+                        className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 shadow-xl shadow-indigo-500/20 hover:scale-105 hover:bg-indigo-700 transition-all active:scale-95 text-sm"
+                    >
+                        <PlusCircle size={18} />
+                        Tarik Saldo Event
+                    </button>
+                </div>
             </div>
 
             {/* Quick Stats Grid */}
@@ -545,6 +569,21 @@ export default function EventCash() {
                     </div>
                 </div>
             )}
+
+            {/* Hidden Financial Report Template */}
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+                <FormalReport 
+                    type="event_cash_creator" 
+                    data={{ 
+                        totalSales, 
+                        totalWithdrawn, 
+                        eventBalance, 
+                        withdrawals: withdrawals 
+                    }} 
+                    creatorInfo={creatorInfo} 
+                    eventData={eventData} 
+                />
+            </div>
         </div>
     );
 }

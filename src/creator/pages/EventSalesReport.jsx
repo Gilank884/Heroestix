@@ -24,10 +24,14 @@ import {
     Activity,
     RefreshCw,
     ExternalLink,
-    ArrowUpDown
+    ArrowUpDown,
+    ArrowUpRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import VerificationPending from '../components/VerificationPending';
+import { exportToPDF } from '../../utils/pdfExport';
+import FormalReport from '../../components/Finance/FormalReport';
+import { useRef } from 'react';
 
 const rupiah = (value) => {
     return new Intl.NumberFormat("id-ID", {
@@ -55,6 +59,9 @@ export default function EventSalesReport() {
     const [pageSize, setPageSize] = useState(20);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [creatorInfo, setCreatorInfo] = useState(null);
+    const reportRef = useRef(null);
+    const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => {
         if (user?.id && eventId) {
@@ -67,9 +74,11 @@ export default function EventSalesReport() {
         try {
             const { data: creatorData } = await supabase
                 .from('creators')
-                .select('verified')
+                .select('verified, brand_name, bank_name, bank_account, bank_account_name')
                 .eq('id', user.id)
                 .single();
+
+            setCreatorInfo(creatorData);
 
             const verified = creatorData?.verified ?? false;
             setIsVerified(verified);
@@ -207,6 +216,15 @@ export default function EventSalesReport() {
         link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
     };
 
+    const exportFinancialReport = async () => {
+        setIsExporting(true);
+        try {
+            await exportToPDF('financial-report-content', `Financial_Report_${eventData?.title || 'Event'}.pdf`);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -270,6 +288,16 @@ export default function EventSalesReport() {
                         </div>
 
                         <div className="flex items-center gap-3">
+                            <motion.button 
+                                onClick={exportFinancialReport}
+                                disabled={isExporting}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-6 py-4 bg-emerald-50 border border-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest rounded-[1.25rem] shadow-sm hover:bg-emerald-100 transition-all group"
+                            >
+                                <ArrowUpRight size={14} className={isExporting ? 'animate-spin' : ''} />
+                                {isExporting ? 'Processing...' : 'Export Cash Flow'}
+                            </motion.button>
                             <motion.button 
                                 onClick={() => window.print()}
                                 whileHover={{ scale: 1.05 }}
@@ -460,7 +488,7 @@ export default function EventSalesReport() {
                                                         </p>
                                                     </td>
                                                 </motion.tr>
-                                            );
+                                            )
                                         })
                                     )}
                                 </AnimatePresence>
@@ -484,6 +512,20 @@ export default function EventSalesReport() {
                     </div>
                 </motion.div>
             </motion.div>
+
+            {/* Hidden Sales Report Template */}
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+                <FormalReport 
+                    type="sales_report_creator" 
+                    data={history} 
+                    metrics={{ 
+                        totalGross: stats.totalRevenue, // Adjusting mapping based on component props
+                        totalNetRevenue: stats.totalRevenue,
+                        totalTickets: stats.ticketsSold
+                    }} 
+                    eventData={eventData} 
+                />
+            </div>
         </div>
     );
 }
